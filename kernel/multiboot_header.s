@@ -1,10 +1,15 @@
+; Values for the multiboot header
+MULTIBOOT_MAGIC         equ 0xE85250D6
+MULTIBOOT_ARCH          equ 0
+MULTIBOOT_HEADER_LENGTH equ (header_end - header_start)
+MULTIBOOT_CHECKSUM  equ -(MULTIBOOT_MAGIC + MULTIBOOT_ARCH + MULTIBOOT_HEADER_LENGTH)
+
 section .multiboot_header
 header_start:
-    dd 0xe85250d6                ; magic number (multiboot 2)
-    dd 0                         ; architecture 0 (protected mode i386)
-    dd header_end - header_start ; header length
-    ; checksum
-    dd 0x100000000 - (0xe85250d6 + 0 + (header_end - header_start))
+    dd MULTIBOOT_MAGIC
+    dd MULTIBOOT_ARCH
+    dd MULTIBOOT_HEADER_LENGTH
+    dd MULTIBOOT_CHECKSUM
 
     ; insert optional multiboot tags here
 

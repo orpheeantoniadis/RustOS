@@ -1,4 +1,4 @@
-ENTRY(start)            /* the entry point */
+ENTRY(entrypoint)            /* the entry point */
 
 SECTIONS {
   . = 1M;            /* all sections located above 1MB */
