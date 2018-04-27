@@ -1,3 +1,5 @@
+extern kernel_entry
+
 global entrypoint  ; the entry point symbol defined in kernel.ld
 
 ; Values for the multiboot header
@@ -23,15 +25,21 @@ dd MULTIBOOT_MAGIC
 dd MULTIBOOT_FLAGS
 dd MULTIBOOT_CHECKSUM
 
+STACK_SIZE 	equ 0x100000
+
 entrypoint:
 	; code starts executing here
 	cli  ; disable hardware interrupts
 
-	; TODO :
-	; - Initialize the stack pointer and EBP (both to the same value)
-	; - Pass the multiboot info to the kernel
-	; - Call the kernel entry point (C code)
-	; ...
+	; Initialize the stack pointer and EBP (both to the same value)
+	mov 	esp, stack + STACK_SIZE
+	mov 	ebp, stack + STACK_SIZE
+	
+	; Pass the multiboot info to the kernel
+	; push 	ebx
+	
+	; TODO : Call the kernel entry point (Rust code)
+	call 	kernel_entry
 
 	; infinite loop (should never get here)
 .forever:
@@ -39,6 +47,9 @@ entrypoint:
 	jmp .forever
 
 ;---------------------------------------------------------------------------------------------------
-; TODO : declare a .stack section for the kernel. It should at least be 1MB long. Given this stack
-; area won't be initialized, the nobits keyword should be added when declaring the section.
-; ...
+; .stack section 1MB long
+
+section .stack nobits
+
+stack:
+resb STACK_SIZE 	; reserve 1MB for the stack
