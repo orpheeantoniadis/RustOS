@@ -1,4 +1,0 @@
-default=0
-timeout=3
-title RustOS
-kernel /boot/kernel.elf

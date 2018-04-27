@@ -1,27 +1,34 @@
-CC=gcc
-CFLAGS=-Wall -Wextra -std=gnu11 -m32
-SRCS=$(wildcard *.s)
-OBJS=$(SRCS:.s=.o)
-KERNEL=kernel.elf
-LINKER=kernel.ld
-OS=rustos
+BUILD_FOLDER = build
+SRCS = $(wildcard *.s)
+OBJS = $(patsubst %.s, $(BUILD_FOLDER)/%.o, $(SRCS))
+KERNEL = kernel.elf
+LINKER = linker.ld
+GRUB = grub.cfg
+OS = rustos
+ISO = $(BUILD_FOLDER)/$(OS).iso
 
-all : iso
+.PHONY: all clean run iso
 
-iso : $(KERNEL)
-	mkdir -p $(OS)/boot/
-	cp -r ../grub $(OS)/boot
-	cp kernel.elf $(OS)/boot
-	genisoimage -R -b boot/grub/stage2_eltorito -input-charset utf8 -no-emul-boot -boot-info-table -o $(OS).iso $(OS)
+all: $(BUILD_FOLDER)/$(KERNEL) iso
 
-$(KERNEL) : $(OBJS)
-	$(CC) $(OBJS) -T $(LINKER) -static -m32 -ffreestanding -nostdlib -o $@
+run: $(ISO)
+	qemu-system-x86_64 -cdrom $(ISO)
 
-%.o : %.s
-	nasm -f elf32 $^
+iso: $(ISO)
 
-run : $(OS).iso
-	qemu-system-i386 -cdrom $<
+$(ISO): $(BUILD_FOLDER)/$(KERNEL) $(GRUB)
+	mkdir -p $(BUILD_FOLDER)/isofiles/boot/grub
+	cp $(BUILD_FOLDER)/$(KERNEL) $(BUILD_FOLDER)/isofiles/boot/$(KERNEL)
+	cp $(GRUB) $(BUILD_FOLDER)/isofiles/boot/grub
+	grub-mkrescue -o $(ISO) $(BUILD_FOLDER)/isofiles
+	rm -r $(BUILD_FOLDER)/isofiles
 
+$(BUILD_FOLDER)/$(KERNEL): $(OBJS) $(LINKER)
+	ld -n -T $(LINKER) -o $(BUILD_FOLDER)/$(KERNEL) $(OBJS)
+
+$(BUILD_FOLDER)/%.o: %.s
+	mkdir -p $(shell dirname $@)
+	nasm -felf64 $< -o $@
+	
 clean:
-	rm -rf rustos $(OBJS) $(KERNEL) *.iso
+	rm -rf $(BUILD_FOLDER)
