@@ -1,3 +1,4 @@
+extern rust_entry
 global longmode_entry
 
 section .text
@@ -14,7 +15,8 @@ longmode_entry:
   ; TODO : Pass the multiboot info to the kernel
   ; push 	ebx
   
-  ; TODO : Call the kernel entry point (Rust code)
+  ; Call the kernel entry point (Rust code)
+  call rust_entry
 
   ; print `OKAY` to screen
   mov rax, 0x2f592f412f4b2f4f
@@ -24,3 +26,4 @@ longmode_entry:
   .forever:
     hlt
     jmp .forever
+    

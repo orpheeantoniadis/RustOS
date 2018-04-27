@@ -1,6 +1,9 @@
 # Mac
 .DS_Store
 
+# Kernel
+kernel/build
+
 # Rust
 /target
 **/*.rs.bk

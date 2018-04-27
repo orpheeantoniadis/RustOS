@@ -25,7 +25,7 @@ $(ISO): $(BUILD_FOLDER)/$(KERNEL) $(GRUB)
 	rm -r $(BUILD_FOLDER)/isofiles
 
 $(BUILD_FOLDER)/$(KERNEL): $(OBJS) $(LINKER) $(RUST)
-	ld -n -T $(LINKER) -o $(BUILD_FOLDER)/$(KERNEL) $(OBJS) $(RUST)
+	ld -n --gc-sections -T $(LINKER) -o $(BUILD_FOLDER)/$(KERNEL) $(OBJS) $(RUST)
 
 $(BUILD_FOLDER)/%.o: %.s
 	mkdir -p $(shell dirname $@)

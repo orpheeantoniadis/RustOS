@@ -5,7 +5,7 @@ SECTIONS {
 
   .boot ALIGN(4):     /* multiboot header first (needs to reside within the first 8KB) */
   {
-    *(.multiboot_header)
+    KEEP(*(.multiboot_header))
   }
 
   .stack ALIGN(4):         /* kernel stack */
