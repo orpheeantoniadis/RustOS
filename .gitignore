@@ -1,1 +1,6 @@
+# Mac
 .DS_Store
+
+# Rust
+/target
+**/*.rs.bk
