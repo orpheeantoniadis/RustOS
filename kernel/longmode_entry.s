@@ -17,10 +17,6 @@ longmode_entry:
   
   ; Call the kernel entry point (Rust code)
   call rust_entry
-
-  ; print `OKAY` to screen
-  mov rax, 0x2f592f412f4b2f4f
-  mov qword [0xb8000], rax
   
   ; infinite loop (should never get here)
   .forever:

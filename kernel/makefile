@@ -4,7 +4,7 @@ OBJS = $(patsubst %.s, $(BUILD_FOLDER)/%.o, $(SRCS))
 KERNEL = kernel.elf
 LINKER = linker.ld
 GRUB = grub.cfg
-OS = rustos
+OS = rust_os
 ISO = $(BUILD_FOLDER)/$(OS).iso
 RUST = ../target/x86_64-rust_os/debug/librust_os.a
 
