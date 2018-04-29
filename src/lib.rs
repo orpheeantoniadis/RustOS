@@ -2,7 +2,7 @@
 #![no_std]
 
 #[no_mangle]
-pub extern fn rust_entry() {
+pub extern fn kernel_entry() {
     let hello = b"Hello World!";
     let color_byte = 0x0f; // white foreground, black background
 
@@ -16,6 +16,11 @@ pub extern fn rust_entry() {
     unsafe { *buffer_ptr = hello_colored };
 
     loop{}
+}
+
+#[no_mangle]
+pub extern "C" fn __floatundisf() {
+    loop {}
 }
 
 #[lang = "eh_personality"] #[no_mangle] pub extern fn eh_personality() {}

@@ -1,13 +1,15 @@
+ARCH = i386
 CC = xargo
+TARGET = $(ARCH)-rust_os
+FLAGS = -v --no-default-features --target $(TARGET)
 KERNEL_PATH = kernel/
-TARGET = x86_64-rust_os
 
 .PHONY: all build run clean
 	
 all: build
 
 build:
-	RUST_TARGET_PATH=$(shell pwd) $(CC) build --target $(TARGET)
+	$(CC) build $(FLAGS)
 	$(MAKE) -C $(KERNEL_PATH)
 	
 run:
