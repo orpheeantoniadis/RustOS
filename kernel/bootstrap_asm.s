@@ -35,8 +35,8 @@ entrypoint:
   mov 	esp, stack + STACK_SIZE
   mov 	ebp, stack + STACK_SIZE
   
-  ; TODO : pass the multiboot info to the kernel
-  ; push ebx
+  ; pass the multiboot info to the kernel
+  push ebx
   
   call kernel_entry
   

@@ -1,8 +1,11 @@
 #![feature(lang_items)]
 #![no_std]
 
+mod multiboot;
+use multiboot::*;
+
 #[no_mangle]
-pub extern fn kernel_entry() {
+pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     let hello = b"Hello World!";
     let color_byte = 0x0f; // white foreground, black background
 
