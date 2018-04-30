@@ -3,13 +3,15 @@ use core::mem::size_of;
 use x86::*;
 use memory::*;
 
+type GdtTable = [GdtEntry; 3];
+
 extern "C" {
     fn gdt_load(gdt_ptr: *const GdtPtr);
 }
 
 #[repr(C, packed)]
 pub struct Gdt {
-    gdt_table: [GdtEntry; 3],
+    gdt_table: GdtTable,
     gdt_ptr: GdtPtr
 }
 
@@ -27,11 +29,11 @@ impl Gdt {
         self.gdt_table[2] = GdtEntry::make_data_segment(0, 0xfffff, 0);
 
     	// setup gdt_ptr so it points to the GDT and ensure it has the right limit.
-        self.gdt_ptr.base = &self.gdt_table as *const _ as u32;
-        self .gdt_ptr.limit = size_of::<GdtEntry>() as u16 - 1;
+        self.gdt_ptr.base = &self.gdt_table;
+        self .gdt_ptr.limit = size_of::<GdtTable>() as u16;
 
         // Load the GDT
-        // unsafe { gdt_load(&self.gdt_ptr); }
+        unsafe { gdt_load(&self.gdt_ptr); }
     }
 }
 
@@ -113,5 +115,5 @@ impl GdtEntry {
 #[repr(C, packed)]
 struct GdtPtr {
     limit: u16, // Limit of the table (ie. its size)
-    base: u32   // Address of the first entry
+    base: *const GdtTable // Address of the first entry
 }
