@@ -1,4 +1,38 @@
+use core::mem::uninitialized;
+use core::mem::size_of;
 use x86::*;
+
+extern "C" {
+    fn gdt_load(gdt_ptr: *const GdtPtr);
+}
+
+#[repr(C, packed)]
+pub struct Gdt {
+    gdt_table: [GdtEntry; 3],
+    gdt_ptr: GdtPtr
+}
+
+impl Gdt {
+    pub fn new() -> Gdt {
+        unsafe { uninitialized() }
+    }
+
+    // Initialize the GDT
+    pub fn gdt_init(&mut self) {
+    	// initialize 3 segment descriptors: NULL, code segment, data segment.
+    	// Code and data segments must have a privilege level of 0.
+        self.gdt_table[0] = GdtEntry::new();
+        self.gdt_table[1] = GdtEntry::make_code_segment(0, 0xfffff, 0);
+        self.gdt_table[2] = GdtEntry::make_data_segment(0, 0xfffff, 0);
+
+    	// TODO: setup gdt_ptr so it points to the GDT and ensure it has the right limit.
+        self.gdt_ptr.base = &self.gdt_table as *const _ as u32;
+        self .gdt_ptr.limit = size_of::<GdtEntry>() as u16;
+
+        // Load the GDT
+        unsafe { gdt_load(&self.gdt_ptr); }
+    }
+}
 
 #[repr(C, packed)]
 struct GdtEntry {
@@ -21,7 +55,7 @@ struct GdtEntry {
 }
 
 impl GdtEntry {
-    fn new(&mut self) -> GdtEntry {
+    fn new() -> GdtEntry {
         GdtEntry { 
             lim15_0: 0,
             base15_0: 0,
@@ -39,7 +73,7 @@ impl GdtEntry {
         }
     }
     
-    fn build_entry(&mut self, base: u32, limit: u32, gdt_type: u8, s: u8, db: u8, granularity: u8, dpl: u8) -> GdtEntry {
+    fn build_entry(base: u32, limit: u32, gdt_type: u8, s: u8, db: u8, granularity: u8, dpl: u8) -> GdtEntry {
         GdtEntry { 
             lim15_0: (limit & 0xffff) as u16,
             base15_0: (base & 0xffff) as u16,
@@ -57,12 +91,12 @@ impl GdtEntry {
         }
     }
     
-    fn make_code_segment(&mut self, base: u32, limit: u32, dpl: u8) -> GdtEntry {
-        self.build_entry(base, limit, TYPE_CODE_EXECREAD, S_CODE_OR_DATA, DB_SEG, 1, dpl)
+    fn make_code_segment(base: u32, limit: u32, dpl: u8) -> GdtEntry {
+        GdtEntry::build_entry(base, limit, TYPE_CODE_EXECREAD, S_CODE_OR_DATA, DB_SEG, 1, dpl)
     }
     
-    fn make_data_segment(&mut self, base: u32, limit: u32, dpl: u8) -> GdtEntry {
-        self.build_entry(base, limit, TYPE_DATA_READWRITE, S_CODE_OR_DATA, DB_SEG, 1, dpl)
+    fn make_data_segment(base: u32, limit: u32, dpl: u8) -> GdtEntry {
+        GdtEntry::build_entry(base, limit, TYPE_DATA_READWRITE, S_CODE_OR_DATA, DB_SEG, 1, dpl)
     }
 }
 
@@ -70,19 +104,4 @@ impl GdtEntry {
 struct GdtPtr {
     limit: u16, // Limit of the table (ie. its size)
     base: u32   // Address of the first entry
-}
-
-extern "C" {
-    fn gdt_load(gdt_ptr: *mut GdtPtr);
-}
-
-// Initialize the GDT
-pub fn gdt_init() {
-	// TODO: initialize 3 segment descriptors: NULL, code segment, data segment.
-	// Code and data segments must have a privilege level of 0.
-
-	// TODO: setup gdt_ptr so it points to the GDT and ensure it has the right limit.
-
-    // Load the GDT
-    // gdt_load(&gdt_ptr);
 }

@@ -10,6 +10,9 @@ use gdt::*;
 
 #[no_mangle]
 pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
+    let mut gdt = Gdt::new();
+    gdt.gdt_init();
+    
     let hello = b"Hello World!";
     let color_byte = 0x0f; // white foreground, black background
 

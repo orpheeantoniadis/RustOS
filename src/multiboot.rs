@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 #[repr(C)]
 pub struct MultibootAoutSymbolTable {
 	pub tabsize: u32,
@@ -62,7 +64,6 @@ pub struct MultibootInfo {
 	pub vbe_interface_len: u16
 }
 
-#[allow(dead_code)]
 #[repr(C)]
 pub struct MultibootModList {
 	/* the memory used goes from bytes 'mod_start' to 'mod_end-1' inclusive */

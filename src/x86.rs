@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 // Privilege levels
 pub const  DPL_USER: u8 = 0x3;
 pub const  DPL_KERNEL: u8 = 0x0;
