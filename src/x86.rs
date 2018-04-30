@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+
 // Privilege levels
 pub const  DPL_USER: u8 = 0x3;
 pub const  DPL_KERNEL: u8 = 0x0;
@@ -33,3 +34,23 @@ pub const  DB_SYS: u8 = 0;
 // kernel code and data selectors in the GDT
 pub const  GDT_KERNEL_CODE_SELECTOR: u8 = 0x08;
 pub const  GDT_KERNEL_DATA_SELECTOR: u8 = 0x10;
+
+// Disable hardware interrupts.
+fn cli() {
+    unsafe { asm!("cli"); }
+}
+
+// Enable hardware interrupts.
+fn sti() {
+    unsafe { asm!("sti"); }
+}
+
+// Halt the processor.
+// External interrupts wake up the CPU, hence the cli instruction.
+fn halt() {
+    unsafe {
+    	loop {
+            asm!("cli\nhlt");
+        }
+    }
+}

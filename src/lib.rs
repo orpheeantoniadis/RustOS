@@ -1,4 +1,4 @@
-#![feature(lang_items)]
+#![feature(lang_items, asm)]
 #![no_std]
 
 mod x86;

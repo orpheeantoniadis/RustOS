@@ -4,7 +4,7 @@ use x86::*;
 use memory::*;
 
 extern "C" {
-    fn gdt_load(gdt_ptr: *mut GdtPtr);
+    fn gdt_load(gdt_ptr: *const GdtPtr);
 }
 
 #[repr(C, packed)]
@@ -31,7 +31,7 @@ impl Gdt {
         self .gdt_ptr.limit = size_of::<GdtEntry>() as u16 - 1;
 
         // Load the GDT
-        // unsafe { gdt_load(&mut self.gdt_ptr); }
+        // unsafe { gdt_load(&self.gdt_ptr); }
     }
 }
 
