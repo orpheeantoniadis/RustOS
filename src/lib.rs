@@ -1,9 +1,10 @@
 #![feature(lang_items)]
 #![no_std]
 
+mod x86;
 mod multiboot;
 mod gdt;
-mod x86;
+mod memory;
 
 use multiboot::*;
 use gdt::*;

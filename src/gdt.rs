@@ -1,9 +1,10 @@
 use core::mem::uninitialized;
 use core::mem::size_of;
 use x86::*;
+use memory::*;
 
 extern "C" {
-    fn gdt_load(gdt_ptr: *const GdtPtr);
+    fn gdt_load(gdt_ptr: *mut GdtPtr);
 }
 
 #[repr(C, packed)]
@@ -21,16 +22,16 @@ impl Gdt {
     pub fn gdt_init(&mut self) {
     	// initialize 3 segment descriptors: NULL, code segment, data segment.
     	// Code and data segments must have a privilege level of 0.
-        self.gdt_table[0] = GdtEntry::new();
+        self.gdt_table[0] = GdtEntry::make_null_segment();
         self.gdt_table[1] = GdtEntry::make_code_segment(0, 0xfffff, 0);
         self.gdt_table[2] = GdtEntry::make_data_segment(0, 0xfffff, 0);
 
-    	// TODO: setup gdt_ptr so it points to the GDT and ensure it has the right limit.
+    	// setup gdt_ptr so it points to the GDT and ensure it has the right limit.
         self.gdt_ptr.base = &self.gdt_table as *const _ as u32;
-        self .gdt_ptr.limit = size_of::<GdtEntry>() as u16;
+        self .gdt_ptr.limit = size_of::<GdtEntry>() as u16 - 1;
 
         // Load the GDT
-        unsafe { gdt_load(&self.gdt_ptr); }
+        // unsafe { gdt_load(&mut self.gdt_ptr); }
     }
 }
 
@@ -88,6 +89,15 @@ impl GdtEntry {
             db: db,
             granularity: granularity,
             base31_24: ((base >> 24) & 0xff) as u8
+        }
+    }
+    
+    fn make_null_segment() -> GdtEntry {
+        unsafe {
+            let mut entry = GdtEntry::new();
+            let entry_ptr = &mut entry as *mut _ as *mut u8;
+        	memset(entry_ptr, 0, size_of::<GdtEntry>());
+            return entry;
         }
     }
     
