@@ -2,7 +2,11 @@
 #![no_std]
 
 mod multiboot;
+mod gdt;
+mod x86;
+
 use multiboot::*;
+use gdt::*;
 
 #[no_mangle]
 pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
