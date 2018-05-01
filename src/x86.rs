@@ -49,7 +49,7 @@ fn sti() {
 // External interrupts wake up the CPU, hence the cli instruction.
 fn halt() {
     unsafe {
-    	loop {
+        loop {
             asm!("cli\nhlt");
         }
     }

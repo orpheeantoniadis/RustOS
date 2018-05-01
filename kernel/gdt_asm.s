@@ -14,5 +14,5 @@ gdt_load:
   mov     gs,ax
   mov     ss,ax
   jmp     GDT_KERNEL_CODE_SELECTOR:.flush  ; far jump [selector:offset]
-.flush:
-  ret
+  .flush:
+    ret

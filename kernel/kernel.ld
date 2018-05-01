@@ -15,12 +15,12 @@ SECTIONS {
 
   .text ALIGN(4K) :        /* code */
   {
-    *(.text*)            
+    *(.text*)
   }
 
   .rodata ALIGN(4K) :      /* read-only data */
   {
-    *(.rodata*)          
+    *(.rodata*)
   }
 
   .data ALIGN(4K) :        /* initialized data */
