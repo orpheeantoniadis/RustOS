@@ -16,6 +16,7 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     clear_screen();
     println!("Welcome to RustOS!");
     println!("Available Memory = {} kB", (*multiboot_infos).mem_upper);
+    println!("Multiboot Info : {:?}", (*multiboot_infos));
     gdt_init();
     loop{}
 }

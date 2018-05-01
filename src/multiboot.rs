@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+#[derive(Debug, Clone, Copy)]
 #[repr(C)]
 pub struct MultibootAoutSymbolTable {
     pub tabsize: u32,
@@ -8,6 +9,7 @@ pub struct MultibootAoutSymbolTable {
     pub reserved: u32
 }
 
+#[derive(Debug, Clone, Copy)]
 #[repr(C)]
 pub struct MultibootElfSectionHeaderTable {
     pub num: u32,
@@ -16,6 +18,7 @@ pub struct MultibootElfSectionHeaderTable {
     pub shndx: u32
 }
 
+#[derive(Debug, Clone, Copy)]
 #[repr(C)]
 pub struct MultibootInfo {
     /* Multiboot info version number */
@@ -64,6 +67,7 @@ pub struct MultibootInfo {
     pub vbe_interface_len: u16
 }
 
+#[derive(Debug, Clone, Copy)]
 #[repr(C)]
 pub struct MultibootModList {
     /* the memory used goes from bytes 'mod_start' to 'mod_end-1' inclusive */
