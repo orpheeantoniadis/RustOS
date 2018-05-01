@@ -25,7 +25,7 @@ pub fn gdt_init() {
         // setup gdt_ptr so it points to the GDT and ensure it has the right limit.
         GDT_PTR = GdtPtr::new((size_of::<GdtTable>() - 1) as u16, &GDT_TABLE);
         // Load the GDT
-        gdt_load(&GDT_PTR);
+        // gdt_load(&GDT_PTR);
     }
 }
 

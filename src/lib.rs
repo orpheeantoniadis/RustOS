@@ -5,25 +5,21 @@ mod x86;
 mod multiboot;
 mod gdt;
 mod memory;
+#[macro_use]
 mod vga;
 
 use multiboot::*;
 use gdt::*;
 use vga::*;
 
-#[no_mangle]
-pub extern fn kernel_entry(_multiboot_infos: *mut MultibootInfo) {
-    gdt_init();
-    
-    let hello = "Hello World!";
-    let mut i = 34;
-    for byte in hello.bytes() {
-        unsafe {
-            (*BUFFER)[BUFFER_HEIGHT/2][i] = Character::new(byte, ColorAttribute::new(Color::Black, Color::White));
-        }
-        i+=1;
-    }
+use core::fmt::Write;
 
+#[no_mangle]
+pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
+    gdt_init();
+    unsafe { SCREEN.clear(); }
+    println!("Welcome to RustOS!");
+    println!("Available Memory = {} kB", (*multiboot_infos).mem_upper);
     loop{}
 }
 
