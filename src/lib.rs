@@ -2,24 +2,21 @@
 #![no_std]
 
 mod x86;
+mod vga;
 mod multiboot;
 mod gdt;
 mod memory;
-#[macro_use]
-mod vga;
 
 use multiboot::*;
 use gdt::*;
 use vga::*;
 
-use core::fmt::Write;
-
 #[no_mangle]
 pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
-    gdt_init();
-    unsafe { SCREEN.clear(); }
+    clear_screen();
     println!("Welcome to RustOS!");
     println!("Available Memory = {} kB", (*multiboot_infos).mem_upper);
+    gdt_init();
     loop{}
 }
 

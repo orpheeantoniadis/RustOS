@@ -1,6 +1,8 @@
 #![allow(dead_code)]
+#![macro_use]
 
 use core::fmt;
+pub use core::fmt::Write;
 
 pub static mut SCREEN: Screen = Screen {
     buffer: 0xb8000 as *mut _,
@@ -25,6 +27,10 @@ macro_rules! print {
 macro_rules! println {
     ($fmt:expr) => (print!(concat!($fmt, "\n")));
     ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
+}
+
+pub fn clear_screen() {
+    unsafe { SCREEN.clear() }
 }
 
 type FrameBuffer = [[Character; BUFFER_WIDTH]; BUFFER_HEIGHT];
@@ -95,6 +101,10 @@ impl Screen {
                     self.shift_up();
                     self.pos = 0;
                 } else {
+                    if self.pos >= BUFFER_WIDTH {
+                        self.shift_up();
+                        self.pos = 0;
+                    }
                     (*self.buffer)[BUFFER_HEIGHT-1][self.pos] = Character::new(byte, self.attribute);
                     self.pos+=1;
                 }

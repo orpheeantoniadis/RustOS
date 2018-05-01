@@ -2,6 +2,7 @@
 
 use core::mem::size_of;
 use x86::*;
+use vga::*;
 
 static mut GDT_TABLE: GdtTable = [GdtEntry::null(), GdtEntry::null(), GdtEntry::null()];
 static mut GDT_PTR: GdtPtr = GdtPtr::null();
@@ -27,8 +28,11 @@ pub fn gdt_init() {
         // Load the GDT
         // gdt_load(&GDT_PTR);
     }
+    println!("GDT Table : {:?}",GDT_TABLE );
+    println!("GDT Pointer : {:?}", GDT_PTR);
 }
 
+#[derive(Debug, Clone, Copy)]
 #[repr(C, packed)]
 struct GdtEntry {
     lim15_0: u16,
@@ -73,15 +77,15 @@ impl GdtEntry {
             lim15_0:        0,
             base15_0:       0,
             base23_16:      0,
-            gdt_type:       4,
-            s:              1,
-            dpl:            2,
-            present:        1,
+            gdt_type:       4,  // See TYPE_xxx flags
+            s:              1,  // 1 for segments; 0 for system (TSS, LDT, gates)
+            dpl:            2,  // privilege level
+            present:        1,  // present in memory
             lim19_16:       4,
-            avl:            1,
-            l:              1,
-            db:             1,
-            granularity:    1,
+            avl:            1,  // available for use
+            l:              1,  // should be 0 (64-bit code segment)
+            db:             1,  // 1 for 32-bit code and data segments; 0 for system (TSS, LDT, gate)
+            granularity:    1,  // granularity of the limit value: 0 = 1 byte; 1 = 4096 bytes
             base31_24:      0
         }
     }
@@ -113,6 +117,7 @@ impl GdtEntry {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 #[repr(C, packed)]
 struct GdtPtr {
     limit: u16, // Limit of the table (ie. its size)
