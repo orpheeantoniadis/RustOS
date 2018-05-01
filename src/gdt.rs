@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use core::mem::uninitialized;
 use core::mem::size_of;
 use x86::*;
@@ -21,19 +23,27 @@ impl Gdt {
     }
 
     // Initialize the GDT
-    pub fn gdt_init(&mut self) {
+    pub fn gdt_init() {
     	// initialize 3 segment descriptors: NULL, code segment, data segment.
     	// Code and data segments must have a privilege level of 0.
-        self.gdt_table[0] = GdtEntry::make_null_segment();
-        self.gdt_table[1] = GdtEntry::make_code_segment(0, 0xfffff, 0);
-        self.gdt_table[2] = GdtEntry::make_data_segment(0, 0xfffff, 0);
+        // self.gdt_table[0] = GdtEntry::make_null_segment();
+        // self.gdt_table[1] = GdtEntry::make_code_segment(0, 0xfffff, 0);
+        // self.gdt_table[2] = GdtEntry::make_data_segment(0, 0xfffff, 0);
 
     	// setup gdt_ptr so it points to the GDT and ensure it has the right limit.
-        self.gdt_ptr.base = &self.gdt_table;
-        self .gdt_ptr.limit = size_of::<GdtTable>() as u16;
+        // self.gdt_ptr.base = &self.gdt_table;
+        // self .gdt_ptr.limit = (size_of::<GdtTable>() - 1) as u16;
+        
+        let gdt_table0 = GdtEntry::make_null_segment();
+        let gdt_table1 = GdtEntry::make_code_segment(0, 0xfffff, 0);
+        let gdt_table2 = GdtEntry::make_data_segment(0, 0xfffff, 0);
+        let gdt_table = [gdt_table0, gdt_table1, gdt_table2];
+        let gdt_ptr = GdtPtr::new((size_of::<GdtTable>() - 1) as u16, &gdt_table);
+        
+        
 
         // Load the GDT
-        unsafe { gdt_load(&self.gdt_ptr); }
+        unsafe { gdt_load(&gdt_ptr); }
     }
 }
 
@@ -116,4 +126,13 @@ impl GdtEntry {
 struct GdtPtr {
     limit: u16, // Limit of the table (ie. its size)
     base: *const GdtTable // Address of the first entry
+}
+
+impl GdtPtr {
+    fn new(limit: u16, base: *const GdtTable) -> GdtPtr {
+        GdtPtr {
+            limit: limit,
+            base: base
+        }
+    }
 }
