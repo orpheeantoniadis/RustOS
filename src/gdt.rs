@@ -2,7 +2,6 @@
 
 use core::mem::size_of;
 use x86::*;
-use vga::*;
 
 static mut GDT_TABLE: GdtTable = [GdtEntry::null(), GdtEntry::null(), GdtEntry::null()];
 static mut GDT_PTR: GdtPtr = GdtPtr::null();
@@ -26,10 +25,8 @@ pub fn gdt_init() {
         // setup gdt_ptr so it points to the GDT and ensure it has the right limit.
         GDT_PTR = GdtPtr::new((size_of::<GdtTable>() - 1) as u16, &GDT_TABLE);
         // Load the GDT
-        // gdt_load(&GDT_PTR);
+        gdt_load(&GDT_PTR);
     }
-    println!("GDT Table : {:?}",GDT_TABLE );
-    println!("GDT Pointer : {:?}", GDT_PTR);
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -39,16 +36,8 @@ struct GdtEntry {
     base15_0: u16,
     base23_16: u8,
 
-    gdt_type: u8,
-    s: u8,
-    dpl: u8,
-    present: u8,
-
-    lim19_16: u8,
-    avl: u8,
-    l: u8,
-    db: u8,
-    granularity: u8,
+    flags7_0: u8,
+    flags15_8: u8,
 
     base31_24: u8
 }
@@ -56,55 +45,23 @@ struct GdtEntry {
 impl GdtEntry {
     const fn null() -> GdtEntry {
         GdtEntry { 
-            lim15_0:        0,
-            base15_0:       0,
-            base23_16:      0,
-            gdt_type:       0,
-            s:              0,
-            dpl:            0,
-            present:        0,
-            lim19_16:       0,
-            avl:            0,
-            l:              0,
-            db:             0,
-            granularity:    0,
-            base31_24:      0
-        }
-    }
-    
-    fn new() -> GdtEntry {
-        GdtEntry { 
-            lim15_0:        0,
-            base15_0:       0,
-            base23_16:      0,
-            gdt_type:       4,  // See TYPE_xxx flags
-            s:              1,  // 1 for segments; 0 for system (TSS, LDT, gates)
-            dpl:            2,  // privilege level
-            present:        1,  // present in memory
-            lim19_16:       4,
-            avl:            1,  // available for use
-            l:              1,  // should be 0 (64-bit code segment)
-            db:             1,  // 1 for 32-bit code and data segments; 0 for system (TSS, LDT, gate)
-            granularity:    1,  // granularity of the limit value: 0 = 1 byte; 1 = 4096 bytes
-            base31_24:      0
+            lim15_0:    0,
+            base15_0:   0,
+            base23_16:  0,
+            flags7_0:   0,
+            flags15_8:  0,
+            base31_24:  0
         }
     }
     
     fn build_entry(base: u32, limit: u32, gdt_type: u8, s: u8, db: u8, granularity: u8, dpl: u8) -> GdtEntry {
         GdtEntry { 
-            lim15_0:        (limit & 0xffff) as u16,
-            base15_0:       (base & 0xffff) as u16,
-            base23_16:      ((base >> 16) & 0xff) as u8,
-            gdt_type:       gdt_type,
-            s:              s,
-            dpl:            dpl,
-            present:        1,
-            lim19_16:       ((limit >> 16) & 0xf) as u8,
-            avl:            0,
-            l:              0,
-            db:             db,
-            granularity:    granularity,
-            base31_24:      ((base >> 24) & 0xff) as u8
+            lim15_0:    (limit & 0xffff) as u16,
+            base15_0:   (base & 0xffff) as u16,
+            base23_16:  ((base >> 16) & 0xff) as u8,
+            flags7_0:   gdt_type | s<<4 | dpl<<5 | 1<<7,
+            flags15_8:  ((limit >> 16) & 0xf) as u8 | db<<6 | granularity<<7,
+            base31_24:  ((base >> 24) & 0xff) as u8
         }
     }
     

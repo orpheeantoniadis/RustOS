@@ -62,11 +62,11 @@ entrypoint:
   ; code starts executing here
   cli  ; disable hardware interrupts
 
-  call move_cursor
-
   ; Initialize the stack pointer and EBP (both to the same value)
   mov esp, stack + STACK_SIZE
   mov ebp, stack + STACK_SIZE
+  
+  call move_cursor
   
   ; pass the multiboot info to the kernel
   push ebx
