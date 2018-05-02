@@ -7,3 +7,4 @@ authors = ["orpheeantoniadis <orphee.antoniadis@gmail.com>"]
 crate-type = ["staticlib"]
 
 [dependencies]
+rlibc = "1.0"

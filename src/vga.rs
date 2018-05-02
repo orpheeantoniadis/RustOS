@@ -30,8 +30,11 @@ macro_rules! println {
     ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
 }
 
-pub fn clear_screen() {
-    unsafe { SCREEN.clear() }
+pub fn vga_init(background: Color, foreground: Color) {
+    unsafe { 
+        SCREEN.set_color(background, foreground);
+        SCREEN.clear();
+    }
 }
 
 type FrameBuffer = [[Character; BUFFER_WIDTH]; BUFFER_HEIGHT];
@@ -84,7 +87,7 @@ pub struct Screen {
     attribute: ColorAttribute,
     pos: usize
 }
-impl Screen {
+impl Screen {    
     pub fn clear(&mut self) {
         unsafe {
             for i in 0..BUFFER_HEIGHT {
@@ -131,6 +134,10 @@ impl Screen {
     
     pub fn get_pos(&mut self) -> u16 {
         ((BUFFER_HEIGHT-1)*BUFFER_WIDTH+self.pos) as u16
+    }
+    
+    pub fn set_color(&mut self, background: Color, foreground: Color) {
+        self.attribute = ColorAttribute::new(background, foreground);
     }
 }
 impl fmt::Write for Screen {

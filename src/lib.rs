@@ -1,12 +1,13 @@
 #![feature(lang_items, asm, const_fn)]
 #![no_std]
 
+extern crate rlibc;
+
 mod x86;
 mod vga;
 mod pio;
 mod multiboot;
 mod gdt;
-mod memory;
 
 use multiboot::*;
 use gdt::*;
@@ -14,7 +15,7 @@ use vga::*;
 
 #[no_mangle]
 pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
-    clear_screen();
+    vga_init(Color::Black, Color::White);
     println!("Screen initialized.");
     gdt_init();
     println!("GDT initialized.");

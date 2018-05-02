@@ -9,7 +9,7 @@ KERNEL_PATH = kernel/
 all: build
 
 build:
-	$(CC) build $(FLAGS)
+	RUST_TARGET_PATH=$(shell pwd) $(CC) build $(FLAGS)
 	$(MAKE) -C $(KERNEL_PATH)
 	
 run:
