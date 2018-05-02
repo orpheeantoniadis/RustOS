@@ -1,8 +1,9 @@
 #![allow(dead_code)]
 #![macro_use]
 
-use core::fmt;
 pub use core::fmt::Write;
+use core::fmt;
+use pio::*;
 
 pub static mut SCREEN: Screen = Screen {
     buffer: 0xb8000 as *mut _,
@@ -91,6 +92,8 @@ impl Screen {
                     (*self.buffer)[i][j] = Character::new(0, self.attribute);
                 }
             }
+            self.pos = 0;
+            move_cursor(self.get_pos());
         }
     }
     
@@ -109,6 +112,7 @@ impl Screen {
                     self.pos+=1;
                 }
             }
+            move_cursor(self.get_pos());
         }
     }
     
@@ -123,6 +127,10 @@ impl Screen {
                 (*self.buffer)[BUFFER_HEIGHT-1][j] = Character::new(0, self.attribute);
             }
         }
+    }
+    
+    pub fn get_pos(&mut self) -> u16 {
+        ((BUFFER_HEIGHT-1)*BUFFER_WIDTH+self.pos) as u16
     }
 }
 impl fmt::Write for Screen {
