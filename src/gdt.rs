@@ -6,7 +6,7 @@ use x86::*;
 static mut GDT_TABLE: GdtTable = [GdtEntry::null(), GdtEntry::null(), GdtEntry::null()];
 static mut GDT_PTR: GdtPtr = GdtPtr::null();
 
-type GdtTable = [GdtEntry; 3];
+pub type GdtTable = [GdtEntry; 3];
 
 extern "C" {
     fn gdt_load(gdt_ptr: *const GdtPtr);
@@ -31,7 +31,7 @@ pub fn gdt_init() {
 
 #[derive(Debug, Clone, Copy)]
 #[repr(C, packed)]
-struct GdtEntry {
+pub struct GdtEntry {
     lim15_0: u16,
     base15_0: u16,
     base23_16: u8,

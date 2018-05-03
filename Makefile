@@ -1,7 +1,7 @@
 ARCH = i386
 CC = xargo
 TARGET = $(ARCH)-rust_os
-FLAGS = -v --no-default-features --target $(TARGET)
+FLAGS = -v --target $(TARGET)
 KERNEL_PATH = kernel/
 
 .PHONY: all build run clean
@@ -14,6 +14,9 @@ build:
 	
 run:
 	$(MAKE) -C $(KERNEL_PATH) run
+
+test:
+	cargo test
 
 clean:
 	$(MAKE) -C $(KERNEL_PATH) clean

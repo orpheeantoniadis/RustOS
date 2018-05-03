@@ -14,6 +14,9 @@ use multiboot::*;
 use gdt::*;
 use vga::*;
 
+#[cfg(test)]
+mod test;
+
 #[no_mangle]
 pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     vga_init(Color::Black, Color::White);
@@ -21,7 +24,7 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     gdt_init();
     println!("GDT initialized.");
     println!("Welcome to RustOS!");
-    println!("Available Memory = {} kB", unsafe { (*multiboot_infos).mem_upper });
+    println!("Available Memory = {} kB", unsafe { (*multiboot_infos).mem_upper });    
     loop{}
 }
 
@@ -30,5 +33,12 @@ pub extern "C" fn __floatundisf() {
     loop {}
 }
 
-#[lang = "eh_personality"] #[no_mangle] pub extern fn eh_personality() {}
-#[lang = "panic_fmt"] #[no_mangle] pub extern fn panic_fmt() -> ! {loop{}}
+#[cfg(not(test))] #[lang = "eh_personality"] #[no_mangle] pub extern fn eh_personality() {}
+
+#[cfg(not(test))]
+#[lang = "panic_fmt"]
+#[no_mangle]
+pub extern fn panic_fmt(details: ::core::fmt::Arguments, file: &'static str, line: u32) -> ! {
+    println!("Panic at {}:{}, {}", file, line, details);
+    loop{};
+}

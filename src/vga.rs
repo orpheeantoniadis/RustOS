@@ -19,10 +19,7 @@ pub const BUFFER_WIDTH: usize =     80;
 
 macro_rules! print {
     ($($arg:tt)*) => ({
-        match SCREEN.lock().write_fmt(format_args!($($arg)*)) {
-            Ok(_) => (),
-            Err(_) => ()
-        }
+        SCREEN.lock().write_fmt(format_args!($($arg)*)).expect("Error while formatting !");
     });
 }
 
