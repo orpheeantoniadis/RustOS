@@ -8,7 +8,8 @@ use pio::*;
 pub static mut SCREEN: Screen = Screen {
     buffer: 0xb8000 as *mut _,
     attribute: ColorAttribute::new(Color::Black, Color::White),
-    pos : 0
+    cursor_x: 0,
+    cursor_y: 0
 };
 
 pub const BUFFER_HEIGHT: usize =    25;
@@ -85,7 +86,8 @@ impl Character {
 pub struct Screen {
     buffer: *mut FrameBuffer,
     attribute: ColorAttribute,
-    pos: usize
+    cursor_x: usize,
+    cursor_y: usize
 }
 impl Screen {    
     pub fn clear(&mut self) {
@@ -95,28 +97,39 @@ impl Screen {
                     (*self.buffer)[i][j] = Character::new(0, self.attribute);
                 }
             }
-            self.pos = 0;
-            move_cursor(self.get_pos());
+            self.set_cursor(0, 0);
         }
     }
     
     pub fn write(&mut self, buf: &str) {
-        unsafe {
-            for byte in buf.bytes() {
+        for byte in buf.bytes() {
+            if self.cursor_y == BUFFER_HEIGHT-1 {    
                 if byte == b'\n' {
                     self.shift_up();
-                    self.pos = 0;
+                    self.cursor_x = 0;
                 } else {
-                    if self.pos >= BUFFER_WIDTH {
+                    if self.cursor_x >= BUFFER_WIDTH {
                         self.shift_up();
-                        self.pos = 0;
+                        self.cursor_x = 0;
                     }
-                    (*self.buffer)[BUFFER_HEIGHT-1][self.pos] = Character::new(byte, self.attribute);
-                    self.pos+=1;
+                    unsafe { (*self.buffer)[self.cursor_y][self.cursor_x] = Character::new(byte, self.attribute); }
+                    self.cursor_x += 1;
+                }
+            } else {
+                if byte == b'\n' {
+                    self.cursor_x = 0;
+                    self.cursor_y += 1;
+                } else {
+                    if self.cursor_x >= BUFFER_WIDTH {
+                        self.cursor_x = 0;
+                        self.cursor_y += 1;
+                    }
+                    unsafe { (*self.buffer)[self.cursor_y][self.cursor_x] = Character::new(byte, self.attribute); }
+                    self.cursor_x += 1;
                 }
             }
-            move_cursor(self.get_pos());
         }
+        unsafe { move_cursor(self.get_pos()); }
     }
     
     pub fn shift_up(&mut self) {
@@ -133,11 +146,23 @@ impl Screen {
     }
     
     pub fn get_pos(&mut self) -> u16 {
-        ((BUFFER_HEIGHT-1)*BUFFER_WIDTH+self.pos) as u16
+        (self.cursor_y*BUFFER_WIDTH+self.cursor_x) as u16
+    }
+    
+    pub fn get_color(&mut self) -> ColorAttribute {
+        return self.attribute;
     }
     
     pub fn set_color(&mut self, background: Color, foreground: Color) {
         self.attribute = ColorAttribute::new(background, foreground);
+    }
+    
+    pub fn set_cursor(&mut self, x: usize, y: usize) {
+        unsafe {
+            self.cursor_x = x;
+            self.cursor_y = y;
+            move_cursor(self.get_pos());
+        }
     }
 }
 impl fmt::Write for Screen {
