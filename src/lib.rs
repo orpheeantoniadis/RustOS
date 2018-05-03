@@ -1,7 +1,8 @@
-#![feature(lang_items, asm, const_fn)]
+#![feature(lang_items, asm, const_fn, ptr_internals)]
 #![no_std]
 
 extern crate rlibc;
+extern crate spin;
 
 mod x86;
 mod vga;
@@ -20,7 +21,7 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     gdt_init();
     println!("GDT initialized.");
     println!("Welcome to RustOS!");
-    println!("Available Memory = {} kB", (*multiboot_infos).mem_upper);
+    println!("Available Memory = {} kB", unsafe { (*multiboot_infos).mem_upper });
     loop{}
 }
 
