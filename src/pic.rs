@@ -42,7 +42,7 @@ pub fn pic_init() {
 
 // Send an end-of-interrupt to the PICs.
 // An EOI must also be sent to the slave for IRQs > 7
-pub fn pic_eoi(irq: u8) {
+pub fn pic_eoi(irq: u32) {
     unsafe {
     	if irq > 7 {
     		outb(PIC2_CMD, PIC_EOI);

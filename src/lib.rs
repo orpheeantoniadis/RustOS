@@ -8,18 +8,21 @@ mod vga;
 mod pio;
 mod multiboot;
 mod gdt;
-mod idt;
 mod pic;
+mod idt;
 
 #[cfg(test)]
 mod test;
 
 use vga::*;
 use multiboot::*;
-use gdt::*;
+use gdt::gdt_init;
+use pic::pic_init;
+use idt::idt_init;
 
 // exports
 pub use idt::exception_handler;
+pub use idt::irq_handler;
 
 #[no_mangle]
 pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
@@ -27,6 +30,10 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     println!("Screen initialized.");
     gdt_init();
     println!("GDT initialized.");
+    pic_init();
+    println!("PIC initialized.");
+    idt_init();
+    println!("IDT initialized.");
     println!("Welcome to RustOS!");
     println!("Available Memory = {} kB", (*multiboot_infos).mem_upper);    
     loop{}
