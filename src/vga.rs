@@ -3,23 +3,21 @@
 
 pub use core::fmt::Write;
 use core::fmt;
-use core::ptr::Unique;
-use spin::Mutex;
 use pio::*;
 
-pub static SCREEN: Mutex<Screen> = Mutex::new(Screen {
-    buffer: unsafe { Unique::new_unchecked(0xb8000 as *mut _) },
+pub static mut SCREEN: Screen = Screen {
+    buffer: 0xb8000 as *mut _,
     attribute: ColorAttribute::new(Color::Black, Color::White),
     cursor_x: 0,
     cursor_y: 0
-});
+};
 
 pub const BUFFER_HEIGHT: usize =    25;
 pub const BUFFER_WIDTH: usize =     80;
 
 macro_rules! print {
     ($($arg:tt)*) => ({
-        SCREEN.lock().write_fmt(format_args!($($arg)*)).expect("Error while formatting !");
+        unsafe {SCREEN.write_fmt(format_args!($($arg)*)).expect("Error while formatting !"); }
     });
 }
 
@@ -29,8 +27,10 @@ macro_rules! println {
 }
 
 pub fn vga_init(background: Color, foreground: Color) {
-    SCREEN.lock().set_color(background, foreground);
-    SCREEN.lock().clear();
+    unsafe {
+        SCREEN.set_color(background, foreground);
+        SCREEN.clear();
+    }
 }
 
 type FrameBuffer = [[Character; BUFFER_WIDTH]; BUFFER_HEIGHT];
@@ -79,7 +79,7 @@ impl Character {
 }
 
 pub struct Screen {
-    buffer: Unique<FrameBuffer>,
+    buffer: *mut FrameBuffer,
     attribute: ColorAttribute,
     cursor_x: usize,
     cursor_y: usize
@@ -89,7 +89,7 @@ impl Screen {
         unsafe {
             for i in 0..BUFFER_HEIGHT {
                 for j in 0..BUFFER_WIDTH {
-                    self.buffer.as_mut()[i][j] = Character::new(0, self.attribute);
+                    (*self.buffer)[i][j] = Character::new(0, self.attribute);
                 }
             }
             self.set_cursor(0, 0);
@@ -107,7 +107,7 @@ impl Screen {
                         self.shift_up();
                         self.cursor_x = 0;
                     }
-                    unsafe { self.buffer.as_mut()[self.cursor_y][self.cursor_x] = Character::new(byte, self.attribute); }
+                    unsafe { (*self.buffer)[self.cursor_y][self.cursor_x] = Character::new(byte, self.attribute); }
                     self.cursor_x += 1;
                 }
             } else {
@@ -119,7 +119,7 @@ impl Screen {
                         self.cursor_x = 0;
                         self.cursor_y += 1;
                     }
-                    unsafe { self.buffer.as_mut()[self.cursor_y][self.cursor_x] = Character::new(byte, self.attribute); }
+                    unsafe { (*self.buffer)[self.cursor_y][self.cursor_x] = Character::new(byte, self.attribute); }
                     self.cursor_x += 1;
                 }
             }
@@ -131,11 +131,11 @@ impl Screen {
         unsafe {
             for i in 0..BUFFER_HEIGHT-1 {
                 for j in 0..BUFFER_WIDTH {
-                    self.buffer.as_mut()[i][j] = self.buffer.as_mut()[i+1][j];
+                    (*self.buffer)[i][j] = (*self.buffer)[i+1][j];
                 }
             }
             for j in 0..BUFFER_WIDTH {
-                self.buffer.as_mut()[BUFFER_HEIGHT-1][j] = Character::new(0, self.attribute);
+                (*self.buffer)[BUFFER_HEIGHT-1][j] = Character::new(0, self.attribute);
             }
         }
     }

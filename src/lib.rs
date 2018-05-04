@@ -1,4 +1,4 @@
-#![feature(lang_items, asm, const_fn, ptr_internals)]
+#![feature(lang_items, asm, const_fn)]
 #![no_std]
 
 extern crate rlibc;
@@ -24,21 +24,19 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     gdt_init();
     println!("GDT initialized.");
     println!("Welcome to RustOS!");
-    println!("Available Memory = {} kB", unsafe { (*multiboot_infos).mem_upper });    
+    println!("Available Memory = {} kB", (*multiboot_infos).mem_upper);    
     loop{}
+}
+
+#[cfg(not(test))]
+#[lang = "panic_fmt"]
+#[no_mangle]
+pub extern fn panic_fmt(details: ::core::fmt::Arguments, file: &'static str, line: u32, column: u32) -> ! {
+    println!("panicked at {}, {}:{}:{}", details, file, line, column);
+    loop{};
 }
 
 #[no_mangle]
 pub extern "C" fn __floatundisf() {
     loop {}
-}
-
-#[cfg(not(test))] #[lang = "eh_personality"] #[no_mangle] pub extern fn eh_personality() {}
-
-#[cfg(not(test))]
-#[lang = "panic_fmt"]
-#[no_mangle]
-pub extern fn panic_fmt(details: ::core::fmt::Arguments, file: &'static str, line: u32) -> ! {
-    println!("Panic at {}:{}, {}", file, line, details);
-    loop{};
 }
