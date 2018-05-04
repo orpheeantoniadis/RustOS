@@ -124,7 +124,7 @@ impl Screen {
                 }
             }
         }
-        unsafe { move_cursor(self.get_pos()); }
+        move_cursor(self.get_pos());
     }
     
     pub fn shift_up(&mut self) {
@@ -153,11 +153,9 @@ impl Screen {
     }
     
     pub fn set_cursor(&mut self, x: usize, y: usize) {
-        unsafe {
-            self.cursor_x = x;
-            self.cursor_y = y;
-            move_cursor(self.get_pos());
-        }
+        self.cursor_x = x;
+        self.cursor_y = y;
+        move_cursor(self.get_pos());
     }
 }
 impl fmt::Write for Screen {

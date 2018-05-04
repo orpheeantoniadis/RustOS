@@ -2,20 +2,24 @@
 #![no_std]
 
 extern crate rlibc;
-extern crate spin;
 
 mod x86;
 mod vga;
 mod pio;
 mod multiboot;
 mod gdt;
-
-use multiboot::*;
-use gdt::*;
-use vga::*;
+mod idt;
+mod pic;
 
 #[cfg(test)]
 mod test;
+
+use vga::*;
+use multiboot::*;
+use gdt::*;
+
+// exports
+pub use idt::exception_handler;
 
 #[no_mangle]
 pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
