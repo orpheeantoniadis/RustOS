@@ -10,15 +10,18 @@ mod multiboot;
 mod gdt;
 mod pic;
 mod idt;
+mod timer;
 
 #[cfg(test)]
 mod test;
 
+use x86::*;
 use vga::*;
 use multiboot::*;
 use gdt::gdt_init;
 use pic::pic_init;
 use idt::idt_init;
+use timer::*;
 
 // exports
 pub use idt::exception_handler;
@@ -34,6 +37,11 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     println!("PIC initialized.");
     idt_init();
     println!("IDT initialized.");
+    sti();
+    println!("Interrupts unmasked.");
+    timer_init(MIN_FREQ);
+    sleep(1000);
+    println!("PIT initialized.");
     println!("Welcome to RustOS!");
     println!("Available Memory = {} kB", (*multiboot_infos).mem_upper);    
     loop{}
