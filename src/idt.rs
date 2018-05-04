@@ -4,6 +4,7 @@ use core::mem::size_of;
 use x86::*;
 use vga::*;
 use pic::*;
+use timer::timer_handler;
 
 const IDT_SIZE: usize = 256;
 const EXCEPTION_MESSAGES: [&str;21] = [
@@ -36,49 +37,53 @@ static mut IDT_PTR: IdtPtr = IdtPtr::null();
 // Initialize the IDT
 pub fn idt_init() {
     unsafe {
+        for i in 0..IDT_SIZE {
+            IDT[i] = IdtEntry::new(0,0, 0, 0);
+        }
+        
         // CPU exceptions
-        IDT[0] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_exception_0 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[1] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_exception_1 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[2] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_exception_2 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[3] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_exception_3 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[4] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_exception_4 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[5] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_exception_5 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[6] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_exception_6 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[7] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_exception_7 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[8] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_exception_8 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[9] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_exception_9 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[10] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_exception_10 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[11] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_exception_11 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[12] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_exception_12 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[13] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_exception_13 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[14] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_exception_14 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[15] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_exception_15 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[16] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_exception_16 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[17] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_exception_17 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[18] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_exception_18 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[19] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_exception_19 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[20] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_exception_20 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[0] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_0 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[1] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_1 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[2] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_2 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[3] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_3 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[4] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_4 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[5] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_5 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[6] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_6 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[7] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_7 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[8] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_8 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[9] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_9 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[10] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_10 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[11] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_11 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[12] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_12 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[13] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_13 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[14] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_14 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[15] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_15 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[16] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_16 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[17] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_17 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[18] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_18 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[19] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_19 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[20] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_20 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
         
         // IRQ
-        IDT[32] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_irq_0 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[33] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_irq_1 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[34] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_irq_2 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[35] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_irq_3 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[36] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_irq_4 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[37] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_irq_5 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[38] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_irq_6 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[39] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_irq_7 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[40] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_irq_8 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[41] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_irq_9 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[42] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_irq_10 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[43] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_irq_11 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[44] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_irq_12 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[45] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_irq_13 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[46] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_irq_14 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
-        IDT[47] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, &_irq_15 as *const _ as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[32] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _irq_0 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[33] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _irq_1 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[34] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _irq_2 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[35] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _irq_3 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[36] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _irq_4 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[37] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _irq_5 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[38] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _irq_6 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[39] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _irq_7 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[40] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _irq_8 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[41] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _irq_9 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[42] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _irq_10 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[43] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _irq_11 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[44] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _irq_12 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[45] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _irq_13 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[46] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _irq_14 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        IDT[47] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _irq_15 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
         
         // setup idt_ptr so it points to the IDT and ensure it has the right limit.
-        IDT_PTR = IdtPtr::new((size_of::<Idt>() - 1) as u16, &IDT as *const _ as u32);
+        IDT_PTR = IdtPtr::new((size_of::<Idt>() - 1) as u16, &IDT);
         // Load the IDT
         idt_load(&IDT_PTR);
     }
@@ -87,6 +92,7 @@ pub fn idt_init() {
 // Exception handler
 #[no_mangle]
 pub extern fn exception_handler(regs: *mut Regs) {
+    println!("exception");
     unsafe {
         panic!(EXCEPTION_MESSAGES[(*regs).number as usize]);
     }
@@ -97,6 +103,7 @@ pub extern fn exception_handler(regs: *mut Regs) {
 pub extern fn irq_handler(regs: *mut Regs) {
     let irq = unsafe { (*regs).number };
     match irq {
+        0 => timer_handler(),
         _ => println!("irq {} not implemented", irq)
     }
     pic_eoi(irq);
@@ -150,17 +157,17 @@ impl IdtEntry {
 #[repr(C, packed)]
 struct IdtPtr {
     limit: u16, // Limit of the table (ie. its size)
-	base: u32   // Address of the first entry
+	base: *const Idt   // Address of the first entry
 }
 impl IdtPtr {
     const fn null() -> IdtPtr {
         IdtPtr {
             limit: 0,
-            base: 0
+            base: 0 as *const _
         }
     }
     
-    fn new(limit: u16, base: u32) -> IdtPtr {
+    fn new(limit: u16, base: *const Idt) -> IdtPtr {
         IdtPtr {
             limit:  limit,
             base:   base

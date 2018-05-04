@@ -40,8 +40,8 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     sti();
     println!("Interrupts unmasked.");
     timer_init(MIN_FREQ);
-    sleep(1000);
     println!("PIT initialized.");
+    sleep(1000);
     println!("Welcome to RustOS!");
     println!("Available Memory = {} kB", (*multiboot_infos).mem_upper);    
     loop{}
