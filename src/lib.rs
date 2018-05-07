@@ -41,12 +41,16 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     println!("IDT initialized.");
     sti();
     println!("Interrupts unmasked.");
-    timer_init(MIN_FREQ);
+    timer_init(50);
     println!("PIT initialized.");
     println!("Welcome to RustOS!");
     println!("Available Memory = {} kB", (*multiboot_infos).mem_upper);
     loop{
         let key = getc();
+        if key == 'Q' {
+            println!("\nKernel stopped.");
+            break;
+        }
         print!("{}", key);
     }
 }
