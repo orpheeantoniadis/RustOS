@@ -15,6 +15,8 @@ pub static mut SCREEN: Screen = Screen {
 pub const BUFFER_HEIGHT: usize =    25;
 pub const BUFFER_WIDTH: usize =     80;
 
+const TAB_SIZE: usize = 4;
+
 macro_rules! print {
     ($($arg:tt)*) => ({
         unsafe {SCREEN.write_fmt(format_args!($($arg)*)).expect("Error while formatting !"); }
@@ -96,32 +98,53 @@ impl Screen {
         }
     }
     
-    pub fn write(&mut self, buf: &str) {
+    pub fn write_byte(&mut self, byte: u8) {
+        if self.cursor_y == BUFFER_HEIGHT-1 {
+            if self.cursor_x >= BUFFER_WIDTH {
+                self.shift_up();
+                self.cursor_x = 0;
+            }
+        } else {
+            if self.cursor_x >= BUFFER_WIDTH {
+                self.cursor_x = 0;
+                self.cursor_y += 1;
+            }
+        }
+        match byte {
+            b'\0' => return,
+            b'\t' => {
+                for _i in 0..TAB_SIZE {
+                    self.write_byte(b' ');
+                }
+            }
+            0x8 => {
+                if self.cursor_x > 0 {
+                    self.cursor_x -= 1;
+                } else {
+                    self.cursor_y -= 1;
+                    self.cursor_x = BUFFER_WIDTH-1;
+                }
+                unsafe { (*self.buffer)[self.cursor_y][self.cursor_x] = Character::new(b'\0', self.attribute); }
+            }
+            _ => {
+                unsafe { (*self.buffer)[self.cursor_y][self.cursor_x] = Character::new(byte, self.attribute); }
+                self.cursor_x += 1;
+            }
+        }
+    }
+    
+    pub fn write_str(&mut self, buf: &str) {
         for byte in buf.bytes() {
-            if self.cursor_y == BUFFER_HEIGHT-1 {    
-                if byte == b'\n' {
+            if byte == b'\n' {
+                if self.cursor_y == BUFFER_HEIGHT-1 {
                     self.shift_up();
                     self.cursor_x = 0;
                 } else {
-                    if self.cursor_x >= BUFFER_WIDTH {
-                        self.shift_up();
-                        self.cursor_x = 0;
-                    }
-                    unsafe { (*self.buffer)[self.cursor_y][self.cursor_x] = Character::new(byte, self.attribute); }
-                    self.cursor_x += 1;
-                }
-            } else {
-                if byte == b'\n' {
                     self.cursor_x = 0;
                     self.cursor_y += 1;
-                } else {
-                    if self.cursor_x >= BUFFER_WIDTH {
-                        self.cursor_x = 0;
-                        self.cursor_y += 1;
-                    }
-                    unsafe { (*self.buffer)[self.cursor_y][self.cursor_x] = Character::new(byte, self.attribute); }
-                    self.cursor_x += 1;
                 }
+            } else {
+                self.write_byte(byte);
             }
         }
         move_cursor(self.get_pos());
@@ -160,7 +183,7 @@ impl Screen {
 }
 impl fmt::Write for Screen {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        self.write(s);
+        self.write_str(s);
         Ok(())
     }
 }

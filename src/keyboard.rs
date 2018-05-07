@@ -37,7 +37,7 @@ const KEY_MAP: [char;93] = [
     '\t', 'a', 'z', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '^', '$', '\n',
     NUL, 'q', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', U_GRAVE, '@',
     NUL, '`', 'w', 'x', 'c', 'v', 'b', 'n', ',', ';', ':', '=', NUL,
-    NUL, NUL, NUL, NUL, ' ', NUL, NUL, NUL, NUL, NUL, NUL, NUL, NUL,
+    NUL, NUL, ' ', NUL, ' ', NUL, NUL, NUL, NUL, NUL, NUL, NUL, NUL,
     NUL, NUL, NUL, NUL, NUL, NUL, NUL, NUL, NUL, NUL, NUL, NUL, NUL,
     NUL, NUL, NUL, NUL, NUL, '<', NUL, NUL, NUL, NUL, NUL, NUL
 ];
@@ -47,7 +47,7 @@ const SHIFT_KEY_MAP: [char;93] = [
     '\t', 'A', 'Z', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', NUL, '*', '\n',
     NUL, 'Q', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', '%', '#',
     NUL, POUND, 'W', 'X', 'C', 'V', 'B', 'N', '?', '.', '/', '+', NUL,
-    NUL, NUL, NUL, NUL, ' ', NUL, NUL, NUL, NUL, NUL, NUL, NUL, NUL,
+    NUL, NUL, ' ', NUL, ' ', NUL, NUL, NUL, NUL, NUL, NUL, NUL, NUL,
     NUL, NUL, NUL, NUL, NUL, NUL, NUL, NUL, NUL, NUL, NUL, NUL, NUL,
     NUL, NUL, NUL, NUL, NUL, '>', NUL, NUL, NUL, NUL, NUL, NUL
 ];
