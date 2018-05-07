@@ -36,7 +36,6 @@ inb:
 	mov word dx, [esp+8]
 	in byte al, dx
   
-  mov eax, 0
   leave
 	ret
 
@@ -47,6 +46,5 @@ inw:
 	mov word dx, [esp+8]
 	in word ax, dx
   
-  mov eax, 0
   leave
 	ret

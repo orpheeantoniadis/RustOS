@@ -5,30 +5,31 @@ use x86::*;
 use vga::*;
 use pic::*;
 use timer::timer_handler;
+use keyboard::keyboard_handler;
 
 const IDT_SIZE: usize = 256;
 const EXCEPTION_MESSAGES: [&str;21] = [
-	"Exception 0 - Divide Error",
-	"Exception 1 - RESERVED",
-	"Exception 2 - NMI Interrupt",
-	"Exception 3 - Breakpoint",
-	"Exception 4 - Overflow",
-	"Exception 5 - BOUND Range Exceeded",
-	"Exception 6 - Invalid Opcode (Undefined Opcode)",
-	"Exception 7 - Device Not Available (No Math Coprocessor)",
-	"Exception 8 - Double Fault",
-	"Exception 9 - Coprocessor Segment Overrun (reserved)",
-	"Exception 10 - Invalid TSS",
-	"Exception 11 - Segment Not Present",
-	"Exception 12 - Stack-Segment Fault",
-	"Exception 13 - General Protection",
-	"Exception 14 - Page Fault",
-	"Exception 15 - (Inter reserved. Do not use.)",
-	"Exception 16 - x87 FPU Floating-Point Error (Math Fault)",
-	"Exception 17 - Alignment Check",
-	"Exception 18 - Machine Check",
-	"Exception 19 - SIMD Floating-Point Exception",
-	"Exception 20 - Virtualization Exception"
+	"EXCEPTION 0 : Divide error",
+	"EXCEPTION 1 : Intel RESERVED exception number",
+	"EXCEPTION 2 : External non maskable interrupt",
+	"EXCEPTION 3 : Breakpoint",
+	"EXCEPTION 4 : Overflow",
+	"EXCEPTION 5 : Bound range exceeded",
+	"EXCEPTION 6 : Invalid opcode",
+	"EXCEPTION 7 : Device not available",
+	"EXCEPTION 8 : Double fault",
+	"EXCEPTION 9 : Coprocessor segment overrun",
+	"EXCEPTION 10 : Invalid TSS",
+	"EXCEPTION 11 : Segment not present",
+	"EXCEPTION 12 : Stack-segment fault",
+	"EXCEPTION 13 : General protection",
+	"EXCEPTION 14 : Page fault",
+	"EXCEPTION 15 : Intel RESERVED exception number",
+	"EXCEPTION 16 : x87 FPU floating-point error",
+	"EXCEPTION 17 : Alignment check",
+	"EXCEPTION 18 : Machine check",
+	"EXCEPTION 19 : SIMD floating-point exception",
+	"EXCEPTION 20 : Virtualization exception"
 ];
 
 static mut IDT: Idt = [IdtEntry::null();IDT_SIZE];
@@ -104,6 +105,7 @@ pub extern fn irq_handler(regs: *mut Regs) {
     let irq = unsafe { (*regs).number };
     match irq {
         0 => timer_handler(),
+        1 => keyboard_handler(),
         _ => println!("irq {} not implemented", irq)
     }
     pic_eoi(irq);

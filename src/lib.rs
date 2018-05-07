@@ -11,6 +11,7 @@ mod gdt;
 mod pic;
 mod idt;
 mod timer;
+mod keyboard;
 
 #[cfg(test)]
 mod test;
@@ -22,6 +23,7 @@ use gdt::gdt_init;
 use pic::pic_init;
 use idt::idt_init;
 use timer::*;
+use keyboard::*;
 
 // exports
 pub use idt::exception_handler;
@@ -41,10 +43,12 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     println!("Interrupts unmasked.");
     timer_init(MIN_FREQ);
     println!("PIT initialized.");
-    sleep(1000);
     println!("Welcome to RustOS!");
-    println!("Available Memory = {} kB", (*multiboot_infos).mem_upper);    
-    loop{}
+    println!("Available Memory = {} kB", (*multiboot_infos).mem_upper);
+    loop{
+        let key = getc();
+        print!("{}", key);
+    }
 }
 
 #[cfg(not(test))]
