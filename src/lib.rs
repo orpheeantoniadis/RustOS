@@ -13,6 +13,7 @@ mod idt;
 mod timer;
 mod keyboard;
 mod ide;
+mod fs;
 
 #[cfg(test)]
 mod test;
@@ -25,7 +26,7 @@ use pic::pic_init;
 use idt::idt_init;
 use timer::*;
 use keyboard::*;
-use ide::*;
+use fs::*;
 
 // exports
 pub use idt::exception_handler;
@@ -46,9 +47,7 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     timer_init(50);
     println!("PIT initialized.");
     
-    let mut superblock : [u16;SECTOR_SIZE/2] = [0;SECTOR_SIZE/2];
-    read_sector(0, &mut superblock[0] as *mut u16);
-    println!("{:?}", &superblock[41..45]);
+    file_exists("README.md");
     
     println!("Welcome to RustOS!");
     println!("Available Memory = {} kB", (*multiboot_infos).mem_upper);
