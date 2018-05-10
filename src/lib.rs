@@ -12,6 +12,7 @@ mod pic;
 mod idt;
 mod timer;
 mod keyboard;
+mod ide;
 
 #[cfg(test)]
 mod test;
@@ -24,6 +25,7 @@ use pic::pic_init;
 use idt::idt_init;
 use timer::*;
 use keyboard::*;
+use ide::*;
 
 // exports
 pub use idt::exception_handler;
@@ -43,6 +45,9 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     println!("Interrupts unmasked.");
     timer_init(50);
     println!("PIT initialized.");
+    println!("Waiting for the disk drive to be ready...", );
+    wait_drive();
+    println!("Disk drive ready.");
     println!("Welcome to RustOS!");
     println!("Available Memory = {} kB", (*multiboot_infos).mem_upper);
     loop{

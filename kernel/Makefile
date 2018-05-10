@@ -8,14 +8,15 @@ GRUB = ../grub
 OS = rust_os
 ISO = $(BUILD_FOLDER)/$(OS).iso
 RUST = ../target/$(ARCH)-rust_os/debug/librust_os.a
+FS = ../tools/MicroFS/fs.img
 QEMU = qemu-system-$(ARCH)
 
 .PHONY: all clean run iso
 
 all: $(BUILD_FOLDER)/$(KERNEL) iso
 
-run: $(ISO)
-	$(QEMU) -cdrom $(ISO)
+run: $(ISO) $(FS)
+	$(QEMU) -monitor stdio -hda $(FS) -cdrom $(ISO)
 
 iso: $(ISO)
 
