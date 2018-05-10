@@ -45,9 +45,11 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     println!("Interrupts unmasked.");
     timer_init(50);
     println!("PIT initialized.");
-    println!("Waiting for the disk drive to be ready...", );
-    wait_drive();
-    println!("Disk drive ready.");
+    
+    let mut superblock : [u16;SECTOR_SIZE/2] = [0;SECTOR_SIZE/2];
+    read_sector(0, &mut superblock[0] as *mut u16);
+    println!("{:?}", &superblock[41..45]);
+    
     println!("Welcome to RustOS!");
     println!("Available Memory = {} kB", (*multiboot_infos).mem_upper);
     loop{

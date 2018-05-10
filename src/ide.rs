@@ -1,13 +1,13 @@
 #![allow(dead_code)]
 
 /**
- * Simple IDE read/write routines using PIO mode.
- * This code is very CPU intensive and not efficient
- * (if that's what you're after, use DMA mode instead).
- * Reference: http://wiki.osdev.org/ATA_PIO_Mode
- * ATA disk0, I/O ports: 0x1f0-0x1f7, 0x3f6
- * ATA disk1, I/O ports: 0x170-0x177, 0x376
- */
+* Simple IDE read/write routines using PIO mode.
+* This code is very CPU intensive and not efficient
+* (if that's what you're after, use DMA mode instead).
+* Reference: http://wiki.osdev.org/ATA_PIO_Mode
+* ATA disk0, I/O ports: 0x1f0-0x1f7, 0x3f6
+* ATA disk1, I/O ports: 0x170-0x177, 0x376
+*/
 
 use pio::*;
 
@@ -15,12 +15,12 @@ use pio::*;
 const IDE_CMD : u16 = 0x1f7;
 const IDE_DATA : u16 = 0x1f0;
 
-const SECTOR_SIZE : usize = 512;
+pub const SECTOR_SIZE : usize = 512;
 
 /**
  * Wait for the disk drive to be ready.
  */
-pub fn wait_drive() {
+fn wait_drive() {
     unsafe { while(inb(IDE_CMD) & 192) != 64 { } }
 }
 
@@ -45,7 +45,7 @@ fn pio_prepare(sector: u32) {
  * @param dst address to store to read data
  * Based on the assembly code at http://wiki.osdev.org/ATA_read/write_sectors
  */
-fn read_sector(sector: u32, dst: *mut u16) {
+pub fn read_sector(sector: u32, dst: *mut u16) {
     unsafe {
     	pio_prepare(sector);
 
@@ -63,7 +63,7 @@ fn read_sector(sector: u32, dst: *mut u16) {
  * @param sector first sector to write (0-indexed)
  * @param src address of the data to be written
  */
-fn write_sector(sector: u32, src: *mut u16) {
+pub fn write_sector(sector: u32, src: *mut u16) {
     unsafe {
     	pio_prepare(sector);
 
