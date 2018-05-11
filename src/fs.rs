@@ -6,10 +6,17 @@ use core::mem;
 use vga::*;
 use ide::*;
 
-pub struct Stat {
-    size: u32
+#[derive(Debug, Clone, Copy)]
+#[repr(C, packed)]
+pub struct Stat<'a> {
+    name: &'a str,
+    size: u32,
+    entry_offset: u16,
+    start: u16
 }
 
+#[derive(Debug, Clone, Copy)]
+#[repr(C, packed)]
 pub struct FileIterator {
     
 }
@@ -33,7 +40,32 @@ pub fn file_exists(filename: &str) -> bool {
     println!("Block size = {} bytes", block_size);
     println!("FAT size = {} bytes", fat_size);
     println!("Root entry = block number {}", root_entry);
-    println!("Entries sector size = {} bytes", entries_size);
+    println!("Entries-sector size = {} bytes", entries_size);
+    
+    read_sector(root_entry as u32, &mut sector[0] as *mut u16);
+    let entries = unsafe {
+        mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector)
+    };
+    let mut cnt = 0;
+    println!("Files :");
+    while cnt < SECTOR_SIZE {
+        if entries[cnt] != 0 {
+            let name = bytes_to_str(&entries[cnt..cnt+26]);
+            let start = unsafe {
+                mem::transmute::<[u8;2], u16>([entries[cnt+26], entries[cnt+27]])
+            };
+            let size = unsafe {
+                mem::transmute::<[u8;4], u32>([entries[cnt+28], entries[cnt+29], entries[cnt+30], entries[cnt+31]])
+            };
+            println!("\n{}", name);
+            println!("Start at block {}", start);
+            println!("{} bytes", size);
+        } else {
+            break;
+        }
+        cnt += 32;
+    }
+    
     println!("");
     return true;
 }
