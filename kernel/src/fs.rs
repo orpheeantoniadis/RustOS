@@ -33,7 +33,7 @@ pub fn file_exists(filename: &str) -> bool {
     };
     let label = bytes_to_str(&superblock[0x52..0x59]);
     let block_size = superblock[13] as usize * SECTOR_SIZE;
-    let fat_size = superblock[0x24] as usize * SECTOR_SIZE;
+    let fat_size = superblock[0x24] as usize;
     let root_entry = superblock[0x2c];
     let entries_size = fat_size * 32; // entry size = 32
     println!("\nReading {}...", label);
