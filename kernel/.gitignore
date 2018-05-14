@@ -1,5 +1,5 @@
 # Kernel
-kernel/build
+src/build
 
 # Rust
 /target

@@ -47,7 +47,14 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     timer_init(50);
     println!("PIT initialized.");
     
-    file_exists("README.md");
+    {
+        let mut raw_filename = [0;MAX_FILENAME_LENGTH];
+        let mut it = FileIterator::new();
+        while it.has_next() {
+            it.next(&mut raw_filename[0]);
+            println!("{}", bytes_to_str(&raw_filename));
+        }
+    }
     
     println!("Welcome to RustOS!");
     println!("Available Memory = {} kB", (*multiboot_infos).mem_upper);

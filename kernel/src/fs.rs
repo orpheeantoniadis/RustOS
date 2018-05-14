@@ -6,64 +6,144 @@ use core::mem;
 use vga::*;
 use ide::*;
 
+const ENTRY_SIZE : usize = 32;
+pub const MAX_FILENAME_LENGTH: usize = 22;
+
 #[derive(Debug, Clone, Copy)]
 #[repr(C, packed)]
-pub struct Stat<'a> {
-    name: &'a str,
+pub struct Stat {
+    name: [u8;MAX_FILENAME_LENGTH],
     size: u32,
     entry_offset: u16,
     start: u16
+}
+impl Stat {
+    pub fn new(filename: &str) -> Stat {
+        let mut sector : [u16;SECTOR_SIZE/2] = [0;SECTOR_SIZE/2];
+        let mut raw_filename = [0;MAX_FILENAME_LENGTH];
+        let mut it = FileIterator::new();
+        while it.has_next() {
+            it.next(&mut raw_filename[0]);
+            if filename == bytes_to_str(&raw_filename) {
+                read_sector(it.sector as u32, &mut sector[0] as *mut u16);
+                unsafe {
+                    let entries = mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector);
+                    let start = [entries[it.offset+26], entries[it.offset+27]];
+                    let start = mem::transmute::<[u8;2], u16>(start);
+                    let size = [entries[it.offset+28], entries[it.offset+29], entries[it.offset+30], entries[it.offset+31]];
+                    let size = mem::transmute::<[u8;4], u32>(size);
+                    return Stat {
+                        name: raw_filename,
+                        size: size,
+                        entry_offset: it.offset as u16,
+                        start: start
+                    }
+                }
+            }
+        }
+        Stat { name: raw_filename, size: 0, entry_offset: 0, start: 0 }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
 #[repr(C, packed)]
 pub struct FileIterator {
-    
+    sector: u32,
+    offset: usize
 }
-
-pub fn file_stat(filename: &str, stat: Stat) -> i32 {
-    unimplemented!()
+impl FileIterator {
+    pub fn new() -> FileIterator {
+        let superblock = read_super_block();
+        FileIterator {
+            sector: superblock.2,
+            offset: 0
+        }
+    }
+    
+    pub fn has_next(&mut self) -> bool {
+        let superblock = read_super_block();
+        
+        if self.offset + ENTRY_SIZE < superblock.0 {
+            let mut sector : [u16;SECTOR_SIZE/2] = [0;SECTOR_SIZE/2];
+            read_sector(self.sector, &mut sector[0] as *mut u16);
+            let entries = unsafe {
+                mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector)
+            };
+            if entries[self.offset + ENTRY_SIZE] != 0 {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    pub fn next(&mut self, filename: *mut u8) {
+        if self.has_next() {
+            self.offset += ENTRY_SIZE;
+            let mut sector : [u16;SECTOR_SIZE/2] = [0;SECTOR_SIZE/2];
+            read_sector(self.sector, &mut sector[0] as *mut u16);
+            let entries = unsafe {
+                mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector)
+            };
+            for i in self.offset..self.offset+26 {
+                unsafe {
+                    *filename.offset((i-self.offset) as isize) = entries[i];
+                }
+            }
+        }
+    }
 }
 
 pub fn file_exists(filename: &str) -> bool {
+    // superblock read
     let mut sector : [u16;SECTOR_SIZE/2] = [0;SECTOR_SIZE/2];
-    read_sector(0, &mut sector[0] as *mut u16);
-    let superblock = unsafe {
+    
+    let superblock = read_super_block();
+    println!("Block size = {} bytes", superblock.0);
+    println!("FAT size = {} bytes", superblock.1);
+    println!("Root entry = block number {}", superblock.2);
+    
+    // read fat
+    read_sector(1, &mut sector[0] as *mut u16);
+    let fat = unsafe {
         mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector)
     };
-    let label = bytes_to_str(&superblock[0x52..0x59]);
-    let block_size = superblock[13] as usize * SECTOR_SIZE;
-    let fat_size = superblock[0x24] as usize;
-    let root_entry = superblock[0x2c];
-    let entries_size = fat_size * 32; // entry size = 32
-    println!("\nReading {}...", label);
-    println!("Block size = {} bytes", block_size);
-    println!("FAT size = {} bytes", fat_size);
-    println!("Root entry = block number {}", root_entry);
-    println!("Entries-sector size = {} bytes", entries_size);
     
-    read_sector(root_entry as u32, &mut sector[0] as *mut u16);
+    // entries read
+    read_sector(superblock.2 as u32, &mut sector[0] as *mut u16);
     let entries = unsafe {
         mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector)
     };
     let mut cnt = 0;
     println!("Files :");
     while cnt < SECTOR_SIZE {
-        if entries[cnt] != 0 {
-            let name = bytes_to_str(&entries[cnt..cnt+26]);
-            let start = unsafe {
-                mem::transmute::<[u8;2], u16>([entries[cnt+26], entries[cnt+27]])
-            };
-            let size = unsafe {
-                mem::transmute::<[u8;4], u32>([entries[cnt+28], entries[cnt+29], entries[cnt+30], entries[cnt+31]])
-            };
-            println!("\n{}", name);
-            println!("Start at block {}", start);
-            println!("{} bytes", size);
-        } else {
+        if entries[cnt] == 0 {
             break;
         }
-        cnt += 32;
+        let name = bytes_to_str(&entries[cnt..cnt+26]);
+        let start = unsafe {
+            mem::transmute::<[u8;2], u16>([entries[cnt+26], entries[cnt+27]])
+        };
+        let size = unsafe {
+            mem::transmute::<[u8;4], u32>([entries[cnt+28], entries[cnt+29], entries[cnt+30], entries[cnt+31]])
+        };
+        println!("\n{}", name);
+        println!("Start at block {}", start);
+        println!("{} bytes", size);
+    
+        // data read
+        let mut block = start as usize;
+        loop {
+            read_sector(block as u32, &mut sector[0] as *mut u16);
+            let data = unsafe {
+                mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector)
+            };
+            println!("{:?}", &data[..]);
+            block = fat[block] as usize;
+            if block == 0 {
+                break;
+            }
+        }
+        cnt += ENTRY_SIZE;
     }
     
     println!("");
@@ -86,19 +166,22 @@ pub fn file_close(fd: i32) {
     unimplemented!()
 }
 
-pub fn file_iterator() -> FileIterator {
-    unimplemented!()
+fn read_super_block() -> (usize, usize, u32) {
+    let mut sector : [u16;SECTOR_SIZE/2] = [0;SECTOR_SIZE/2];
+    read_sector(0, &mut sector[0] as *mut u16);
+    let superblock = unsafe {
+        mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector)
+    };
+    let label = bytes_to_str(&superblock[0x52..0x59]);
+    // println!("\nReading {}...", label);
+    let block_size = superblock[13] as usize * SECTOR_SIZE;
+    let fat_size = superblock[0x24] as usize;
+    let root_entry = superblock[0x2c] as u32;
+    
+    return (block_size, fat_size, root_entry);
 }
 
-pub fn file_has_next(it: FileIterator) -> bool {
-    unimplemented!()
-}
-
-pub fn file_next(filename: *mut str, it: FileIterator) {
-    unimplemented!()
-}
-
-fn bytes_to_str(bytes: &[u8]) -> &str {
+pub fn bytes_to_str(bytes: &[u8]) -> &str {
     let mut cnt = 0;
     for &byte in bytes {
         if byte == 0 {

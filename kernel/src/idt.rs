@@ -106,6 +106,7 @@ pub extern fn irq_handler(regs: *mut Regs) {
     match irq {
         0 => timer_handler(),
         1 => keyboard_handler(),
+        14 => (),
         _ => println!("irq {} not implemented", irq)
     }
     pic_eoi(irq);
