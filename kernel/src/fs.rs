@@ -7,15 +7,15 @@ use vga::*;
 use ide::*;
 
 const ENTRY_SIZE : usize = 32;
-pub const MAX_FILENAME_LENGTH: usize = 22;
+pub const MAX_FILENAME_LENGTH: usize = 26;
 
 #[derive(Debug, Clone, Copy)]
 #[repr(C, packed)]
 pub struct Stat {
-    name: [u8;MAX_FILENAME_LENGTH],
-    size: u32,
-    entry_offset: u16,
-    start: u16
+    pub name: [u8;MAX_FILENAME_LENGTH],
+    pub size: u32,
+    pub entry_offset: u16,
+    pub start: u16
 }
 impl Stat {
     pub fn new(filename: &str) -> Stat {
@@ -27,15 +27,16 @@ impl Stat {
             if filename == bytes_to_str(&raw_filename) {
                 read_sector(it.sector as u32, &mut sector[0] as *mut u16);
                 unsafe {
+                    let offset = it.offset - ENTRY_SIZE;
                     let entries = mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector);
-                    let start = [entries[it.offset+26], entries[it.offset+27]];
+                    let start = [entries[offset+26], entries[offset+27]];
                     let start = mem::transmute::<[u8;2], u16>(start);
-                    let size = [entries[it.offset+28], entries[it.offset+29], entries[it.offset+30], entries[it.offset+31]];
+                    let size = [entries[offset+28], entries[offset+29], entries[offset+30], entries[offset+31]];
                     let size = mem::transmute::<[u8;4], u32>(size);
                     return Stat {
                         name: raw_filename,
                         size: size,
-                        entry_offset: it.offset as u16,
+                        entry_offset: offset as u16,
                         start: start
                     }
                 }
@@ -48,8 +49,8 @@ impl Stat {
 #[derive(Debug, Clone, Copy)]
 #[repr(C, packed)]
 pub struct FileIterator {
-    sector: u32,
-    offset: usize
+    pub sector: u32,
+    pub offset: usize
 }
 impl FileIterator {
     pub fn new() -> FileIterator {
@@ -63,13 +64,14 @@ impl FileIterator {
     pub fn has_next(&mut self) -> bool {
         let superblock = read_super_block();
         
-        if self.offset + ENTRY_SIZE < superblock.0 {
+        if self.offset < superblock.0 {
             let mut sector : [u16;SECTOR_SIZE/2] = [0;SECTOR_SIZE/2];
             read_sector(self.sector, &mut sector[0] as *mut u16);
             let entries = unsafe {
                 mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector)
             };
-            if entries[self.offset + ENTRY_SIZE] != 0 {
+            let bytes = &entries[self.offset..self.offset+MAX_FILENAME_LENGTH];
+            if entries[self.offset] != 0 {
                 return true;
             }
         }
@@ -78,17 +80,17 @@ impl FileIterator {
     
     pub fn next(&mut self, filename: *mut u8) {
         if self.has_next() {
-            self.offset += ENTRY_SIZE;
             let mut sector : [u16;SECTOR_SIZE/2] = [0;SECTOR_SIZE/2];
             read_sector(self.sector, &mut sector[0] as *mut u16);
             let entries = unsafe {
                 mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector)
             };
-            for i in self.offset..self.offset+26 {
+            for i in self.offset..self.offset+MAX_FILENAME_LENGTH {
                 unsafe {
                     *filename.offset((i-self.offset) as isize) = entries[i];
                 }
             }
+            self.offset += ENTRY_SIZE;
         }
     }
 }

@@ -52,7 +52,9 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
         let mut it = FileIterator::new();
         while it.has_next() {
             it.next(&mut raw_filename[0]);
-            println!("{}", bytes_to_str(&raw_filename));
+            let filename = bytes_to_str(&raw_filename);
+            let stat = Stat::new(filename);
+            println!("{} ({} bytes)", filename, stat.size);
         }
     }
     
