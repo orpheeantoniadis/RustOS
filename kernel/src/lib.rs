@@ -56,6 +56,10 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
             let stat = Stat::new(filename);
             println!("{} ({} bytes)", filename, stat.size);
         }
+        println!("README.md exists ? {}", file_exists("README.md"));
+        println!("README.txt ? {}", file_exists("README.txt"));
+        println!("FD (README.md) = {}", file_open("README.md"));
+        println!("FD (src/main.rs) = {}", file_open("src/main.rs"));
     }
     
     println!("Welcome to RustOS!");
