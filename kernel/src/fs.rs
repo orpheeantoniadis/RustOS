@@ -3,6 +3,7 @@
 
 use core::str;
 use core::mem;
+use rlibc::memcpy;
 use vga::*;
 use ide::*;
 
@@ -50,18 +51,50 @@ pub fn file_exists(filename: &str) -> bool {
 }
 
 pub fn file_open(filename: &str) -> i32 {
-    if file_exists(filename) {
-        let fd = free_fd();
-        unsafe {
+    unsafe {
+        if file_exists(filename) {
+            let fd = free_fd();
             FDT[fd as usize].stat = Stat::new(filename);
+            return fd;
         }
-        return fd;
+        return -1;
     }
-    return -1;
 }
 
-pub fn file_read(fd: i32, buf: *mut (), count: u32) -> i32 {
-    unimplemented!()
+pub fn file_read(fd: i32, buf: *mut u8, n: usize) -> i32 {
+    unsafe {
+        if FDT[fd as usize].stat.start == 0 {
+            return -1;
+        }
+        
+        let mut sector : [u16;SECTOR_SIZE/2] = [0;SECTOR_SIZE/2];
+        read_sector(1, &mut sector[0] as *mut u16);
+        let fat = mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector);
+        
+        let mut block = FDT[fd as usize].stat.start as usize;
+        let size = if FDT[fd as usize].pos + n > FDT[fd as usize].stat.size as usize {
+            FDT[fd as usize].stat.size as usize
+        } else {
+            FDT[fd as usize].pos + n
+        };
+        for _i in 0..(size / SECTOR_SIZE) {
+            read_sector(block as u32, &mut sector[0] as *mut u16);
+            let data = mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector);
+            memcpy(buf.offset(FDT[fd as usize].pos as isize), &data[0], SECTOR_SIZE);
+            block = fat[block] as usize;
+            FDT[fd as usize].pos += SECTOR_SIZE;
+        }
+        read_sector(block as u32, &mut sector[0] as *mut u16);
+        let data = mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector);
+        memcpy(buf.offset(FDT[fd as usize].pos as isize), &data[0], size % SECTOR_SIZE);
+        FDT[fd as usize].pos += size % SECTOR_SIZE;
+        
+        if FDT[fd as usize].pos >= size {
+            return 0;
+        } else {
+            return n as i32;
+        }
+    }
 }
 
 pub fn file_seek(fd: i32, offset: u32) -> i32{
@@ -179,18 +212,14 @@ impl FileIterator {
     }
     
     pub fn next(&mut self, filename: *mut u8) {
-        if self.has_next() {
-            let mut sector : [u16;SECTOR_SIZE/2] = [0;SECTOR_SIZE/2];
-            read_sector(self.sector, &mut sector[0] as *mut u16);
-            let entries = unsafe {
-                mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector)
-            };
-            for i in self.offset..self.offset+MAX_FILENAME_LENGTH {
-                unsafe {
-                    *filename.offset((i-self.offset) as isize) = entries[i];
-                }
+        unsafe {
+            if self.has_next() {
+                let mut sector : [u16;SECTOR_SIZE/2] = [0;SECTOR_SIZE/2];
+                read_sector(self.sector, &mut sector[0] as *mut u16);
+                let entries = mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector);
+                memcpy(filename, &entries[self.offset], MAX_FILENAME_LENGTH);
+                self.offset += ENTRY_SIZE;
             }
-            self.offset += ENTRY_SIZE;
         }
     }
 }
