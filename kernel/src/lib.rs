@@ -57,8 +57,9 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
             println!("{} ({} bytes)", filename, stat.size);
         }
         
-        let mut data = [0;37];
+        let mut data = [0;50];
         let fd = file_open("README.md");
+        file_seek(fd, 37);
         file_read(fd, &mut data[0], 37);
         println!("{}", bytes_to_str(&data));
         

@@ -4,7 +4,6 @@
 use core::str;
 use core::mem;
 use rlibc::memcpy;
-use vga::*;
 use ide::*;
 
 const FDT_SIZE : usize = 128;
@@ -15,23 +14,23 @@ pub static mut FDT: Fdt = [FdtEntry::null();FDT_SIZE];
 pub type Fdt = [FdtEntry; FDT_SIZE];
 
 #[derive(Debug, Clone, Copy)]
-#[repr(C, packed)]
+#[repr(C)]
 pub struct FdtEntry {
     pub stat: Stat,
     pub pos: usize
 }
 
 #[derive(Debug, Clone, Copy)]
-#[repr(C, packed)]
+#[repr(C)]
 pub struct Stat {
     pub name: [u8;MAX_FILENAME_LENGTH],
-    pub size: u32,
+    pub size: usize,
     pub entry_offset: u16,
-    pub start: u16
+    pub start: usize
 }
 
 #[derive(Debug, Clone, Copy)]
-#[repr(C, packed)]
+#[repr(C)]
 pub struct FileIterator {
     pub sector: u32,
     pub offset: usize
@@ -50,7 +49,7 @@ pub fn file_exists(filename: &str) -> bool {
     return false;
 }
 
-pub fn file_open(filename: &str) -> i32 {
+pub fn file_open(filename: &str) -> i8 {
     unsafe {
         if file_exists(filename) {
             let fd = free_fd();
@@ -61,9 +60,9 @@ pub fn file_open(filename: &str) -> i32 {
     }
 }
 
-pub fn file_read(fd: i32, buf: *mut u8, n: usize) -> i32 {
+pub fn file_read(fd: i8, buf: *mut u8, n: usize) -> i8 {
     unsafe {
-        if FDT[fd as usize].stat.start == 0 {
+        if fd < 0 || FDT[fd as usize].stat.start == 0 {
             return -1;
         }
         
@@ -72,9 +71,9 @@ pub fn file_read(fd: i32, buf: *mut u8, n: usize) -> i32 {
         let fat = mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector);
         
         let mut cnt = 0;
-        let mut block = FDT[fd as usize].stat.start as usize;
-        let size = if FDT[fd as usize].pos + n > FDT[fd as usize].stat.size as usize {
-            FDT[fd as usize].stat.size as usize
+        let mut block = FDT[fd as usize].stat.start;
+        let size = if FDT[fd as usize].pos + n > FDT[fd as usize].stat.size {
+            FDT[fd as usize].stat.size
         } else {
             FDT[fd as usize].pos + n
         };
@@ -95,18 +94,26 @@ pub fn file_read(fd: i32, buf: *mut u8, n: usize) -> i32 {
         } else {
             read_sector(block as u32, &mut sector[0] as *mut u16);
             let data = mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector);
-            memcpy(buf.offset(cnt as isize), &data[FDT[fd as usize].pos % SECTOR_SIZE], size % SECTOR_SIZE);
-            FDT[fd as usize].pos += size % SECTOR_SIZE;
-            return n as i32;
+            memcpy(buf.offset(cnt as isize), &data[FDT[fd as usize].pos % SECTOR_SIZE], n % SECTOR_SIZE);
+            FDT[fd as usize].pos += n % SECTOR_SIZE;
+            return n as i8;
         }
     }
 }
 
-pub fn file_seek(fd: i32, offset: u32) -> i32{
-    unimplemented!()
+pub fn file_seek(fd: i8, offset: usize) -> i8{
+    unsafe {
+        if FDT[fd as usize].pos + offset > FDT[fd as usize].stat.size {
+            FDT[fd as usize].pos = FDT[fd as usize].stat.size;
+            return -1;
+        } else {
+            FDT[fd as usize].pos += offset;
+            return 0;
+        }
+    }
 }
 
-pub fn file_close(fd: i32) {
+pub fn file_close(fd: i8) {
     unimplemented!()
 }
 
@@ -121,7 +128,7 @@ pub fn bytes_to_str(bytes: &[u8]) -> &str {
     str::from_utf8(&bytes[0..cnt]).expect("Found invalid UTF-8")
 }
 
-fn free_fd() -> i32 {
+fn free_fd() -> i8 {
     unsafe {
         let mut cnt = 0;
         for entry in FDT.iter() {
@@ -169,7 +176,7 @@ impl Stat {
         while it.has_next() {
             it.next(&mut raw_filename[0]);
             if filename == bytes_to_str(&raw_filename) {
-                read_sector(it.sector as u32, &mut sector[0] as *mut u16);
+                read_sector(it.sector, &mut sector[0] as *mut u16);
                 unsafe {
                     let offset = it.offset - ENTRY_SIZE;
                     let entries = mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector);
@@ -179,9 +186,9 @@ impl Stat {
                     let size = mem::transmute::<[u8;4], u32>(size);
                     return Stat {
                         name: raw_filename,
-                        size: size,
+                        size: size as usize,
                         entry_offset: offset as u16,
-                        start: start
+                        start: start as usize
                     }
                 }
             }
@@ -227,60 +234,4 @@ impl FileIterator {
             }
         }
     }
-}
-
-pub fn fs_test(filename: &str) {
-    // superblock read
-    let mut sector : [u16;SECTOR_SIZE/2] = [0;SECTOR_SIZE/2];
-    
-    let superblock = read_super_block();
-    println!("Block size = {} bytes", superblock.0);
-    println!("FAT size = {} bytes", superblock.1);
-    println!("Root entry = block number {}", superblock.2);
-    
-    // read fat
-    read_sector(1, &mut sector[0] as *mut u16);
-    let fat = unsafe {
-        mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector)
-    };
-    
-    // entries read
-    read_sector(superblock.2 as u32, &mut sector[0] as *mut u16);
-    let entries = unsafe {
-        mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector)
-    };
-    let mut cnt = 0;
-    println!("Files :");
-    while cnt < SECTOR_SIZE {
-        if entries[cnt] == 0 {
-            break;
-        }
-        let name = bytes_to_str(&entries[cnt..cnt+26]);
-        let start = unsafe {
-            mem::transmute::<[u8;2], u16>([entries[cnt+26], entries[cnt+27]])
-        };
-        let size = unsafe {
-            mem::transmute::<[u8;4], u32>([entries[cnt+28], entries[cnt+29], entries[cnt+30], entries[cnt+31]])
-        };
-        println!("\n{}", name);
-        println!("Start at block {}", start);
-        println!("{} bytes", size);
-    
-        // data read
-        let mut block = start as usize;
-        loop {
-            read_sector(block as u32, &mut sector[0] as *mut u16);
-            let data = unsafe {
-                mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector)
-            };
-            println!("{:?}", &data[..]);
-            block = fat[block] as usize;
-            if block == 0 {
-                break;
-            }
-        }
-        cnt += ENTRY_SIZE;
-    }
-    
-    println!("");
 }
