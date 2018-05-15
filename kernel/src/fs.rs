@@ -71,27 +71,32 @@ pub fn file_read(fd: i32, buf: *mut u8, n: usize) -> i32 {
         read_sector(1, &mut sector[0] as *mut u16);
         let fat = mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector);
         
+        let mut cnt = 0;
         let mut block = FDT[fd as usize].stat.start as usize;
         let size = if FDT[fd as usize].pos + n > FDT[fd as usize].stat.size as usize {
             FDT[fd as usize].stat.size as usize
         } else {
             FDT[fd as usize].pos + n
         };
-        for _i in 0..(size / SECTOR_SIZE) {
-            read_sector(block as u32, &mut sector[0] as *mut u16);
-            let data = mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector);
-            memcpy(buf.offset(FDT[fd as usize].pos as isize), &data[0], SECTOR_SIZE);
+        
+        for i in 0..(size / SECTOR_SIZE) {
+            if i >= FDT[fd as usize].pos / SECTOR_SIZE {
+                read_sector(block as u32, &mut sector[0] as *mut u16);
+                let data = mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector);
+                memcpy(buf.offset(cnt as isize), &data[0], SECTOR_SIZE);
+                FDT[fd as usize].pos += SECTOR_SIZE;
+                cnt += SECTOR_SIZE;
+            }
             block = fat[block] as usize;
-            FDT[fd as usize].pos += SECTOR_SIZE;
         }
-        read_sector(block as u32, &mut sector[0] as *mut u16);
-        let data = mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector);
-        memcpy(buf.offset(FDT[fd as usize].pos as isize), &data[0], size % SECTOR_SIZE);
-        FDT[fd as usize].pos += size % SECTOR_SIZE;
         
         if FDT[fd as usize].pos >= size {
             return 0;
         } else {
+            read_sector(block as u32, &mut sector[0] as *mut u16);
+            let data = mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector);
+            memcpy(buf.offset(cnt as isize), &data[FDT[fd as usize].pos % SECTOR_SIZE], size % SECTOR_SIZE);
+            FDT[fd as usize].pos += size % SECTOR_SIZE;
             return n as i32;
         }
     }
