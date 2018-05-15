@@ -70,6 +70,9 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
         println!("{}", bytes_to_str(&data));
         file_read(fd, &mut data[0], 15);
         println!("{}", bytes_to_str(&data));
+        
+        file_close(fd);
+        file_close(fd);
     }
     
     println!("Welcome to RustOS!");

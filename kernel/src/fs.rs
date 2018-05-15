@@ -5,6 +5,7 @@ use core::str;
 use core::mem;
 use rlibc::memcpy;
 use ide::*;
+use vga::*;
 
 const FDT_SIZE : usize = 128;
 const ENTRY_SIZE : usize = 32;
@@ -114,7 +115,11 @@ pub fn file_seek(fd: i8, offset: usize) -> i8{
 }
 
 pub fn file_close(fd: i8) {
-    unimplemented!()
+    if fd < 0 || unsafe { FDT[fd as usize].stat.start } == 0 {
+        println!("fd {} does not exist.", fd);
+    } else {
+        unsafe { FDT[fd as usize] = FdtEntry::null() };
+    }
 }
 
 pub fn bytes_to_str(bytes: &[u8]) -> &str {
