@@ -46,38 +46,10 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     println!("Interrupts unmasked.");
     timer_init(50);
     println!("PIT initialized.");
-    
-    {
-        let mut raw_filename = [0;MAX_FILENAME_LENGTH];
-        let mut it = FileIterator::new();
-        while it.has_next() {
-            it.next(&mut raw_filename[0]);
-            let filename = bytes_to_str(&raw_filename);
-            let stat = Stat::new(filename);
-            println!("{} ({} bytes)", filename, stat.size);
-        }
-        
-        let mut data = [0;50];
-        let fd = file_open("README.md");
-        file_seek(fd, 37);
-        file_read(fd, &mut data[0], 37);
-        println!("{}", bytes_to_str(&data));
-        
-        let mut data = [0;80];
-        file_read(fd, &mut data[0], 10);
-        println!("{}", bytes_to_str(&data));
-        file_read(fd, &mut data[0], 10);
-        println!("{}", bytes_to_str(&data));
-        file_read(fd, &mut data[0], 15);
-        println!("{}", bytes_to_str(&data));
-        
-        file_close(fd);
-        file_close(fd);
-    }
-    
+    set_superblock();
     println!("Welcome to RustOS!");
     println!("Available Memory = {} kB", (*multiboot_infos).mem_upper);
-    loop{
+    loop {
         let key = getc();
         if key == 'Q' {
             println!("\nKernel stopped.");
