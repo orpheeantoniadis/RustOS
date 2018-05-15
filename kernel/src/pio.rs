@@ -4,6 +4,7 @@
 const CRTC_CMD: u16 = 0x3d4;
 const CRTC_DATA: u16 = 0x3d5;
 // CRTC registers
+const CRTC_START_REG: u8 = 0xa;
 const CRTC_LOCATION_MSB: u8 = 0xe;
 const CRTC_LOCATION_LSB: u8 = 0xf;
 
@@ -22,5 +23,23 @@ pub fn move_cursor(position: u16) {
         outb(CRTC_DATA, pos_msb);
         outb(CRTC_CMD, CRTC_LOCATION_LSB);
         outb(CRTC_DATA, pos_lsb);
+    }
+}
+
+pub fn enable_cursor() {
+    unsafe {
+        outb(CRTC_CMD, CRTC_START_REG);
+        let reg = inb(CRTC_DATA);
+        outb(CRTC_CMD, CRTC_START_REG);
+        outb(CRTC_DATA, reg & !0x20);
+    }
+}
+
+pub fn disable_cursor() {
+    unsafe {
+        outb(CRTC_CMD, CRTC_START_REG);
+        let reg = inb(CRTC_DATA);
+        outb(CRTC_CMD, CRTC_START_REG);
+        outb(CRTC_DATA, reg | 0x20);
     }
 }

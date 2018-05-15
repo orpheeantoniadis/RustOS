@@ -20,6 +20,7 @@ mod test;
 
 use x86::*;
 use vga::*;
+use pio::*;
 use multiboot::*;
 use gdt::gdt_init;
 use pic::pic_init;
@@ -31,6 +32,23 @@ use fs::*;
 // exports
 pub use idt::exception_handler;
 pub use idt::irq_handler;
+
+fn splash_screen() {
+    vga_clear();
+    vga_set_cursor(22,10);
+    let fd = file_open("splash.txt");
+    let mut data = [0;300];
+    file_read(fd, &mut data[0], 300);
+    for c in bytes_to_str(&data).chars() {
+        print!("{}", c);
+        if c == '\n' {
+            let cursor = vga_get_cursor();
+            vga_set_cursor(22,cursor.1);
+        }
+    }
+    file_close(fd);
+    disable_cursor();
+}
 
 #[no_mangle]
 pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
@@ -47,8 +65,13 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     timer_init(50);
     println!("PIT initialized.");
     set_superblock();
-    println!("Welcome to RustOS!");
     println!("Available Memory = {} kB", (*multiboot_infos).mem_upper);
+    sleep(3000);
+    splash_screen();
+    sleep(5000);
+    enable_cursor();
+    vga_clear();
+    
     loop {
         let key = getc();
         if key == 'Q' {

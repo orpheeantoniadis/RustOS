@@ -35,6 +35,20 @@ pub fn vga_init(background: Color, foreground: Color) {
     }
 }
 
+pub fn vga_clear() {
+    unsafe { SCREEN.clear(); }
+}
+
+pub fn vga_set_cursor(x: usize, y: usize) {
+    unsafe { SCREEN.set_cursor(x, y); }
+}
+
+pub fn vga_get_cursor() -> (usize, usize) {
+    unsafe {
+        return (SCREEN.cursor_x, SCREEN.cursor_y);
+    }
+}
+
 type FrameBuffer = [[Character; BUFFER_WIDTH]; BUFFER_HEIGHT];
 
 #[repr(u8)]
@@ -120,7 +134,7 @@ impl Screen {
             0x8 => {
                 if self.cursor_x > 0 {
                     self.cursor_x -= 1;
-                } else {
+                } else if self.cursor_y > 0 {
                     self.cursor_y -= 1;
                     self.cursor_x = BUFFER_WIDTH-1;
                 }
