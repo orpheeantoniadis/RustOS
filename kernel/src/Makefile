@@ -1,26 +1,34 @@
 ARCH = i386
 BUILD_FOLDER = build
+FS_FOLDER = ../../tools/MicroFS
+
 SRCS = $(wildcard *.s)
 OBJS = $(patsubst %.s, $(BUILD_FOLDER)/%.o, $(SRCS))
 KERNEL = kernel.elf
 LINKER = kernel.ld
 GRUB = ../../grub
 OS = rust_os
-ISO = $(BUILD_FOLDER)/$(OS).iso
+ISO = $(OS).iso
 RUST = ../target/$(ARCH)-rust_os/debug/librust_os.a
-FS = ../../tools/MicroFS/fs.img
+FS = fs.img
+SPLASH = ../../doc/splash.txt
+
 QEMU = qemu-system-$(ARCH)
 
-.PHONY: all clean run iso
+.PHONY: all run elf iso fs clean mrproper
 
-all: $(BUILD_FOLDER)/$(KERNEL) iso
+all: elf iso fs
 
-run: $(ISO) $(FS)
-	$(QEMU) -monitor stdio -hda $(FS) -cdrom $(ISO)
+run: elf iso fs
+	$(QEMU) -monitor stdio -hda $(BUILD_FOLDER)/$(FS) -cdrom $(BUILD_FOLDER)/$(ISO)
 
-iso: $(ISO)
+elf: $(BUILD_FOLDER)/$(KERNEL)
 
-$(ISO): $(BUILD_FOLDER)/$(KERNEL)
+iso: $(BUILD_FOLDER)/$(ISO)
+	
+fs: $(BUILD_FOLDER)/$(FS)
+
+$(BUILD_FOLDER)/$(ISO): elf
 	mkdir -p $(BUILD_FOLDER)/isofiles/boot/grub
 	cp $(BUILD_FOLDER)/$(KERNEL) $(BUILD_FOLDER)/isofiles/boot/$(KERNEL)
 	cp -r $(GRUB) $(BUILD_FOLDER)/isofiles/boot
@@ -37,5 +45,12 @@ $(BUILD_FOLDER)/%.o: %.s
 $(RUST):
 	$(MAKE) -C ../
 	
+$(BUILD_FOLDER)/$(FS): $(SPLASH)
+	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) create MicroFS 1 100000
+	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(SPLASH)
+	
 clean:
 	rm -rf $(BUILD_FOLDER)
+	
+mrproper: clean
+	cargo clean --manifest-path $(FS_FOLDER)/Cargo.toml

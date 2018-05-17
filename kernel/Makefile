@@ -4,7 +4,7 @@ TARGET = $(ARCH)-rust_os
 FLAGS = -v --target $(TARGET)
 SOURCE_PATH = src/
 
-.PHONY: all build run clean
+.PHONY: all build run test clean mrproper
 	
 all: build
 
@@ -20,4 +20,8 @@ test:
 
 clean:
 	$(MAKE) -C $(SOURCE_PATH) clean
+	$(CC) clean
+	
+mrproper:
+	$(MAKE) -C $(SOURCE_PATH) mrproper
 	$(CC) clean

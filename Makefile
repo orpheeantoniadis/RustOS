@@ -1,6 +1,6 @@
 KERNEL_PATH = kernel/
 
-.PHONY: all build run clean
+.PHONY: all build run test clean mrproper
 	
 all: build
 
@@ -15,3 +15,6 @@ test:
 
 clean:
 	$(MAKE) -C $(KERNEL_PATH) clean
+	
+mrproper:
+	$(MAKE) -C $(KERNEL_PATH) mrproper
