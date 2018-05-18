@@ -98,6 +98,11 @@ Lors de la rédaction de ce document, les conventions typographique ci-dessous o
 \newacronym{bios}{BIOS}{\textit{Basic Input Output System}}
 \newacronym{pc}{PC}{\textit{Personal Computer}}
 \newacronym{mbr}{MBR}{\textit{Master Boot Record}}
+\newacronym{gdt}{GDT}{\textit{Global Descriptor Table}}
+\newacronym{idt}{IDT}{\textit{Interrupt Descriptor Table}}
+\newacronym{vga}{VGA}{\textit{Video Graphics Array}}
+\newacronym{pio}{PIO}{\textit{Port Input/Output}}
+\newacronym{cpu}{CPU}{\textit{Central Processing Unit}}
 \printglossary[type=\acronymtype,title={Acronymes}]
 \newpage
 
@@ -166,7 +171,7 @@ autre utilitaire basé sur cargo existe et permet d'installer par défaut la lib
 \mintinline{rust}{core} pour des projets sans bibliothèque standard. Cet utilitaire
 se nomme xargo et est utilisé pour compiler le code Rust en fichiers objets \\
 
-\subsubsection{Exécution du \textit{kernel}}
+\subsubsection{QEMU}
 Le compilateur \acrshort{gcc} a été utilisé pour \textit{linker} les fichiers
 objet générés par nasm et xargo. \acrshort{gcc} génère un fichier au format \acrshort{elf}.
 Pour utiliser ce fichier comme un système d'exploitation \textit{bootable}, il faut
@@ -190,7 +195,7 @@ l'architecture i386 a été choisie afin d'émuler un processeur Intel 32-bits.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Système d’exploitation de type \textit{bare metal}}
+\section{Exécution du \textit{kernel}}
 \subsection{Compilation}
 Quand on veut compiler un simple code C en utilisant \acrshort{gcc} par
 exemple, le compilateur passe par plusieurs étapes. Le préprocesseur génère d'abord
@@ -208,7 +213,7 @@ gcc $(OBJS) -T $(LINKER) -static -m32 -ffreestanding -nostdlib -o $@ $(RUST)
 \end{minted}
 Ici, \mintinline{shell}{$(OBJS)} représente les fichiers objets générés par
 \mintinline{rust}{nasm}, \mintinline{shell}{$(LINKER)} est un fichier permettant
-de faire l'édition des liens et \mintinline{shell}{$(RUST)} représentre les fichiers
+de faire l'édition des liens et \mintinline{shell}{$(RUST)} représente les fichiers
 objets générés par Rust.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -251,12 +256,11 @@ SECTIONS {
 }
 \end{minted}
 
-
 L'appel à \mintinline{c}{ENTRY} permet de spécifier l'entrée du \textit{kernel}.
 Pour un simple programme en C l'entrée serait le \textit{main}. Ici, ce sera
 l'entrée de notre \textit{kernel} donc la première fonction exécutée au \textit{boot}.
-\mintinline{c}{SECTION} va dire au linker où placer les parties du code. Par exemple, 
-la section \mintinline{c}{.text} contiendra le code et la section \mintinline{c}{.data}
+\mintinline{text}{SECTION} va dire au linker où placer les parties du code. Par exemple, 
+la section \mintinline{text}{.text} contiendra le code et la section \mintinline{text}{.data}
 contiendra les variables initialisées \cite{ref9,ref10,ref11}. Voici donc la structure
 du fichier \acrshort{elf} qui serait généré à l'aide de ce \textit{script}.
 
@@ -267,8 +271,8 @@ du fichier \acrshort{elf} qui serait généré à l'aide de ce \textit{script}.
 \end{figure}
 
 A noter que les sections commencent avec un \textit{offset} de 1MB. Nous avons eu
-besoin de faire ça car les premiers 1MB dans un \acrshort{os} sont reservés. La 
-mémoire vidéo (\acrshort{vram}) se situe par exemple dans cette zone.
+besoin de faire ça car les premiers 1MB dans un \acrshort{os} sont reservés \cite{ref13}.
+La mémoire vidéo (\acrshort{vram}) se situe par exemple dans cette zone.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -343,26 +347,52 @@ genisoimage -R -b boot/grub/stage2_eltorito -input-charset utf8 -no-emul-boot \
 \end{minted}
 Cette commande génerera une image \acrshort{iso} \textit{bootable} nommée \mintinline{text}{os.iso}.
 
+\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Adressage mémoire}
+\section{Tables de descripteurs}
+\subsection{\acrshort{gdt}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\subsection{\acrshort{idt}}
+
+\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Periphériques}
 \subsection{Ports}
+Les ports d'entrées/sorties sur architecture x86 se situent dans un espace d'adresses
+séparé de la mémoire physique. Il n'est donc pas possible d'écrire dans un \acrshort{pio}
+de la même manière que l'on écrirait dans la mémoire (avec une instruction 
+\mintinline{text}{MOV}). Ainsi, le \acrshort{cpu} utilise des instructions speciales
+pour accéder aux périphériques \acrshort{pio}. Ces instructions sont les instructions
+\mintinline{text}{IN} et \mintinline{text}{OUT}. \mintinline{text}{IN} permet de lire
+tandis que \mintinline{text}{OUT} permet d'écrire. A noter que l'adresse du port
+doit toujours être spécifiée dans le registre \mintinline{text}{dx} et la lecture
+et l'écriture se font toujours avec les registres \mintinline{text}{ax/al}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Interruptions}
+\subsection{\acrshort{vga}}
+Dans l'\acrshort{os} développé, le mode texte \acrshort{vga} a été utilisé pour
+l'affichage. Toute carte graphique offre ce mode texte de 80 colonnes par 25 lignes.
+Les 16 couleurs disponibles sont les suivantes :
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.7]{images/colors.png}
+  \caption{Couleurs du mode texte \acrshort{vga}}
+\end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Periphériques}
-\subsubsection{VGA}
+\subsection{\textit{Timer}}
 
-\subsubsection{\textit{Timer}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsubsection{Clavier}
+\subsection{Clavier}
 
 \newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
