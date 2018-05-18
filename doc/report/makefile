@@ -2,13 +2,15 @@ CC = xelatex
 FLAGS = -shell-escape
 MAIN = report
 BIB = biblio
+KERNEL_SRC = ../../kernel/src
 
 all: $(MAIN).pdf mostlyclean
 
-$(MAIN).pdf: $(MAIN).tex $(BIB).bib
+$(MAIN).pdf: $(MAIN).tex $(BIB).bib $(KERNEL_SRC)
 	$(CC) $(FLAGS) $(MAIN).tex
 	makeglossaries $(MAIN)
 	bibtex $(MAIN)
+	$(CC) $(FLAGS) $(MAIN).tex
 	$(CC) $(FLAGS) $(MAIN).tex
 
 mostlyclean:

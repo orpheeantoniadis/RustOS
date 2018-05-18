@@ -93,6 +93,11 @@ Lors de la rédaction de ce document, les conventions typographique ci-dessous o
 \newacronym{elf}{ELF}{\textit{Executable and Linkable Format}}
 \newacronym{gcc}{GCC}{\textit{GNU Compiler Collection}}
 \newacronym{iso}{ISO}{\textit{International Organization for Standardization}}
+\newacronym{vram}{VRAM}{\textit{Video Random Access Memory}}
+\newacronym{grub}{GRUB}{\textit{GRand Unified Bootloader}}
+\newacronym{bios}{BIOS}{\textit{Basic Input Output System}}
+\newacronym{pc}{PC}{\textit{Personal Computer}}
+\newacronym{mbr}{MBR}{\textit{Master Boot Record}}
 \printglossary[type=\acronymtype,title={Acronymes}]
 \newpage
 
@@ -108,11 +113,13 @@ Lors de la rédaction de ce document, les conventions typographique ci-dessous o
 
 \subsection{Objectif}
 
+\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Analyse}
 
+\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -134,7 +141,7 @@ différent sur Mac \acrshort{os}.
 Bien que le système d'exploitation développé devait être sur Rust, certaines parties
 ont du être faites en assembleur car étant trop bas niveau pour le Rust. Ces éléments
 seront décrits plus loin dans ce document. Nasm a été  utilisé pour compiler le
-code assembleur x86 en \acrshort{elf} 32-bit. Nasm produit des fichiers objets pouvant être
+code assembleur x86 en \acrshort{elf} 32-bits. Nasm produit des fichiers objets pouvant être
 liés à d'autres fichiers objets afin de créer un exécutable. \\
 
 \subsubsection{Rustup}
@@ -161,23 +168,25 @@ se nomme xargo et est utilisé pour compiler le code Rust en fichiers objets \\
 
 \subsubsection{Exécution du \textit{kernel}}
 Le compilateur \acrshort{gcc} a été utilisé pour \textit{linker} les fichiers
-objet générés par nasm et xargo. \acrshort{gcc} génère un fichier au format \acrshort{elf}. Pour utiliser
-ce fichier comme un système d'exploitation \textit{bootable}, il faut en faire 
-une image \acrshort{iso} \textit{bootable}. Pour se faire, l'utilitaire \mintinline{rust}{genisoimage}
-est utilisé, couplé au \textit{bootloader} GRUB. L'image \acrshort{iso} est finalement exécutée
-par la machine virtuelle QEMU. QEMU est une machine virtuelle pouvant émuler une
-architecture. Pour ce projet, l'architecture i386 a été choisie afin d'émuler
-un processeur Intel 32-bit.
+objet générés par nasm et xargo. \acrshort{gcc} génère un fichier au format \acrshort{elf}.
+Pour utiliser ce fichier comme un système d'exploitation \textit{bootable}, il faut
+en faire une image \acrshort{iso} \textit{bootable}. Pour se faire, l'utilitaire
+\mintinline{rust}{genisoimage} est utilisé, couplé au \textit{bootloader} \acrshort{grub}.
+L'image \acrshort{iso} est finalement exécutée par la machine virtuelle QEMU.
+QEMU est une machine virtuelle pouvant émuler une architecture. Pour ce projet,
+l'architecture i386 a été choisie afin d'émuler un processeur Intel 32-bits.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Architecture}
 
+\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Rust}
 
+\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -194,7 +203,7 @@ d'un code C, nous avons d'un côté du code assembleur et de l'autre du code Rus
 Nasm et cargo permettent tous deux de générer des fichiers objets. Il n'y a donc
 que la dernière étape à effectuer ce que \acrshort{gcc} permet de faire avec
 la commande suivante.
-\begin{minted}[tabsize=4]{bash}
+\begin{minted}[tabsize=4]{shell}
 gcc $(OBJS) -T $(LINKER) -static -m32 -ffreestanding -nostdlib -o $@ $(RUST)
 \end{minted}
 Ici, \mintinline{shell}{$(OBJS)} représente les fichiers objets générés par
@@ -205,10 +214,134 @@ objets générés par Rust.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{\textit{Linking}}
+Nous avons vu dans la partie précédente que \acrshort{gcc} a besoin d'un fichier
+pour faire l'édition des liens. Si ce fichier n'est pas donné, il en utilise un par
+défaut. Le \textit{linker} permet de structurer le code par sections. Prenons
+pour exemple le \textit{script} utilisé pour ce projet.
+
+\begin{minted}[linenos,frame=single,tabsize=4]{c}
+ENTRY(entrypoint)
+SECTIONS {
+  . = 1M;
+  .boot ALIGN(4):
+  {
+    *(.multiboot)
+  }
+  .stack ALIGN(4):
+  {
+    *(.stack)
+  }
+  .text ALIGN(4K) :
+  {
+    *(.text*)
+  }
+  .rodata ALIGN(4K) :
+  {
+    *(.rodata*)
+  }
+  .data ALIGN(4K) :
+  {
+    *(.data*)
+  }
+  .bss ALIGN(4K) :
+  {
+    *(COMMON)
+    *(.bss*)
+  }
+}
+\end{minted}
+
+
+L'appel à \mintinline{c}{ENTRY} permet de spécifier l'entrée du \textit{kernel}.
+Pour un simple programme en C l'entrée serait le \textit{main}. Ici, ce sera
+l'entrée de notre \textit{kernel} donc la première fonction exécutée au \textit{boot}.
+\mintinline{c}{SECTION} va dire au linker où placer les parties du code. Par exemple, 
+la section \mintinline{c}{.text} contiendra le code et la section \mintinline{c}{.data}
+contiendra les variables initialisées \cite{ref9,ref10,ref11}. Voici donc la structure
+du fichier \acrshort{elf} qui serait généré à l'aide de ce \textit{script}.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.75]{images/elf_struct.png}
+  \caption{Strucutre du fichier \acrshort{elf}}
+\end{figure}
+
+A noter que les sections commencent avec un \textit{offset} de 1MB. Nous avons eu
+besoin de faire ça car les premiers 1MB dans un \acrshort{os} sont reservés. La 
+mémoire vidéo (\acrshort{vram}) se situe par exemple dans cette zone.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Processus de \textit{boot}}
+\subsection{\textit{Boot}}
+\subsubsection{Principe général}
+Quand un ordinateur est allumé, un signal est envoyé à la carte mère qui démarre
+l'alimentation. Le processeur démarre alors en mode 16-bits. Le signal "Power Ok"
+est envoyé au \acrshort{bios} qui est le \textit{firmware} du \acrshort{pc}
+(localisé en mémoire flash de la carte mère). Le \acrshort{bios} initialise alors
+la séquence POST (\textit{Power On Self Test}) qui vérifie que chaque périphérique
+est alimenté et que la mémoire est ok puis initialise chaque périphérique et enfin
+redonne la main au \acrshort{bios} qui continue le \textit{boot}. Le \acrshort{bios}
+charge ensuite les 512 premiers bytes (\acrshort{mbr}) du premier disque qui doit
+charger le \textit{kernel} en mémoire et l'exécuter. Pour résumer, le \textit{boot}
+d'une machine à base de \acrshort{bios} se déroule de la manière ci-dessous.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.4]{images/bios_boot.png}
+  \caption{\textit{Boot} d'une machine à base de \acrshort{bios}}
+\end{figure}
+
+\subsubsection{\acrshort{grub}}
+Le \acrshort{mbr} contient ce qui est appelé le \textit{bootloader}. Le \textit{bootloader}
+est le morceau de code qui va charger le \textit{kernel} en mémoire et l'exécuter.
+C'est ici qu'entre en scène \acrshort{grub}. \acrshort{grub} est un \textit{bootloader}
+puissant et versatile permettant de charger n’importe quel type de système d’exploitation.
+Son initialisation se fait par étapes.
+\begin{itemize}[label=\textbullet]
+	\item \textit{Stage} 1: Chargé en mémoire par le \acrshort{bios} depuis le
+    \acrshort{mbr}, il contient le code pour charger le \textit{Stage} 1.5
+	\item \textit{Stage} 1.5: Chargé en mémoire par le \textit{Stage} 1, il contient
+    les drivers nécessaires à l'accès au système de fichiers par le \textit{Stage} 2
+	\item \textit{Stage} 2: Chargé en mémoire par le \textit{Stage} 1.5, il affiche
+    le menu de \acrshort{grub}. Il permet de sélectionner et charger un \acrshort{os}
+\end{itemize}
+
+\acrshort{grub} permet de charger n'importe quel type de système d'exploitation
+grace au standard \textit{Multiboot}. Ce standard permet à tout \textit{bootloader}
+de charger tout \acrshort{os} compatible \cite{ref12}.
+
+\subsubsection{Image \acrshort{iso}}
+Nous avons déjà pu voir que le \textit{boot} du \textit{kernel} se faisait à partie
+d'une image \acrshort{iso} dans la partie 3.2.4. Pour qu'une image \acrshort{iso}
+soit \textit{bootable}, il est nécessaire que \acrshort{grub} soit installé dans
+les huit premiers KB du disque. Prenons l'arborescence suivante :
+
+\begin{minted}[tabsize=4]{shell}
+isofiles
+└── boot
+    └── grub
+\end{minted}
+
+Les fichiers \mintinline{text}{kernel.elf} (kernel sur lequel nous voulons
+\textit{booter}), \mintinline{text}{menu.lst} (fichier de configuration de \acrshort{grub})
+et \mintinline{text}{stage2_eltorito} doivent être copiés de manière à obtenir
+l'arborescence suivante :
+
+\begin{minted}[tabsize=4]{text}
+isofiles
+└── boot
+    ├── grub
+    │   ├── menu.lst
+    │   └── stage2_eltorito
+    └── kernel.elf
+\end{minted}
+
+Pour finir, il faut exécuter la commande :
+\begin{minted}[tabsize=4]{shell}
+genisoimage -R -b boot/grub/stage2_eltorito -input-charset utf8 -no-emul-boot \
+-boot-info-table -o os.iso isofiles
+\end{minted}
+Cette commande génerera une image \acrshort{iso} \textit{bootable} nommée \mintinline{text}{os.iso}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -231,6 +364,7 @@ objets générés par Rust.
 
 \subsubsection{Clavier}
 
+\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -241,11 +375,13 @@ objets générés par Rust.
 
 \subsection{Structure}
 
+\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Résultats}
 
+\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -256,13 +392,13 @@ objets générés par Rust.
 
 \subsection{Améliorations possibles}
 
+\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Conclusion}
 
 \newpage
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
