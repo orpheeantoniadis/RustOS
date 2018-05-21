@@ -5,7 +5,6 @@ use x86::*;
 use task::*;
 
 const GDT_SIZE: usize = 3;
-const TASKS_NB: usize = 16;
 
 pub const fn selector_to_gdt_index(idx: u32) -> u32 {idx >> 3}
 pub const fn gdt_index_to_selector(idx: u32) -> u32 {idx << 3}

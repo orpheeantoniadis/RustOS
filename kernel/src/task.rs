@@ -4,6 +4,26 @@ use core::mem::size_of;
 use x86::*;
 use gdt::*;
 
+const TASKS_NB: usize = 8; 
+const ADDR_SPACE: usize = 0x100000;
+const STACK_SIZE: usize = 65536;
+
+static mut tasks: [Task;TASKS_NB] = [Task::new();TASKS_NB];
+
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub struct Task {
+    tss: Tss,
+    ldt: [GdtEntry;2],
+    gdt_tss_sel: u32,
+    gdt_ldt_sel: u32,
+    addr_space: [u8;ADDR_SPACE],
+    ldt_code_idx: usize,
+    ldt_data_idx: usize,
+    limit: u32,
+    kernel_stack: [u8;STACK_SIZE]
+}
+
 #[derive(Debug, Clone, Copy)]
 #[repr(C, packed)]
 pub struct Tss {
@@ -35,52 +55,64 @@ extern "C" {
 
 // Setup GDT index 4 to store the task's TSS descriptor
 // Setup GDT index 5 to store the task's LDT descriptor
-pub fn task_setup() {
-	static mut TASK_TSS: Tss = Tss::null();
-	static mut TASK_LDT: [GdtEntry;2] = [GdtEntry::null();2];
-
+pub fn task_init(idx: usize) {
 	// Add the task's TSS and LDT to the GDT
     unsafe {
-    	GDT[4] = GdtEntry::make_tss(&TASK_TSS, DPL_KERNEL);
-    	GDT[5] = GdtEntry::make_ldt(&TASK_LDT as *const _ as u32, (size_of::<[GdtEntry;2]>() - 1) as u32, DPL_KERNEL);
-    	let _gdt_tss_sel = GDT[4].to_selector();
-    	let gdt_ldt_sel = GDT[5].to_selector();
+    	GDT[4] = GdtEntry::make_tss(&tasks[idx].tss, DPL_KERNEL);
+    	GDT[5] = GdtEntry::make_ldt(&tasks[idx].ldt as *const _ as u32, (size_of::<[GdtEntry;2]>() - 1) as u32, DPL_KERNEL);
+    	tasks[idx].gdt_tss_sel = GDT[4].to_selector();
+    	tasks[idx].gdt_ldt_sel = GDT[5].to_selector();
 
     	// Define code and data segments in the LDT; both segments are overlapping
-    	static ADDR_SPACE: [u8;32768] = [0;32768];  // 32KB of address space
-    	let ldt_code_idx = 0;  // Index of code segment descriptor in the LDT
-    	let ldt_data_idx = 1;  // Index of data segment descriptor in the LDT
-    	let limit = size_of::<[u8;32768]>() as u32;  // Limit for both code and data segments
-    	TASK_LDT[ldt_code_idx] = GdtEntry::make_code_segment(&ADDR_SPACE as *const _ as u32, limit / 4096, DPL_USER);
-    	TASK_LDT[ldt_data_idx] = GdtEntry::make_data_segment(&ADDR_SPACE as *const _ as u32, limit / 4096, DPL_USER);
+    	tasks[idx].ldt[tasks[idx].ldt_code_idx] = GdtEntry::make_code_segment(
+            &ADDR_SPACE as *const _ as u32, tasks[idx].limit / 4096, DPL_USER
+        );
+    	tasks[idx].ldt[tasks[idx].ldt_data_idx] = GdtEntry::make_data_segment(
+            &ADDR_SPACE as *const _ as u32, tasks[idx].limit / 4096, DPL_USER
+        );
 
     	// Initialize the TSS fields
     	// The LDT selector must point to the task's LDT
-    	TASK_TSS.ldt_selector = gdt_ldt_sel as u16;
+    	tasks[idx].tss.ldt_selector = tasks[idx].gdt_ldt_sel as u16;
 
     	// Setup code and stack pointers
-    	TASK_TSS.eip = 0;
-    	TASK_TSS.esp = limit;
-        TASK_TSS.ebp = limit;
+    	tasks[idx].tss.eip = 0;
+    	tasks[idx].tss.esp = tasks[idx].limit;
+        tasks[idx].tss.ebp = tasks[idx].limit;
 
     	// Code and data segment selectors are in the LDT
-    	TASK_TSS.cs = (gdt_index_to_selector(ldt_code_idx as u32) | (DPL_USER | LDT_SELECTOR) as u32) as u16;
-    	TASK_TSS.ds = (gdt_index_to_selector(ldt_data_idx as u32) | (DPL_USER | LDT_SELECTOR) as u32) as u16;
-        TASK_TSS.es = TASK_TSS.ds;
-        TASK_TSS.fs = TASK_TSS.ds;
-        TASK_TSS.gs = TASK_TSS.ds;
-        TASK_TSS.ss = TASK_TSS.ds;
-    	TASK_TSS.eflags = 512;  // Activate hardware interrupts (bit 9)
+    	tasks[idx].tss.cs = (gdt_index_to_selector(tasks[idx].ldt_code_idx as u32) | (DPL_USER | LDT_SELECTOR) as u32) as u16;
+    	tasks[idx].tss.ds = (gdt_index_to_selector(tasks[idx].ldt_data_idx as u32) | (DPL_USER | LDT_SELECTOR) as u32) as u16;
+        tasks[idx].tss.es = tasks[idx].tss.ds;
+        tasks[idx].tss.fs = tasks[idx].tss.ds;
+        tasks[idx].tss.gs = tasks[idx].tss.ds;
+        tasks[idx].tss.ss = tasks[idx].tss.ds;
+    	tasks[idx].tss.eflags = 512;  // Activate hardware interrupts (bit 9)
 
     	// Task's kernel stack
-    	static TASK_KERNEL_STACK : [u8;8192] = [0;8192];
-    	TASK_TSS.ss0 = GDT_KERNEL_DATA_SELECTOR as u16;
-    	TASK_TSS.esp0 = (&TASK_KERNEL_STACK as *const _ as usize + size_of::<[u8;8192]>()) as u32;
+    	tasks[idx].tss.ss0 = GDT_KERNEL_DATA_SELECTOR as u16;
+    	tasks[idx].tss.esp0 = (&tasks[idx].kernel_stack as *const _ as usize + size_of::<[u8;8192]>()) as u32;
+    }
+}
+
+impl Task {
+    const fn new() -> Task {
+        Task {
+            tss: Tss::new(),
+            ldt: [GdtEntry::null();2],
+            gdt_tss_sel: 0,
+            gdt_ldt_sel: 0,
+            addr_space: [0;ADDR_SPACE],
+            ldt_code_idx: 0,            // Index of code segment descriptor in the LDT
+            ldt_data_idx: 1,            // Index of data segment descriptor in the LDT
+            limit: ADDR_SPACE as u32,   // Limit for both code and data segments
+            kernel_stack: [0;STACK_SIZE]
+        }
     }
 }
 
 impl Tss {
-    const fn null() -> Tss {
+    const fn new() -> Tss {
         Tss {
             previous_task_link: 0, reserved0: 0,
         	esp0: 0,
