@@ -4,15 +4,15 @@ use core::mem::size_of;
 use x86::*;
 use task::*;
 
-const GDT_SIZE: usize = 3;
+pub const GDT_SIZE: usize = 4;
 
 pub const fn selector_to_gdt_index(idx: u32) -> u32 {idx >> 3}
 pub const fn gdt_index_to_selector(idx: u32) -> u32 {idx << 3}
 
-pub static mut GDT: Gdt = [GdtEntry::null();GDT_SIZE];
+pub static mut GDT: Gdt = [GdtEntry::null();GDT_SIZE+TASKS_NB*2];
 static mut GDT_PTR: GdtPtr = GdtPtr::null();
 
-pub type Gdt = [GdtEntry; GDT_SIZE];
+pub type Gdt = [GdtEntry; GDT_SIZE+TASKS_NB*2];
 
 extern "C" {
     fn gdt_load(gdt_ptr: *const GdtPtr);
@@ -30,6 +30,8 @@ pub fn gdt_init() {
         GDT_PTR = GdtPtr::new((size_of::<Gdt>() - 1) as u16, &GDT);
         // Load the GDT
         gdt_load(&GDT_PTR);
+        // Init tasks
+        tasks_init();
     }
 }
 
@@ -77,8 +79,8 @@ impl GdtEntry {
         GdtEntry::build_entry(base, limit, TYPE_DATA_READWRITE, S_CODE_OR_DATA, DB_SEG, 1, dpl)
     }
     
-    pub fn make_tss(tss: *const Tss, dpl: u8) -> GdtEntry {
-        GdtEntry::build_entry(tss as u32, (size_of::<Tss>() - 1) as u32, TYPE_TSS, S_SYSTEM, DB_SYS, 0, dpl)
+    pub fn make_tss(base: u32, dpl: u8) -> GdtEntry {
+        GdtEntry::build_entry(base, (size_of::<Tss>() - 1) as u32, TYPE_TSS, S_SYSTEM, DB_SYS, 0, dpl)
     }
     
     pub fn make_ldt(base: u32, limit: u32, dpl: u8) -> GdtEntry {
