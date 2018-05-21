@@ -2,6 +2,7 @@
 #![no_std]
 
 extern crate rlibc;
+extern crate common;
 
 mod x86;
 mod vga;
@@ -14,6 +15,8 @@ mod timer;
 mod keyboard;
 mod ide;
 mod fs;
+mod task;
+mod syscall;
 
 #[cfg(test)]
 mod test;
@@ -32,6 +35,7 @@ use fs::*;
 // exports
 pub use idt::exception_handler;
 pub use idt::irq_handler;
+pub use syscall::syscall_handler;
 
 fn splash_screen() {
     vga_clear();

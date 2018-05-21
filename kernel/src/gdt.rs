@@ -2,11 +2,18 @@
 
 use core::mem::size_of;
 use x86::*;
+use task::*;
 
-static mut GDT_TABLE: GdtTable = [GdtEntry::null(), GdtEntry::null(), GdtEntry::null()];
+const GDT_SIZE: usize = 3;
+const TASKS_NB: usize = 16;
+
+pub const fn selector_to_gdt_index(idx: u32) -> u32 {idx >> 3}
+pub const fn gdt_index_to_selector(idx: u32) -> u32 {idx << 3}
+
+pub static mut GDT: Gdt = [GdtEntry::null();GDT_SIZE];
 static mut GDT_PTR: GdtPtr = GdtPtr::null();
 
-pub type GdtTable = [GdtEntry; 3];
+pub type Gdt = [GdtEntry; GDT_SIZE];
 
 extern "C" {
     fn gdt_load(gdt_ptr: *const GdtPtr);
@@ -17,13 +24,11 @@ pub fn gdt_init() {
     unsafe {
         // initialize 3 segment descriptors: NULL, code segment, data segment.
         // Code and data segments must have a privilege level of 0.
-        GDT_TABLE = [
-            GdtEntry::null(), 
-            GdtEntry::make_code_segment(0, 0xfffff, 0), 
-            GdtEntry::make_data_segment(0, 0xfffff, 0)
-        ];
+        GDT[0] = GdtEntry::null();
+        GDT[1] = GdtEntry::make_code_segment(0, 0xfffff, 0);
+        GDT[2] = GdtEntry::make_data_segment(0, 0xfffff, 0);
         // setup gdt_ptr so it points to the GDT and ensure it has the right limit.
-        GDT_PTR = GdtPtr::new((size_of::<GdtTable>() - 1) as u16, &GDT_TABLE);
+        GDT_PTR = GdtPtr::new((size_of::<Gdt>() - 1) as u16, &GDT);
         // Load the GDT
         gdt_load(&GDT_PTR);
     }
@@ -43,7 +48,7 @@ pub struct GdtEntry {
 }
 
 impl GdtEntry {
-    const fn null() -> GdtEntry {
+    pub const fn null() -> GdtEntry {
         GdtEntry { 
             lim15_0:    0,
             base15_0:   0,
@@ -65,12 +70,26 @@ impl GdtEntry {
         }
     }
     
-    fn make_code_segment(base: u32, limit: u32, dpl: u8) -> GdtEntry {
+    pub fn make_code_segment(base: u32, limit: u32, dpl: u8) -> GdtEntry {
         GdtEntry::build_entry(base, limit, TYPE_CODE_EXECREAD, S_CODE_OR_DATA, DB_SEG, 1, dpl)
     }
     
-    fn make_data_segment(base: u32, limit: u32, dpl: u8) -> GdtEntry {
+    pub fn make_data_segment(base: u32, limit: u32, dpl: u8) -> GdtEntry {
         GdtEntry::build_entry(base, limit, TYPE_DATA_READWRITE, S_CODE_OR_DATA, DB_SEG, 1, dpl)
+    }
+    
+    pub fn make_tss(tss: *const Tss, dpl: u8) -> GdtEntry {
+        GdtEntry::build_entry(tss as u32, (size_of::<Tss>() - 1) as u32, TYPE_TSS, S_SYSTEM, DB_SYS, 0, dpl)
+    }
+    
+    pub fn make_ldt(base: u32, limit: u32, dpl: u8) -> GdtEntry {
+        GdtEntry::build_entry(base, limit, TYPE_LDT, S_SYSTEM, DB_SYS, 0, dpl)
+    }
+    
+    pub fn to_selector(&mut self) -> u32 {
+        unsafe {
+            gdt_index_to_selector((self as *mut _ as u32) - (&GDT as *const _ as u32))
+        }
     }
 }
 
@@ -78,7 +97,7 @@ impl GdtEntry {
 #[repr(C, packed)]
 struct GdtPtr {
     limit: u16, // Limit of the table (ie. its size)
-    base: *const GdtTable // Address of the first entry
+    base: *const Gdt // Address of the first entry
 }
 
 impl GdtPtr {
@@ -89,7 +108,7 @@ impl GdtPtr {
         }
     }
     
-    fn new(limit: u16, base: *const GdtTable) -> GdtPtr {
+    fn new(limit: u16, base: *const Gdt) -> GdtPtr {
         GdtPtr {
             limit:  limit,
             base:   base

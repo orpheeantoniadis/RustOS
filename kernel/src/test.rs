@@ -6,7 +6,7 @@ use timer::*;
 #[test]
 pub fn check_gdt_size() {
     use core::mem::size_of;
-    assert_eq!(size_of::<GdtTable>(), 24);
+    assert_eq!(size_of::<Gdt>(), 24);
 }
 
 #[test]

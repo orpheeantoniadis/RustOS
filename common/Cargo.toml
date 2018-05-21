@@ -1,11 +1,6 @@
 [package]
-name = "rust_os"
+name = "common"
 version = "0.1.0"
 authors = ["orpheeantoniadis <orphee.antoniadis@gmail.com>"]
 
-[lib]
-crate-type = ["staticlib"]
-
 [dependencies]
-rlibc = "1.0"
-common = { path = "../common" }
