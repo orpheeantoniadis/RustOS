@@ -1,0 +1,30 @@
+ARCH = i386
+CC = rustc
+FLAGS = -L . -O -g --target $(ARCH)-app --crate-type lib -C relocation-model=static -Z no-landing-pads
+
+BUILD_FOLDER = build
+SRCS = $(wildcard *.rs)
+OBJS = $(patsubst %.rs,$(BUILD_FOLDER)/%.o,$(SRCS))
+EXECS = $(patsubst %.rs,$(BUILD_FOLDER)/%,$(SRCS))
+LIBCORE = libcore.rlib
+
+all : $(EXECS)
+
+$(BUILD_FOLDER)/% : $(BUILD_FOLDER)/%.o
+	# $(CC) $^
+
+$(BUILD_FOLDER)/%.o : %.rs core.o
+	mkdir -p $(shell dirname $@)
+	$(CC) $(FLAGS) -o $@ --emit obj $<
+	
+core.o: $(BUILD_FOLDER)/$(LIBCORE)
+	ar -x $< $@
+	
+$(BUILD_FOLDER)/$(LIBCORE):
+	mkdir -p $(shell dirname $@)
+	$(CC) $(FLAGS) -o $@ --emit obj libcore/lib.rs
+
+clean :
+	rm -rf $(BUILD_FOLDER)
+
+rebuild : clean all
