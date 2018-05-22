@@ -1,6 +1,11 @@
 #![allow(dead_code)]
-#![allow(unused_variables)]
 
+use keyboard::*;
+use gdt::*;
+use task::*;
+use vga::*;
+use fs::*;
+use timer::get_ticks;
 use common::Syscall;
 
 extern "C" {
@@ -10,6 +15,22 @@ extern "C" {
 // System call handler: call the appropriate system call according to the nb argument.
 // Called by the assembly code _syscall_handler
 #[no_mangle]
-pub extern fn syscall_handler(nb: Syscall, arg1: u32, arg2: u32, arg3: u32, arg4: u32, caller_tss_selector: u32) {
-
+pub unsafe extern fn syscall_handler(nb: Syscall, _arg1: u32, _arg2: u32, _arg3: u32, _arg4: u32, caller_tss_selector: u32) -> i32 {
+    let id = selector_to_gdt_index(caller_tss_selector) as usize - GDT_SIZE;
+    let addr = (&TASKS[id].addr as *const [u8;ADDR_SPACE]).add(_arg1 as usize);
+    match nb {
+        Syscall::Puts => { SCREEN.write_str(bytes_to_str(&*addr)); return 0; }
+        Syscall::Exec => 0,
+        Syscall::Keypressed => keypressed() as i32,
+        Syscall::Getc => getc() as i32,
+        Syscall::FileStat => 0,
+        Syscall::FileOpen => 0,
+        Syscall::FileClose => 0,
+        Syscall::FileRead => 0,
+        Syscall::FileSeek => 0,
+        Syscall::FileIterator => 0,
+        Syscall::FileNext => 0,
+        Syscall::GetTicks => get_ticks() as i32,
+        Syscall::Sleep => 0
+    }
 }

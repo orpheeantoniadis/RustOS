@@ -6,8 +6,8 @@ use gdt::*;
 use fs::*;
 
 pub const TASKS_NB: usize = 8; 
-const ADDR_SPACE: usize = 0x100000;
-const STACK_SIZE: usize = 0x10000;
+pub const ADDR_SPACE: usize = 0x100000;
+pub const STACK_SIZE: usize = 0x10000;
 
 pub static mut INITIAL_TSS: Tss = Tss::new();
 pub static mut INITIAL_TSS_KERNEL_STACK: [u8;STACK_SIZE] = [0;STACK_SIZE];
@@ -16,12 +16,12 @@ pub static mut TASKS: [Task;TASKS_NB] = [Task::new();TASKS_NB];
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Task {
-    tss: Tss,
-    ldt: [GdtEntry;2],
-    tss_selector: u16,
-    addr: [u8;ADDR_SPACE],
-    kernel_stack: [u8;STACK_SIZE],
-    free: bool
+    pub tss: Tss,
+    pub ldt: [GdtEntry;2],
+    pub tss_selector: u16,
+    pub addr: [u8;ADDR_SPACE],
+    pub kernel_stack: [u8;STACK_SIZE],
+    pub free: bool
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -141,8 +141,8 @@ impl Task {
         self.tss.ebp = ADDR_SPACE as u32;
 
     	// Code and data segment selectors are in the LDT
-        let cs = (DPL_USER | LDT_SELECTOR) as u32;
-        let ds = 0x8 | (DPL_USER | LDT_SELECTOR) as u32;
+        let cs = gdt_index_to_selector(0) | (DPL_USER | LDT_SELECTOR) as u32;
+        let ds = gdt_index_to_selector(8) | (DPL_USER | LDT_SELECTOR) as u32;
     	self.tss.cs = cs as u16;
     	self.tss.ds = ds as u16;
         self.tss.es = self.tss.ds;

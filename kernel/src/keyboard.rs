@@ -92,12 +92,14 @@ pub fn getc() -> char {
 }
 
 // Non-blocking call. Return 1 if a key is pressed
-unsafe fn keypressed() -> bool {
-    let state = inb(KEYBOARD_STATE_PORT) & 1;
-    if state == 1 {
-        true
-    } else {
-        false
+pub fn keypressed() -> bool {
+    unsafe {
+        let state = inb(KEYBOARD_STATE_PORT) & 1;
+        if state == 1 {
+            true
+        } else {
+            false
+        }
     }
 }
 

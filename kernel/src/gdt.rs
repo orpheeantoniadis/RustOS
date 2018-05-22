@@ -6,6 +6,9 @@ use task::*;
 
 pub const GDT_SIZE: usize = 4;
 
+pub const fn gdt_index_to_selector(idx: u32) -> u32 {idx << 3}
+pub const fn selector_to_gdt_index(idx: u32) -> u32 {idx >> 3}
+
 pub static mut GDT: Gdt = [GdtEntry::null();GDT_SIZE+TASKS_NB*2];
 static mut GDT_PTR: GdtPtr = GdtPtr::null();
 

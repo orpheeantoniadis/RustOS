@@ -1,3 +1,4 @@
+#[repr(u8)]
 pub enum Syscall {
     Puts            = 0x0,
     Exec            = 0x1,
