@@ -6,6 +6,7 @@ use vga::*;
 use pic::*;
 use timer::timer_handler;
 use keyboard::keyboard_handler;
+use syscall::_syscall_handler;
 
 const IDT_SIZE: usize = 256;
 const EXCEPTION_MESSAGES: [&str;21] = [
@@ -38,10 +39,6 @@ static mut IDT_PTR: IdtPtr = IdtPtr::null();
 // Initialize the IDT
 pub fn idt_init() {
     unsafe {
-        for i in 0..IDT_SIZE {
-            IDT[i] = IdtEntry::new(0,0, 0, 0);
-        }
-        
         // CPU exceptions
         IDT[0] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_0 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
         IDT[1] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _exception_1 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
@@ -82,6 +79,9 @@ pub fn idt_init() {
         IDT[45] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _irq_13 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
         IDT[46] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _irq_14 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
         IDT[47] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _irq_15 as *const () as u32, TYPE_INTERRUPT_GATE, DPL_KERNEL);
+        
+        // Syscall
+        IDT[48] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16, _syscall_handler as *const () as u32, TYPE_TRAP_GATE, DPL_USER);
         
         // setup idt_ptr so it points to the IDT and ensure it has the right limit.
         IDT_PTR = IdtPtr::new((size_of::<Idt>() - 1) as u16, &IDT);

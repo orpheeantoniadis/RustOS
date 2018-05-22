@@ -87,9 +87,15 @@ impl GdtEntry {
         GdtEntry::build_entry(base, limit, TYPE_LDT, S_SYSTEM, DB_SYS, 0, dpl)
     }
     
+    pub fn to_index(&mut self) -> u32 {
+        unsafe {
+            ((self as *mut _ as u32) - (&GDT as *const _ as u32)) >> 3
+        }
+    }
+    
     pub fn to_selector(&mut self) -> u32 {
         unsafe {
-            gdt_index_to_selector((self as *mut _ as u32) - (&GDT as *const _ as u32))
+            (self as *mut _ as u32) - (&GDT as *const _ as u32)
         }
     }
 }

@@ -3,6 +3,10 @@
 
 use common::Syscall;
 
+extern "C" {
+    pub fn _syscall_handler();
+}
+
 // System call handler: call the appropriate system call according to the nb argument.
 // Called by the assembly code _syscall_handler
 #[no_mangle]
