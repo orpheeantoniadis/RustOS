@@ -128,11 +128,13 @@ pub fn file_seek(fd: i8, offset: usize) -> i8 {
     }
 }
 
-pub fn file_close(fd: i8) {
+pub fn file_close(fd: i8) -> i8 {
     if fd < 0 || unsafe { FDT[fd as usize].stat.start } == 0 {
         println!("fd {} does not exist.", fd);
+        return -1;
     } else {
         unsafe { FDT[fd as usize] = FdtEntry::null() };
+        return 0;
     }
 }
 
@@ -229,7 +231,7 @@ impl FileIterator {
         return false;
     }
     
-    pub fn next(&mut self, filename: *mut u8) {
+    pub fn next(&mut self, filename: *mut u8) -> i8 {
         unsafe {
             if self.has_next() {
                 let mut sector : [u16;SECTOR_SIZE/2] = [0;SECTOR_SIZE/2];
@@ -240,7 +242,9 @@ impl FileIterator {
                 if self.offset == 0 {
                     self.sector += 1;
                 }
+                return 0;
             }
+            return -1;
         }
     }
 }

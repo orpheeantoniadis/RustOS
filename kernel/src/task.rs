@@ -12,6 +12,7 @@ pub const STACK_SIZE: usize = 0x10000;
 pub static mut INITIAL_TSS: Tss = Tss::new();
 pub static mut INITIAL_TSS_KERNEL_STACK: [u8;STACK_SIZE] = [0;STACK_SIZE];
 pub static mut TASKS: [Task;TASKS_NB] = [Task::new();TASKS_NB];
+pub static mut ADDR_SPACE: [u8;ADDR_SPACE_SIZE*TASKS_NB] = [0;ADDR_SPACE_SIZE*TASKS_NB];
 
 #[derive(Clone, Copy)]
 #[repr(C)]
@@ -19,7 +20,7 @@ pub struct Task {
     pub tss: Tss,
     pub ldt: [GdtEntry;2],
     pub tss_selector: u16,
-    pub addr_space: [u8;ADDR_SPACE_SIZE],
+    pub addr_space: u32,
     pub kernel_stack: [u8;STACK_SIZE],
     pub is_free: bool
 }
@@ -74,7 +75,7 @@ pub fn exec(filename: &str) -> i8 {
             let fd = file_open(filename);
             if fd != -1 {
                 let stat = Stat::new(filename);
-                if file_read(fd, &mut TASKS[idx].addr_space[0], stat.size) != -1 {
+                if file_read(fd, TASKS[idx].addr_space as *mut u8, stat.size) != -1 {
                     TASKS[idx].is_free = false;
                     task_switch(TASKS[idx].tss_selector as u16);
                     TASKS[idx].tss.eip = 0;
@@ -108,7 +109,7 @@ impl Task {
             tss: Tss::new(),
             ldt: [GdtEntry::null();2],
             tss_selector: 0,
-            addr_space: [0;ADDR_SPACE_SIZE],
+            addr_space: 0,
             kernel_stack: [0;STACK_SIZE],
             is_free: true
         }
@@ -123,9 +124,9 @@ impl Task {
     	GDT[GDT_SIZE + idx * 2 + 1] = GdtEntry::make_ldt(ldt, (size_of::<[GdtEntry;2]>() - 1) as u32, DPL_KERNEL);
 
     	// Define code and data segments in the LDT; both segments are overlapping
-        let addr_space = &self.addr_space as *const _ as u32;
-    	self.ldt[0] = GdtEntry::make_code_segment(addr_space, ADDR_SPACE_SIZE as u32 / 4096, DPL_USER);
-    	self.ldt[1] = GdtEntry::make_data_segment(addr_space, ADDR_SPACE_SIZE as u32 / 4096, DPL_USER);
+        self.addr_space = &ADDR_SPACE[idx*ADDR_SPACE_SIZE] as *const _ as u32;
+    	self.ldt[0] = GdtEntry::make_code_segment(self.addr_space, ADDR_SPACE_SIZE as u32 / 4096, DPL_USER);
+    	self.ldt[1] = GdtEntry::make_data_segment(self.addr_space, ADDR_SPACE_SIZE as u32 / 4096, DPL_USER);
 
     	// Initialize the TSS fields
     	// The LDT selector must point to the task's LDT

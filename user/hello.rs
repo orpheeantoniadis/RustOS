@@ -20,10 +20,12 @@ pub enum Syscall {
     Sleep           = 0xc
 }
 
-fn puts(string: &str) {
-    unsafe {
-        syscall(Syscall::Puts, string.as_ptr() as u32, 0, 0, 0);
-    }
+macro_rules! puts {
+    ($fmt:expr) => ({
+        unsafe {
+            syscall(Syscall::Puts, concat!($fmt, "\0").as_ptr() as u32, 0, 0, 0);
+        }
+    });
 }
 
 extern "C" {
@@ -32,7 +34,7 @@ extern "C" {
 
 #[no_mangle]
 pub extern fn main() {
-    puts("Hello world!");
+    puts!("Hello world!");
 }
 
 #[lang = "panic_fmt"]

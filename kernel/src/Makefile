@@ -27,7 +27,7 @@ elf: $(BUILD_FOLDER)/$(KERNEL)
 
 iso: $(BUILD_FOLDER)/$(ISO)
 	
-fs: $(BUILD_FOLDER)/$(FS) user
+fs: $(BUILD_FOLDER)/$(FS)
 	
 user:
 	$(MAKE) -C $(USER_PATH)
@@ -49,13 +49,15 @@ $(BUILD_FOLDER)/%.o: %.s
 $(RUST):
 	$(MAKE) -C ../
 	
-$(BUILD_FOLDER)/$(FS): $(SPLASH)
+$(BUILD_FOLDER)/$(FS): $(SPLASH) user
 	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) create MicroFS 1 100000
 	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(SPLASH)
 	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(USER_PATH)/build/hello
 	
 clean:
 	rm -rf $(BUILD_FOLDER)
+	$(MAKE) -C $(USER_PATH) clean
 	
 mrproper: clean
 	cargo clean --manifest-path $(FS_FOLDER)/Cargo.toml
+	$(MAKE) -C $(USER_PATH) mrproper
