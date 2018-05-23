@@ -31,6 +31,7 @@ use idt::idt_init;
 use timer::*;
 use keyboard::*;
 use fs::*;
+use task::*;
 
 // exports
 pub use idt::exception_handler;
@@ -75,6 +76,8 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     sleep(5000);
     enable_cursor();
     vga_clear();
+    
+    exec("hello");
     
     loop {
         let key = getc();

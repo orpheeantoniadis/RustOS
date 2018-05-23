@@ -17,9 +17,9 @@ extern "C" {
 #[no_mangle]
 pub unsafe extern fn syscall_handler(nb: Syscall, _arg1: u32, _arg2: u32, _arg3: u32, _arg4: u32, caller_tss_selector: u32) -> i32 {
     let id = selector_to_gdt_index(caller_tss_selector) as usize - GDT_SIZE;
-    let addr = (&TASKS[id].addr as *const [u8;ADDR_SPACE]).add(_arg1 as usize);
+    let addr_space = &TASKS[id].addr_space as *const [u8;ADDR_SPACE_SIZE];
     match nb {
-        Syscall::Puts => { SCREEN.write_str(bytes_to_str(&*addr)); return 0; }
+        Syscall::Puts => { SCREEN.write_str(bytes_to_str(&(*addr_space)[_arg1 as usize..])); return 0; }
         Syscall::Exec => 0,
         Syscall::Keypressed => keypressed() as i32,
         Syscall::Getc => getc() as i32,

@@ -1,6 +1,7 @@
 ARCH = i386
 BUILD_FOLDER = build
 FS_FOLDER = ../../tools/MicroFS
+USER_PATH = ../../user
 
 SRCS = $(wildcard *.s)
 OBJS = $(patsubst %.s, $(BUILD_FOLDER)/%.o, $(SRCS))
@@ -26,7 +27,10 @@ elf: $(BUILD_FOLDER)/$(KERNEL)
 
 iso: $(BUILD_FOLDER)/$(ISO)
 	
-fs: $(BUILD_FOLDER)/$(FS)
+fs: $(BUILD_FOLDER)/$(FS) user
+	
+user:
+	$(MAKE) -C $(USER_PATH)
 
 $(BUILD_FOLDER)/$(ISO): elf
 	mkdir -p $(BUILD_FOLDER)/isofiles/boot/grub
@@ -48,6 +52,7 @@ $(RUST):
 $(BUILD_FOLDER)/$(FS): $(SPLASH)
 	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) create MicroFS 1 100000
 	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(SPLASH)
+	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(USER_PATH)/build/hello
 	
 clean:
 	rm -rf $(BUILD_FOLDER)

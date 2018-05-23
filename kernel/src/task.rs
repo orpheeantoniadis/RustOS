@@ -6,7 +6,7 @@ use gdt::*;
 use fs::*;
 
 pub const TASKS_NB: usize = 8; 
-pub const ADDR_SPACE: usize = 0x100000;
+pub const ADDR_SPACE_SIZE: usize = 0x100000;
 pub const STACK_SIZE: usize = 0x10000;
 
 pub static mut INITIAL_TSS: Tss = Tss::new();
@@ -19,9 +19,9 @@ pub struct Task {
     pub tss: Tss,
     pub ldt: [GdtEntry;2],
     pub tss_selector: u16,
-    pub addr: [u8;ADDR_SPACE],
+    pub addr_space: [u8;ADDR_SPACE_SIZE],
     pub kernel_stack: [u8;STACK_SIZE],
-    pub free: bool
+    pub is_free: bool
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -74,13 +74,13 @@ pub fn exec(filename: &str) -> i8 {
             let fd = file_open(filename);
             if fd != -1 {
                 let stat = Stat::new(filename);
-                if file_read(fd, &mut TASKS[idx].addr[0], stat.size) != -1 {
-                    TASKS[idx].tss.eip = 0;
-                    TASKS[idx].tss.esp = ADDR_SPACE as u32;
-                    TASKS[idx].tss.ebp = ADDR_SPACE as u32;
-                    TASKS[idx].free = false;
+                if file_read(fd, &mut TASKS[idx].addr_space[0], stat.size) != -1 {
+                    TASKS[idx].is_free = false;
                     task_switch(TASKS[idx].tss_selector as u16);
-                    TASKS[idx].free = true;
+                    TASKS[idx].tss.eip = 0;
+                    TASKS[idx].tss.esp = ADDR_SPACE_SIZE as u32;
+                    TASKS[idx].tss.ebp = ADDR_SPACE_SIZE as u32;
+                    TASKS[idx].is_free = true;
                     return 0;
                 }
             }
@@ -93,7 +93,7 @@ fn free_task() -> i8 {
     unsafe {
         let mut cnt = 0;
         for task in TASKS.iter() {
-            if task.free {
+            if task.is_free {
                 return cnt;
             }
             cnt += 1;
@@ -108,27 +108,24 @@ impl Task {
             tss: Tss::new(),
             ldt: [GdtEntry::null();2],
             tss_selector: 0,
-            addr: [0;ADDR_SPACE],
+            addr_space: [0;ADDR_SPACE_SIZE],
             kernel_stack: [0;STACK_SIZE],
-            free: true
+            is_free: true
         }
     }
     
     unsafe fn setup(&mut self) {
         let idx = ((self as *mut _ as usize) - (&TASKS as *const _ as usize)) / size_of::<Task>();
         // Add the task's TSS and LDT to the GDT
-    	GDT[GDT_SIZE + idx * 2] = GdtEntry::make_tss(&self.tss as *const _ as u32, DPL_KERNEL);
-    	GDT[GDT_SIZE + idx * 2 + 1] = GdtEntry::make_ldt(
-            &self.ldt as *const _ as u32, (size_of::<[GdtEntry;2]>() - 1) as u32, DPL_KERNEL
-        );
+        let tss = &self.tss as *const _ as u32;
+        let ldt = &self.ldt as *const _ as u32;
+    	GDT[GDT_SIZE + idx * 2] = GdtEntry::make_tss(tss, DPL_KERNEL);
+    	GDT[GDT_SIZE + idx * 2 + 1] = GdtEntry::make_ldt(ldt, (size_of::<[GdtEntry;2]>() - 1) as u32, DPL_KERNEL);
 
     	// Define code and data segments in the LDT; both segments are overlapping
-    	self.ldt[0] = GdtEntry::make_code_segment(
-            &self.addr as *const _ as u32, ADDR_SPACE as u32 / 4096, DPL_USER
-        );
-    	self.ldt[1] = GdtEntry::make_data_segment(
-            &self.addr as *const _ as u32, ADDR_SPACE as u32 / 4096, DPL_USER
-        );
+        let addr_space = &self.addr_space as *const _ as u32;
+    	self.ldt[0] = GdtEntry::make_code_segment(addr_space, ADDR_SPACE_SIZE as u32 / 4096, DPL_USER);
+    	self.ldt[1] = GdtEntry::make_data_segment(addr_space, ADDR_SPACE_SIZE as u32 / 4096, DPL_USER);
 
     	// Initialize the TSS fields
     	// The LDT selector must point to the task's LDT
@@ -137,12 +134,12 @@ impl Task {
 
     	// Setup code and stack pointers
     	self.tss.eip = 0;
-    	self.tss.esp = ADDR_SPACE as u32;
-        self.tss.ebp = ADDR_SPACE as u32;
+    	self.tss.esp = ADDR_SPACE_SIZE as u32;
+        self.tss.ebp = ADDR_SPACE_SIZE as u32;
 
     	// Code and data segment selectors are in the LDT
         let cs = gdt_index_to_selector(0) | (DPL_USER | LDT_SELECTOR) as u32;
-        let ds = gdt_index_to_selector(8) | (DPL_USER | LDT_SELECTOR) as u32;
+        let ds = gdt_index_to_selector(1) | (DPL_USER | LDT_SELECTOR) as u32;
     	self.tss.cs = cs as u16;
     	self.tss.ds = ds as u16;
         self.tss.es = self.tss.ds;
