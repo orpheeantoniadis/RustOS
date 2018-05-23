@@ -16,7 +16,7 @@ extern "C" {
 // Called by the assembly code _syscall_handler
 #[no_mangle]
 pub unsafe extern fn syscall_handler(nb: Syscall, _arg1: u32, _arg2: u32, _arg3: u32, _arg4: u32, caller_tss_selector: u32) -> i32 {
-    let idx = selector_to_gdt_index(caller_tss_selector) as usize - GDT_SIZE;
+    let idx = (selector_to_gdt_index(caller_tss_selector) as usize - GDT_SIZE) / 2;
     let addr = TASKS[idx].addr_space;
     match nb {
         Syscall::Puts => syscall_puts(addr + _arg1),

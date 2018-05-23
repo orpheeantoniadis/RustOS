@@ -1,23 +1,13 @@
-#![feature(lang_items, no_core, core_panic)]
+#![feature(lang_items, no_core)]
 #![no_core]
 
 extern crate core;
+extern crate common;
 
-#[repr(u8)]
-pub enum Syscall {
-    Puts            = 0x0,
-    Exec            = 0x1,
-    Keypressed      = 0x2,
-    Getc            = 0x3,
-    FileStat        = 0x4,
-    FileOpen        = 0x5,
-    FileClose       = 0x6,
-    FileRead        = 0x7,
-    FileSeek        = 0x8,
-    FileIterator    = 0x9,
-    FileNext        = 0xa,
-    GetTicks        = 0xb,
-    Sleep           = 0xc
+use common::Syscall;
+
+extern "C" {
+    fn syscall(nb: Syscall, arg1: u32, arg2: u32, arg3: u32, arg4: u32) -> i32;
 }
 
 macro_rules! puts {
@@ -26,10 +16,6 @@ macro_rules! puts {
             syscall(Syscall::Puts, concat!($fmt, "\0").as_ptr() as u32, 0, 0, 0);
         }
     });
-}
-
-extern "C" {
-    fn syscall(nb: Syscall, arg1: u32, arg2: u32, arg3: u32, arg4: u32) -> i32;
 }
 
 #[no_mangle]
