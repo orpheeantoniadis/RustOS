@@ -1,6 +1,7 @@
-#![feature(lang_items)]
-#![no_std]
+#![feature(lang_items, no_core, core_panic)]
+#![no_core]
 
+extern crate core;
 // extern crate rlibc;
 // extern crate common;
 // 
@@ -21,17 +22,15 @@ pub extern fn main() {
     // puts("Hello world!");
     let x = 1;
     let _y = x * 2;
-    loop{};
 }
 
-#[cfg(not(test))]
 #[lang = "panic_fmt"]
 #[no_mangle]
-pub extern fn panic_fmt() -> ! {
-    loop{};
+pub extern "C" fn panic_fmt() -> ! {
+    loop{}
 }
 
 #[no_mangle]
-pub extern "C" fn __floatundisf() {
-    loop {}
+pub extern "C" fn _ZN4core9panicking5panic17h7ce2d5c1853dff72E() {
+    loop{}
 }

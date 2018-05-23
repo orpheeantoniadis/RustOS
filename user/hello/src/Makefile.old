@@ -1,30 +1,29 @@
 ARCH = i386
-CC = rustc
-FLAGS = -L . -O -g --target $(ARCH)-app --crate-type lib -C relocation-model=static -Z no-landing-pads
-
 BUILD_FOLDER = build
-SRCS = $(wildcard *.rs)
-OBJS = $(patsubst %.rs,$(BUILD_FOLDER)/%.o,$(SRCS))
-EXECS = $(patsubst %.rs,$(BUILD_FOLDER)/%,$(SRCS))
-LIBCORE = libcore.rlib
 
-all : $(EXECS)
+LINKER = app.ld
+FLAGS = -T $(LINKER) -m32 -MMD -g -ffreestanding -nostdlib -Wall -Wextra -fno-pie
 
-$(BUILD_FOLDER)/% : $(BUILD_FOLDER)/%.o
-	# $(CC) $^
+SRCS = $(wildcard *.s)
+OBJS = $(patsubst %.s, $(BUILD_FOLDER)/%.o, $(SRCS))
+EXEC = hello
+RUST = ../target/$(ARCH)-app/debug/libhello.a
 
-$(BUILD_FOLDER)/%.o : %.rs core.o
+.PHONY : all bin clean
+
+all : bin
+
+bin : $(BUILD_FOLDER)/$(EXEC)
+
+$(BUILD_FOLDER)/$(EXEC) : $(OBJS) $(RUST)
+	gcc $(FLAGS) $^ -o $@
+
+$(BUILD_FOLDER)/%.o : %.s
 	mkdir -p $(shell dirname $@)
-	$(CC) $(FLAGS) -o $@ --emit obj $<
+	nasm -f elf32 $< -o $@
 	
-core.o: $(BUILD_FOLDER)/$(LIBCORE)
-	ar -x $< $@
+$(RUST) :
+	$(MAKE) -C ../
 	
-$(BUILD_FOLDER)/$(LIBCORE):
-	mkdir -p $(shell dirname $@)
-	$(CC) $(FLAGS) -o $@ --emit obj libcore/lib.rs
-
 clean :
 	rm -rf $(BUILD_FOLDER)
-
-rebuild : clean all

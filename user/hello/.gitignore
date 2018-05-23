@@ -1,6 +1,9 @@
 # Build
 src/build
 
+# Core library
+src/libcore
+
 # Rust
 /target
 **/*.rs.bk
