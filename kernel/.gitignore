@@ -1,7 +1,0 @@
-# Kernel
-src/build
-
-# Rust
-/target
-**/*.rs.bk
-Cargo.lock

@@ -1,2 +1,10 @@
 # Mac
 .DS_Store
+
+# Build
+build
+
+# Rust
+target
+**/*.rs.bk
+Cargo.lock

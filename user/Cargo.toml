@@ -1,0 +1,12 @@
+[package]
+name = "user"
+authors = ["orpheeantoniadis <orphee.antoniadis@gmail.com>"]
+version = "0.1.0"
+
+[[bin]]
+name = "hello"
+path = "hello.rs"
+
+[dependencies]
+core = { path = "libcore" }
+common = { path = "../common" }

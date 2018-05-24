@@ -16,6 +16,7 @@ EXECS = $(patsubst %.rs,$(BUILD_FOLDER)/%,$(RSRCS))
 COMMON_PATH = ../common
 LIBCORE = $(BUILD_FOLDER)/libcore.rlib
 LIBCOMMON = $(BUILD_FOLDER)/libcommon.rlib
+ULIBC = ulibc
 
 $(shell mkdir -p $(BUILD_FOLDER))
 
@@ -29,16 +30,22 @@ $(BUILD_FOLDER)/%.o : %.s
 
 $(BUILD_FOLDER)/%.o : %.rs $(LIBCORE) $(LIBCOMMON)
 	$(RUSTC) -L $(BUILD_FOLDER) $(RFLAGS) --out-dir $(BUILD_FOLDER) --emit obj $<
-	
+
 $(LIBCORE) : libcore/lib.rs
 	$(RUSTC) --crate-name core --crate-type=rlib $(RFLAGS) --out-dir $(BUILD_FOLDER) $<
-	
+
 $(LIBCOMMON) : $(COMMON_PATH)/src/lib.rs
 	$(RUSTC) -L $(BUILD_FOLDER) --crate-name common --crate-type=rlib $(RFLAGS) --out-dir $(BUILD_FOLDER) $<
 
+$(BUILD_FOLDER)/$(ULIBC) : $(OBJS) $(BUILD_FOLDER)/$(ULIBC).o
+	@# Exception to pattern rule
+
+$(BUILD_FOLDER)/$(ULIBC).o : $(ULIBC).rs
+	@# Exception to pattern rule
+
 clean :
 	rm -rf $(BUILD_FOLDER)/*.o $(EXECS)
-	
+
 mrproper :
 	rm -rf $(BUILD_FOLDER)
 
