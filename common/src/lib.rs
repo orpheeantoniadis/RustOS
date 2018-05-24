@@ -1,7 +1,7 @@
-#![feature(no_core)]
-#![no_core]
-
-extern crate core;
+#![no_std]
 
 mod syscall;
+mod utils;
+
 pub use syscall::*;
+pub use utils::*;

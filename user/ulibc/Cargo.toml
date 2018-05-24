@@ -1,0 +1,12 @@
+[package]
+name = "ulibc"
+version = "0.1.0"
+authors = ["orpheeantoniadis <orphee.antoniadis@gmail.com>"]
+
+[lib]
+name = "ulibc"
+path = "src/ulibc.rs"
+
+[dependencies]
+rlibc = "1.0"
+common = { path = "../../common" }

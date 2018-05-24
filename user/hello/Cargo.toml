@@ -1,0 +1,12 @@
+[package]
+name = "hello"
+version = "0.1.0"
+authors = ["orpheeantoniadis <orphee.antoniadis@gmail.com>"]
+
+[lib]
+name = "hello"
+path = "src/hello.rs"
+crate-type = ["staticlib"]
+
+[dependencies]
+ulibc = { path = "../ulibc" }
