@@ -50,9 +50,10 @@ $(RUST):
 	$(MAKE) -C ../
 	
 $(BUILD_FOLDER)/$(FS): $(SPLASH) user
-	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) create MicroFS 1 100000
+	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) create MicroFS 1 1000000
 	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(SPLASH)
 	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(USER_PATH)/build/hello
+	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(USER_PATH)/build/demo
 	
 clean:
 	rm -rf $(BUILD_FOLDER)

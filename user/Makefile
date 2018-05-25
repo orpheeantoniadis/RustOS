@@ -5,11 +5,11 @@ BUILD_FOLDER = build
 LINKER = app.ld
 FLAGS = -T $(LINKER) -m32 -MMD -g -ffreestanding -nostdlib -Wall -Wextra -fno-pie
 
-APPS = hello
+APPS = hello demo
 
 SRCS = $(wildcard *.s)
 OBJS = $(patsubst %.s, $(BUILD_FOLDER)/%.o, $(SRCS))
-ROBJS = $(foreach A,$(APPS),$A/target/$(TARGET)/debug/lib$A.a)
+ROBJS = $(foreach A,$(APPS),$A/target/$(TARGET)/release/lib$A.a)
 EXECS = $(patsubst %, $(BUILD_FOLDER)/%, $(APPS))
 
 $(shell mkdir -p $(BUILD_FOLDER))
@@ -27,4 +27,5 @@ $(BUILD_FOLDER)/%.o : %.s
 	
 clean :
 	$(MAKE) -C hello clean
+	$(MAKE) -C demo clean
 	rm -rf build

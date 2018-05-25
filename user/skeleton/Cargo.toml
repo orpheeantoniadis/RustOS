@@ -1,16 +1,12 @@
 [package]
-name = "hello"
+name = "skeleton"
 version = "0.1.0"
 authors = ["orpheeantoniadis <orphee.antoniadis@gmail.com>"]
 
 [lib]
-name = "hello"
-path = "src/hello.rs"
+name = "skeleton"
+path = "src/skeleton.rs"
 crate-type = ["staticlib"]
 
 [dependencies]
 ulibc = { path = "../ulibc" }
-
-[profile.release]
-lto = true
-panic = 'abort'

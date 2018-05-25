@@ -2,11 +2,36 @@
 #![no_std]
 
 extern crate common;
-
-pub use common::Syscall;
+pub use common::*;
+use core::fmt::{Error, Write, Arguments};
 
 extern "C" {
     pub fn syscall(nb: Syscall, arg1: u32, arg2: u32, arg3: u32, arg4: u32) -> i32;
+}
+
+pub struct Stdout {}
+
+impl Write for Stdout {
+    fn write_str(&mut self, s: &str) -> Result<(), Error> {
+        unsafe { syscall(Syscall::Puts, &String::new(s, s.len()) as *const String as u32, 0, 0, 0); }
+        Ok(())
+    }
+}
+
+pub fn write_fmt(args: Arguments) {
+    Stdout {}.write_fmt(args).ok();
+}
+
+#[macro_export]
+macro_rules! print {
+    ($($arg:tt)*) => (write_fmt(format_args!($($arg)*)));
+}
+
+#[macro_export]
+macro_rules! println {
+    () => (print!("\n\0"));
+    ($fmt:expr) => (print!(concat!($fmt, "\n")));
+    ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
 }
 
 #[macro_export]

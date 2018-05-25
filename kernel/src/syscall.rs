@@ -6,7 +6,7 @@ use timer::*;
 use keyboard::*;
 use fs::*;
 use task::*;
-use common::Syscall;
+use common::*;
 
 extern "C" {
     pub fn _syscall_handler();
@@ -35,9 +35,9 @@ pub unsafe extern fn syscall_handler(nb: Syscall, _arg1: u32, _arg2: u32, _arg3:
     }
 }
 
-unsafe fn syscall_puts(fmt_addr: u32) -> i32 {
-    let bytes = fmt_addr as * const [u8; ADDR_SPACE_SIZE];
-    SCREEN.write_str(bytes_to_str(&*bytes));
+unsafe fn syscall_puts(string_addr: u32) -> i32 {
+    let mut string = string_addr as *mut String;
+    SCREEN.write_str((*string).to_string());
     return 0;
 }
 
@@ -66,19 +66,19 @@ unsafe fn syscall_file_stat(filename_addr: u32, stat_addr: u32) -> i32 {
 
 unsafe fn syscall_file_open(filename_addr: u32) -> i32 {
     let bytes = filename_addr as * const [u8; ADDR_SPACE_SIZE];
-    file_open(bytes_to_str(&*bytes)) as i32
+    file_open(bytes_to_str(&*bytes))
 }
 
 unsafe fn syscall_file_close(fd: u32) -> i32 {
-    file_close(fd as i8) as i32
+    file_close(fd as i32)
 }
 
 unsafe fn syscall_file_read(fd: u32, buf_addr: u32, n: u32) -> i32 {
-    file_read(fd as i8, buf_addr as *mut u8, n as usize) as i32
+    file_read(fd as i32, buf_addr as *mut u8, n as usize)
 }
 
 unsafe fn syscall_file_seek(fd: u32, offset: u32) -> i32 {
-    file_seek(fd as i8, offset as usize) as i32
+    file_seek(fd as i32, offset as usize)
 }
 
 unsafe fn syscall_file_iterator(it_addr: u32) -> i32 {

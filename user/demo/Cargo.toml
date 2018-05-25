@@ -1,11 +1,11 @@
 [package]
-name = "hello"
+name = "demo"
 version = "0.1.0"
 authors = ["orpheeantoniadis <orphee.antoniadis@gmail.com>"]
 
 [lib]
-name = "hello"
-path = "src/hello.rs"
+name = "demo"
+path = "src/demo.rs"
 crate-type = ["staticlib"]
 
 [dependencies]

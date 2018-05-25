@@ -59,7 +59,7 @@ pub fn file_exists(filename: &str) -> bool {
     return false;
 }
 
-pub fn file_open(filename: &str) -> i8 {
+pub fn file_open(filename: &str) -> i32 {
     unsafe {
         if file_exists(filename) {
             let fd = free_fd();
@@ -70,7 +70,7 @@ pub fn file_open(filename: &str) -> i8 {
     }
 }
 
-pub fn file_read(fd: i8, buf: *mut u8, n: usize) -> i8 {
+pub fn file_read(fd: i32, buf: *mut u8, n: usize) -> i32 {
     unsafe {
         if fd < 0 || FDT[fd as usize].stat.start == 0 {
             return -1;
@@ -111,12 +111,12 @@ pub fn file_read(fd: i8, buf: *mut u8, n: usize) -> i8 {
             let data = mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector);
             memcpy(buf.offset(cnt as isize), &data[FDT[fd as usize].pos % SECTOR_SIZE], n % SECTOR_SIZE);
             FDT[fd as usize].pos += n % SECTOR_SIZE;
-            return n as i8;
+            return n as i32;
         }
     }
 }
 
-pub fn file_seek(fd: i8, offset: usize) -> i8 {
+pub fn file_seek(fd: i32, offset: usize) -> i32 {
     unsafe {
         if FDT[fd as usize].pos + offset > FDT[fd as usize].stat.size {
             FDT[fd as usize].pos = FDT[fd as usize].stat.size;
@@ -128,7 +128,7 @@ pub fn file_seek(fd: i8, offset: usize) -> i8 {
     }
 }
 
-pub fn file_close(fd: i8) -> i8 {
+pub fn file_close(fd: i32) -> i32 {
     if fd < 0 || unsafe { FDT[fd as usize].stat.start } == 0 {
         println!("fd {} does not exist.", fd);
         return -1;
@@ -149,7 +149,7 @@ pub fn bytes_to_str(bytes: &[u8]) -> &str {
     str::from_utf8(&bytes[0..cnt]).expect("Found invalid UTF-8")
 }
 
-fn free_fd() -> i8 {
+fn free_fd() -> i32 {
     unsafe {
         let mut cnt = 0;
         for entry in FDT.iter() {
