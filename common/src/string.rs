@@ -31,11 +31,15 @@ impl String {
         }
     }
     
-    pub fn to_string(&mut self, offset: u32) -> &str {
+    pub fn to_string(&mut self) -> &str {
         unsafe {
-            let addr = (self.bytes_ptr as *const u8).offset(offset as isize);
+            let addr = self.bytes_ptr as *const u8;
             let bytes = &*(addr as *const [u8;MAX_STR_LEN]);
             from_utf8(&bytes[0..self.len]).expect("Found invalid UTF-8")
         }
+    }
+    
+    pub fn offset(&mut self, offset: u32) {
+        self.bytes_ptr += offset;
     }
 }

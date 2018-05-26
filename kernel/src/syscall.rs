@@ -37,13 +37,15 @@ pub unsafe extern fn syscall_handler(nb: Syscall, _arg1: u32, _arg2: u32, _arg3:
 
 unsafe fn syscall_puts(base_addr: u32, string_offset: u32) -> i32 {
     let mut string = *((base_addr + string_offset) as *mut String);
-    SCREEN.write_str(string.to_string(base_addr));
+    string.offset(base_addr);
+    SCREEN.write_str(string.to_string());
     return 0;
 }
 
 unsafe fn syscall_exec(base_addr: u32, string_offset: u32) -> i32 {
     let mut string = *((base_addr + string_offset) as *mut String);
-    exec(string.to_string(base_addr)) as i32
+    string.offset(base_addr);
+    exec(string.to_string()) as i32
 }
 
 unsafe fn syscall_keypressed() -> i32 {
@@ -66,7 +68,8 @@ unsafe fn syscall_file_stat(filename_addr: u32, stat_addr: u32) -> i32 {
 
 unsafe fn syscall_file_open(base_addr: u32, string_offset: u32) -> i32 {
     let mut string = *((base_addr + string_offset) as *mut String);
-    file_open(string.to_string(base_addr))
+    string.offset(base_addr);
+    file_open(string.to_string())
 }
 
 unsafe fn syscall_file_close(fd: u32) -> i32 {
