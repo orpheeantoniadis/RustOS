@@ -32,6 +32,7 @@ use timer::*;
 use keyboard::*;
 use fs::*;
 use task::*;
+use common::bytes_to_str;
 
 // exports
 pub use idt::exception_handler;
@@ -70,7 +71,7 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     timer_init(50);
     println!("PIT initialized.");
     set_superblock();
-    println!("Available Memory = {} kB", (*multiboot_infos).mem_upper);
+    println!("Available Memory = {} kB", unsafe { (*multiboot_infos) }.mem_upper);
     // sleep(3000);
     // splash_screen();
     // sleep(5000);

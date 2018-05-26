@@ -19,12 +19,12 @@ pub unsafe extern fn syscall_handler(nb: Syscall, _arg1: u32, _arg2: u32, _arg3:
     let idx = (selector_to_gdt_index(caller_tss_selector) as usize - GDT_SIZE) / 2;
     let addr = TASKS[idx].addr_space;
     match nb {
-        Syscall::Puts => syscall_puts(addr + _arg1),
-        Syscall::Exec => syscall_exec(addr + _arg1),
+        Syscall::Puts => {syscall_puts(addr, _arg1)}
+        Syscall::Exec => syscall_exec(addr, _arg1),
         Syscall::Keypressed => syscall_keypressed(),
         Syscall::Getc => syscall_getc(),
         Syscall::FileStat => syscall_file_stat(addr + _arg1, addr + _arg2),
-        Syscall::FileOpen => syscall_file_open(addr + _arg1),
+        Syscall::FileOpen => syscall_file_open(addr, _arg1),
         Syscall::FileClose => syscall_file_close(_arg1),
         Syscall::FileRead => syscall_file_read(_arg1, addr + _arg2, _arg3),
         Syscall::FileSeek => syscall_file_seek(_arg1, _arg2),
@@ -35,15 +35,15 @@ pub unsafe extern fn syscall_handler(nb: Syscall, _arg1: u32, _arg2: u32, _arg3:
     }
 }
 
-unsafe fn syscall_puts(string_addr: u32) -> i32 {
-    let mut string = string_addr as *mut String;
-    SCREEN.write_str((*string).to_string());
+unsafe fn syscall_puts(base_addr: u32, string_offset: u32) -> i32 {
+    let mut string = *((base_addr + string_offset) as *mut String);
+    SCREEN.write_str(string.to_string(base_addr));
     return 0;
 }
 
-unsafe fn syscall_exec(filename_addr: u32) -> i32 {
-    let bytes = filename_addr as * const [u8; ADDR_SPACE_SIZE];
-    exec(bytes_to_str(&*bytes)) as i32
+unsafe fn syscall_exec(base_addr: u32, string_offset: u32) -> i32 {
+    let mut string = *((base_addr + string_offset) as *mut String);
+    exec(string.to_string(base_addr)) as i32
 }
 
 unsafe fn syscall_keypressed() -> i32 {
@@ -64,9 +64,9 @@ unsafe fn syscall_file_stat(filename_addr: u32, stat_addr: u32) -> i32 {
     return 0;
 }
 
-unsafe fn syscall_file_open(filename_addr: u32) -> i32 {
-    let bytes = filename_addr as * const [u8; ADDR_SPACE_SIZE];
-    file_open(bytes_to_str(&*bytes))
+unsafe fn syscall_file_open(base_addr: u32, string_offset: u32) -> i32 {
+    let mut string = *((base_addr + string_offset) as *mut String);
+    file_open(string.to_string(base_addr))
 }
 
 unsafe fn syscall_file_close(fd: u32) -> i32 {

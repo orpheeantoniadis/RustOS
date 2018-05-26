@@ -5,6 +5,7 @@ use core::mem;
 use rlibc::memcpy;
 use ide::*;
 use vga::*;
+use common::bytes_to_str;
 
 const FDT_SIZE : usize = 128;
 const ENTRY_SIZE : usize = 32;
@@ -136,17 +137,6 @@ pub fn file_close(fd: i32) -> i32 {
         unsafe { FDT[fd as usize] = FdtEntry::null() };
         return 0;
     }
-}
-
-pub fn bytes_to_str(bytes: &[u8]) -> &str {
-    let mut cnt = 0;
-    for &byte in bytes {
-        if byte == 0 {
-            break;
-        }
-        cnt += 1;
-    }
-    str::from_utf8(&bytes[0..cnt]).expect("Found invalid UTF-8")
 }
 
 fn free_fd() -> i32 {

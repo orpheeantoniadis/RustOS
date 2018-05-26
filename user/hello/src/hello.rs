@@ -6,5 +6,5 @@ pub use ulibc::*;
 
 #[no_mangle]
 pub extern fn main() {
-    puts!("Hello world!");
+    puts("Hello world!\n");
 }

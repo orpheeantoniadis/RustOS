@@ -1,8 +1,7 @@
 #![allow(dead_code)]
 #![macro_use]
 
-pub use core::fmt::Write;
-use core::fmt;
+use core::fmt::{Error, Write, Arguments};
 use pio::*;
 
 pub static mut SCREEN: Screen = Screen {
@@ -18,12 +17,11 @@ pub const BUFFER_WIDTH: usize =     80;
 const TAB_SIZE: usize = 4;
 
 macro_rules! print {
-    ($($arg:tt)*) => ({
-        unsafe {SCREEN.write_fmt(format_args!($($arg)*)).expect("Error while formatting !"); }
-    });
+    ($($arg:tt)*) => (vga_write_fmt(format_args!($($arg)*)));
 }
 
 macro_rules! println {
+    () => (print!("\n"));
     ($fmt:expr) => (print!(concat!($fmt, "\n")));
     ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
 }
@@ -32,6 +30,12 @@ pub fn vga_init(background: Color, foreground: Color) {
     unsafe {
         SCREEN.set_color(background, foreground);
         SCREEN.clear();
+    }
+}
+
+pub fn vga_write_fmt(args: Arguments) {
+    unsafe {
+        SCREEN.write_fmt(args).ok();
     }
 }
 
@@ -195,8 +199,8 @@ impl Screen {
         move_cursor(self.get_pos());
     }
 }
-impl fmt::Write for Screen {
-    fn write_str(&mut self, s: &str) -> fmt::Result {
+impl Write for Screen {
+    fn write_str(&mut self, s: &str) -> Result<(), Error> {
         self.write_str(s);
         Ok(())
     }

@@ -1,7 +1,7 @@
 #![no_std]
 
 mod syscall;
-mod utils;
+mod string;
 
 pub use syscall::*;
-pub use utils::*;
+pub use string::*;

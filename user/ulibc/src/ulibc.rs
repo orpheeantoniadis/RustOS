@@ -13,7 +13,7 @@ pub struct Stdout {}
 
 impl Write for Stdout {
     fn write_str(&mut self, s: &str) -> Result<(), Error> {
-        unsafe { syscall(Syscall::Puts, &String::new(s, s.len()) as *const String as u32, 0, 0, 0); }
+        unsafe { syscall(Syscall::Puts, &String::new(s) as *const String as u32,  0, 0, 0); }
         Ok(())
     }
 }
@@ -29,27 +29,21 @@ macro_rules! print {
 
 #[macro_export]
 macro_rules! println {
-    () => (print!("\n\0"));
+    () => (print!("\n"));
     ($fmt:expr) => (print!(concat!($fmt, "\n")));
     ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
 }
 
-#[macro_export]
-macro_rules! puts {
-    ($fmt:expr) => ({
-        unsafe {
-            syscall(Syscall::Puts, concat!($fmt, "\0").as_ptr() as u32, 0, 0, 0);
-        }
-    });
+pub fn puts(s: &str) {
+    unsafe {
+        syscall(Syscall::Puts, &String::new(s) as *const String as u32,  0, 0, 0);
+    }
 }
 
-#[macro_export]
-macro_rules! exec {
-    ($fmt:expr) => ({
-        unsafe {
-            syscall(Syscall::Exec, concat!($fmt, "\0").as_ptr() as u32, 0, 0, 0)
-        }
-    });
+pub fn exec(s: &str) {
+    unsafe { 
+        syscall(Syscall::Exec, &String::new(s) as *const String as u32,  0, 0, 0);
+    }
 }
 
 pub fn keypressed() -> i32 {
@@ -64,13 +58,10 @@ pub fn getc() -> i32 {
     }
 }
 
-#[macro_export]
-macro_rules! file_open {
-    ($fmt:expr) => ({
-        unsafe {
-            syscall(Syscall::FileOpen, concat!($fmt, "\0").as_ptr() as u32, 0, 0, 0)
-        }
-    });
+pub fn file_open(s: &str) -> i32 {
+    unsafe {
+        syscall(Syscall::FileOpen, &String::new(s) as *const String as u32, 0, 0, 0)
+    }
 }
 
 pub fn file_close(fd: u32) -> i32 {
