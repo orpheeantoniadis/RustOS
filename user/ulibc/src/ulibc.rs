@@ -36,13 +36,13 @@ macro_rules! println {
 
 pub fn puts(s: &str) {
     unsafe {
-        syscall(Syscall::Puts, &String::new(s) as *const String as u32,  0, 0, 0);
+        syscall(Syscall::Puts, String::new(s).as_ptr() as u32,  0, 0, 0);
     }
 }
 
 pub fn exec(s: &str) {
     unsafe { 
-        syscall(Syscall::Exec, &String::new(s) as *const String as u32,  0, 0, 0);
+        syscall(Syscall::Exec, String::new(s).as_ptr() as u32,  0, 0, 0);
     }
 }
 
@@ -58,9 +58,17 @@ pub fn getc() -> i32 {
     }
 }
 
+pub fn file_stat(s: &str) -> Stat {
+    let mut stat = Stat::null();
+    unsafe {
+        syscall(Syscall::FileStat, String::new(s).as_ptr() as u32, stat.as_ptr() as u32, 0, 0);
+    }
+    return stat;
+}
+
 pub fn file_open(s: &str) -> i32 {
     unsafe {
-        syscall(Syscall::FileOpen, &String::new(s) as *const String as u32, 0, 0, 0)
+        syscall(Syscall::FileOpen, String::new(s).as_ptr() as u32, 0, 0, 0)
     }
 }
 
@@ -80,6 +88,22 @@ pub fn file_seek(fd: u32, offset: u32) -> i32 {
     unsafe {
         syscall(Syscall::FileSeek, fd, offset, 0, 0)
     }
+}
+
+pub fn file_iterator() -> FileIterator {
+    let mut it = FileIterator::null();
+    unsafe {
+        syscall(Syscall::FileIterator, it.as_ptr() as u32, 0, 0, 0);
+    }
+    return it;
+}
+
+pub fn file_next(it: *const FileIterator) -> String {
+    let mut s = String::null();
+    unsafe {
+        syscall(Syscall::FileNext, s.as_ptr() as u32, it as u32, 0, 0);
+    }
+    return s;
 }
 
 pub fn get_ticks() -> i32 {

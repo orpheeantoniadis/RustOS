@@ -13,6 +13,7 @@ pub extern fn main() {
     // while keypressed() == 0 {}
     println!("Waiting on getc..");
     let _ket = getc();
+    println!("{:?}", file_stat("splash.txt"));
     println!("Opening file splash.txt..");
     let fd = file_open("splash.txt");
     if fd != -1 {
@@ -23,5 +24,8 @@ pub extern fn main() {
         println!("Closing file splash.txt..");
         file_close(fd as u32);
     }
+    let it = file_iterator();
+    println!("{:?}", it);
+    // println!("{:?}", file_next(&it).to_string());
     println!("Ok.")
 }

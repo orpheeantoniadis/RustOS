@@ -23,13 +23,13 @@ pub unsafe extern fn syscall_handler(nb: Syscall, _arg1: u32, _arg2: u32, _arg3:
         Syscall::Exec => syscall_exec(addr, _arg1),
         Syscall::Keypressed => syscall_keypressed(),
         Syscall::Getc => syscall_getc(),
-        Syscall::FileStat => syscall_file_stat(addr + _arg1, addr + _arg2),
+        Syscall::FileStat => syscall_file_stat(addr, _arg1, addr + _arg2),
         Syscall::FileOpen => syscall_file_open(addr, _arg1),
         Syscall::FileClose => syscall_file_close(_arg1),
         Syscall::FileRead => syscall_file_read(_arg1, addr + _arg2, _arg3),
         Syscall::FileSeek => syscall_file_seek(_arg1, _arg2),
         Syscall::FileIterator => syscall_file_iterator(addr + _arg1),
-        Syscall::FileNext => syscall_file_next(addr + _arg1, addr + _arg2),
+        Syscall::FileNext => syscall_file_next(addr, _arg1, addr + _arg2),
         Syscall::GetTicks => syscall_get_ticks(),
         Syscall::Sleep => syscall_sleep(_arg1)
     }
@@ -56,10 +56,11 @@ unsafe fn syscall_getc() -> i32 {
     getc() as i32
 }
 
-unsafe fn syscall_file_stat(filename_addr: u32, stat_addr: u32) -> i32 {
-    let bytes = filename_addr as * const [u8; ADDR_SPACE_SIZE];
+unsafe fn syscall_file_stat(base_addr: u32, string_offset: u32, stat_addr: u32) -> i32 {
+    let mut string = *((base_addr + string_offset) as *mut String);
+    string.offset(base_addr);
     let stat = stat_addr as *mut Stat;
-	*stat = Stat::new(bytes_to_str(&*bytes));
+	*stat = Stat::new(string.to_string());
     if (*stat).start == 0 {
         return -1;
     }
@@ -90,9 +91,12 @@ unsafe fn syscall_file_iterator(it_addr: u32) -> i32 {
     return 0;
 }
 
-unsafe fn syscall_file_next(filename_addr: u32, it_addr: u32) -> i32 {
+unsafe fn syscall_file_next(base_addr: u32, string_offset: u32, it_addr: u32) -> i32 {
+    let string = (base_addr + string_offset) as *mut String;
+    (*string).offset(base_addr);
     let it = it_addr as *mut FileIterator;
-    (*it).next(filename_addr as *mut u8) as i32
+    (*it).next((*string).bytes_ptr as *mut u8) as i32;
+    return 0;
 }
 
 unsafe fn syscall_get_ticks() -> i32 {

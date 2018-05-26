@@ -22,6 +22,13 @@ pub fn bytes_to_str(bytes: &[u8]) -> &str {
 }
 
 impl String {
+    pub fn null() -> String {
+        let bytes: [u8;30] = [0;30];
+        String {
+            bytes_ptr: &bytes[0] as *const u8 as u32,
+            len: 0
+        }
+    }
     pub fn new(s: &str) -> String {
         unsafe {
             String {
@@ -41,5 +48,9 @@ impl String {
     
     pub fn offset(&mut self, offset: u32) {
         self.bytes_ptr += offset;
+    }
+    
+    pub fn as_ptr(&mut self) -> *const String {
+        self as *const String
     }
 }

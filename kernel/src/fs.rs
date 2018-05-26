@@ -5,11 +5,10 @@ use core::mem;
 use rlibc::memcpy;
 use ide::*;
 use vga::*;
-use common::bytes_to_str;
+use common::*;
 
 const FDT_SIZE : usize = 128;
 const ENTRY_SIZE : usize = 32;
-pub const MAX_FILENAME_LENGTH: usize = 26;
 
 pub static mut FDT: Fdt = [FdtEntry::null();FDT_SIZE];
 pub static mut SB : Superblock = Superblock::null();
@@ -25,26 +24,20 @@ pub struct FdtEntry {
 
 #[derive(Debug, Clone, Copy)]
 #[repr(C)]
-pub struct Stat {
-    pub name: [u8;MAX_FILENAME_LENGTH],
-    pub size: usize,
-    pub entry_offset: u16,
-    pub start: usize
-}
-
-#[derive(Debug, Clone, Copy)]
-#[repr(C)]
-pub struct FileIterator {
-    pub sector: u32,
-    pub offset: usize
-}
-
-#[derive(Debug, Clone, Copy)]
-#[repr(C)]
 pub struct Superblock {
     pub block_size: usize,
     pub fat_size: usize,
     pub root_entry: usize
+}
+
+pub trait StatBuilder {
+    fn new(filename: &str) -> Self;
+}
+
+pub trait FileIteratorBuilder {
+    fn new() -> Self;
+    fn has_next(&mut self) -> bool;
+    fn next(&mut self, filename: *mut u8) -> i8;
 }
 
 pub fn file_exists(filename: &str) -> bool {
@@ -170,8 +163,8 @@ impl FdtEntry {
     }
 }
 
-impl Stat {
-    pub fn new(filename: &str) -> Stat {
+impl StatBuilder for Stat {
+    fn new(filename: &str) -> Stat {
         let mut sector : [u16;SECTOR_SIZE/2] = [0;SECTOR_SIZE/2];
         let mut raw_filename = [0;MAX_FILENAME_LENGTH];
         let mut it = FileIterator::new();
@@ -199,15 +192,15 @@ impl Stat {
     }
 }
 
-impl FileIterator {
-    pub fn new() -> FileIterator {
+impl FileIteratorBuilder for FileIterator {
+    fn new() -> FileIterator {
         FileIterator {
             sector: (unsafe { SB.root_entry * SB.block_size } / SECTOR_SIZE) as u32,
             offset: 0
         }
     }
     
-    pub fn has_next(&mut self) -> bool {    
+    fn has_next(&mut self) -> bool {    
         if self.sector < self.sector + unsafe { SB.block_size / SECTOR_SIZE } as u32 {
             let mut sector : [u16;SECTOR_SIZE/2] = [0;SECTOR_SIZE/2];
             read_sector(self.sector, &mut sector[0] as *mut u16);
@@ -221,7 +214,7 @@ impl FileIterator {
         return false;
     }
     
-    pub fn next(&mut self, filename: *mut u8) -> i8 {
+    fn next(&mut self, filename: *mut u8) -> i8 {
         unsafe {
             if self.has_next() {
                 let mut sector : [u16;SECTOR_SIZE/2] = [0;SECTOR_SIZE/2];

@@ -4,6 +4,7 @@ use core::mem::size_of;
 use x86::*;
 use gdt::*;
 use fs::*;
+use common::*;
 
 pub const TASKS_NB: usize = 8; 
 pub const ADDR_SPACE_SIZE: usize = 0x100000;
