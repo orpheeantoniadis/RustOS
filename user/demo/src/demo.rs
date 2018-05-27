@@ -9,11 +9,14 @@ pub extern fn main() {
     puts("Starting demo.\n");
     println!("Executing hello app..");
     exec("hello");
-    // println!("Waiting on keypressed..");
-    // while keypressed() == 0 {}
+    println!("Waiting on keypressed..");
+    while keypressed() == 0 {}
+    getc();
+    println!("Waiting 3 sec..");
+    sleep(3000);
     println!("Waiting on getc..");
-    let _ket = getc();
-    println!("{:?}", file_stat("splash.txt"));
+    let key = getc();
+    println!("{} pressed.", key as u8 as char);
     println!("Opening file splash.txt..");
     let fd = file_open("splash.txt");
     if fd != -1 {
@@ -24,8 +27,15 @@ pub extern fn main() {
         println!("Closing file splash.txt..");
         file_close(fd as u32);
     }
+    println!("Iterating all the files..", );
     let it = file_iterator();
-    println!("{:?}", it);
-    // println!("{:?}", file_next(&it).to_string());
+    let mut bytes = [0;MAX_FILENAME_LENGTH];
+    while file_next(&bytes[0], &it) != -1 {
+        {
+            let filename = bytes_to_str(&bytes);
+            println!("{} {}", filename, file_stat(filename).size);
+        }
+        bytes = [0;MAX_FILENAME_LENGTH];
+    }
     println!("Ok.")
 }

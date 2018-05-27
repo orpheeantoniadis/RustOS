@@ -92,11 +92,9 @@ unsafe fn syscall_file_iterator(it_addr: u32) -> i32 {
 }
 
 unsafe fn syscall_file_next(base_addr: u32, string_offset: u32, it_addr: u32) -> i32 {
-    let string = (base_addr + string_offset) as *mut String;
-    (*string).offset(base_addr);
+    let bytes = (base_addr + string_offset) as *mut u8;
     let it = it_addr as *mut FileIterator;
-    (*it).next((*string).bytes_ptr as *mut u8) as i32;
-    return 0;
+    (*it).next(bytes) as i32
 }
 
 unsafe fn syscall_get_ticks() -> i32 {

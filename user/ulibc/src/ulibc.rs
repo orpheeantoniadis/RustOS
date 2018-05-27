@@ -98,12 +98,10 @@ pub fn file_iterator() -> FileIterator {
     return it;
 }
 
-pub fn file_next(it: *const FileIterator) -> String {
-    let mut s = String::null();
+pub fn file_next(bytes: *const u8, it: *const FileIterator) -> i32 {
     unsafe {
-        syscall(Syscall::FileNext, s.as_ptr() as u32, it as u32, 0, 0);
+        syscall(Syscall::FileNext, bytes as u32, it as u32, 0, 0)
     }
-    return s;
 }
 
 pub fn get_ticks() -> i32 {

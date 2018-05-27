@@ -57,7 +57,8 @@ static mut SHIFT: bool = false;
 
 pub fn keyboard_handler() {
     unsafe {
-        if keypressed() {
+        let state = inb(KEYBOARD_STATE_PORT) & 1;
+        if state == 1 {
             let mut key = inb(KEYBOARD_DATA_PORT);
             if key >> 7 == 0 {
                 match key {
@@ -94,12 +95,7 @@ pub fn getc() -> char {
 // Non-blocking call. Return 1 if a key is pressed
 pub fn keypressed() -> bool {
     unsafe {
-        let state = inb(KEYBOARD_STATE_PORT) & 1;
-        if state == 1 {
-            true
-        } else {
-            false
-        }
+        BUFFER.count > 0
     }
 }
 

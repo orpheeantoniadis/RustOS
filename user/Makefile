@@ -12,9 +12,9 @@ OBJS = $(patsubst %.s, $(BUILD_FOLDER)/%.o, $(SRCS))
 ROBJS = $(foreach A,$(APPS),$A/target/$(TARGET)/release/lib$A.a)
 EXECS = $(patsubst %, $(BUILD_FOLDER)/%, $(APPS))
 
-$(shell mkdir -p $(BUILD_FOLDER))
+all : build
 
-all : $(EXECS)
+build : $(EXECS)
 	
 $(EXECS) : $(ROBJS)
 	
@@ -23,9 +23,13 @@ $(EXECS) : $(ROBJS)
 	gcc $(FLAGS) $^ $@ -o $(BUILD_FOLDER)/$(shell echo "$@" | cut -d "/" -f1)
 	
 $(BUILD_FOLDER)/%.o : %.s
+	$(shell mkdir -p $(BUILD_FOLDER))
 	nasm -f elf32 $< -o $@
 	
 clean :
 	$(MAKE) -C hello clean
 	$(MAKE) -C demo clean
 	rm -rf build
+	
+rebuild : clean build
+	
