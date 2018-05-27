@@ -3,6 +3,7 @@
 
 extern crate ulibc;
 use ulibc::*;
+use core::str::FromStr;
 
 const MAX_CMD_LEN: usize = MAX_FILENAME_LENGTH;
 
@@ -30,11 +31,11 @@ fn ls() {
 
 fn help() {
 	puts("\n");
-	puts("ls        : list files present in the file system\n");
-	puts("cat FILE  : dump the content of FILE to the screen\n");
-	puts("run PROG  : execute the program PROG.\n");
-	puts("sleep N   : sleep the specified number of milliseconds\n");
-	puts("exit      : exit the shell\n");
+	puts("ls           : list files present in the file system\n");
+	puts("cat <file>   : dump the content of <file> to the screen\n");
+	puts("<prog>       : execute the program <prog>.\n");
+	puts("sleep <ms>   : sleep the specified number of milliseconds\n");
+	puts("exit         : exit the shell\n");
 }
 
 fn read_cmd(cmd: *mut u8) {
@@ -63,7 +64,24 @@ pub extern fn main() {
         read_cmd(&mut cmd[0]);
         println!();
         let mut s = String::new(bytes_to_str(&cmd));
-        println!("{}", s.to_string());
+        let mut args = s.to_string().split_whitespace();
+        match args.next() {
+            Some(cmd) => {
+                let arg = match args.next() {
+                    Some(arg) => arg,
+                    _ => ""
+                };
+                match cmd {
+                    "help" => help(),
+                    "ls" => ls(),
+                    "cat" => cat(arg),
+                    "sleep" => sleep(u32::from_str(arg).unwrap()),
+                    "exit" => break,
+                    _ => exec(cmd)
+                }
+            }
+            _ => continue
+        }
         cmd = [0;MAX_CMD_LEN]
     }
 }

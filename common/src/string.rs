@@ -18,7 +18,10 @@ pub fn bytes_to_str(bytes: &[u8]) -> &str {
         }
         cnt += 1;
     }
-    from_utf8(&bytes[0..cnt]).expect("Found invalid UTF-8")
+    match from_utf8(&bytes[0..cnt]) {
+        Ok(s) => s,
+        Err(_) => ""
+    }
 }
 
 impl String {
