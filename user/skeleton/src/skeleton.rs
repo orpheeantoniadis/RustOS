@@ -2,7 +2,7 @@
 #![macro_use]
 
 extern crate ulibc;
-pub use ulibc::*;
+use ulibc::*;
 
 #[no_mangle]
 pub extern fn main() {

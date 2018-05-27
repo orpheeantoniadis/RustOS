@@ -10,3 +10,7 @@ crate-type = ["staticlib"]
 
 [dependencies]
 ulibc = { path = "../ulibc" }
+
+[profile.release]
+lto = true
+panic = 'abort'

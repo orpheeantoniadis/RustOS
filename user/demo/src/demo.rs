@@ -37,5 +37,5 @@ pub extern fn main() {
         }
         bytes = [0;MAX_FILENAME_LENGTH];
     }
-    println!("Ok.")
+    println!("Ok.");
 }

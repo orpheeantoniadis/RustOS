@@ -93,7 +93,6 @@ pub fn idt_init() {
 // Exception handler
 #[no_mangle]
 pub extern fn exception_handler(regs: *mut Regs) {
-    println!("exception");
     unsafe {
         panic!(EXCEPTION_MESSAGES[(*regs).number as usize]);
     }
