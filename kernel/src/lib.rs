@@ -72,13 +72,13 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     println!("PIT initialized.");
     set_superblock();
     println!("Available Memory = {} kB", unsafe { (*multiboot_infos) }.mem_upper);
-    sleep(3000);
-    splash_screen();
-    sleep(5000);
-    enable_cursor();
+    // sleep(3000);
+    // splash_screen();
+    // sleep(5000);
+    // enable_cursor();
     vga_clear();
     
-    exec("demo");
+    exec("shell");
     
     loop {
         let key = getc();

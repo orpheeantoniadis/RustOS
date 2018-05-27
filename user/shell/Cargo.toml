@@ -1,0 +1,16 @@
+[package]
+name = "shell"
+version = "0.1.0"
+authors = ["orpheeantoniadis <orphee.antoniadis@gmail.com>"]
+
+[lib]
+name = "shell"
+path = "src/shell.rs"
+crate-type = ["staticlib"]
+
+[dependencies]
+ulibc = { path = "../ulibc" }
+
+[profile.release]
+lto = true
+panic = 'abort'

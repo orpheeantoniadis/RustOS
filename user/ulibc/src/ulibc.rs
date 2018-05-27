@@ -3,6 +3,10 @@
 
 extern crate common;
 pub use common::*;
+
+extern crate rlibc;
+pub use rlibc::*;
+
 use core::fmt::{Error, Write, Arguments};
 
 extern "C" {
