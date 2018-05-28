@@ -11,8 +11,10 @@ fn cat(filename: &str) {
     let fd = file_open(filename);
     if fd != -1 {
         let mut data = [0;MAX_STR_LEN];
-        file_read(fd as u32, &mut data[0], MAX_STR_LEN as u32);
-        println!("{}", bytes_to_str(&data));
+        while file_read(fd as u32, &mut data[0], MAX_STR_LEN as u32) != 0 {
+            println!("{}", bytes_to_str(&data));
+            data = [0;MAX_STR_LEN];
+        }
         file_close(fd as u32);
     } else {
         println!("cat: {}: No such file or directory", filename);

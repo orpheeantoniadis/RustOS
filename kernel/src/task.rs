@@ -78,6 +78,11 @@ pub fn exec(filename: &str) -> i8 {
             if fd != -1 {
                 let stat = Stat::new(filename);
                 if file_read(fd, TASKS[idx].addr_space as *mut u8, stat.size) != -1 {
+                    let addr_space = *(TASKS[idx].addr_space as *const [u8;MAX_STR_LEN]);
+                    if bytes_to_str(&addr_space) != "\0" {
+                        println!("exec: {}: not an executable", filename);
+                        return -1;
+                    }
                     TASKS[idx].is_free = false;
                     task_switch(TASKS[idx].tss_selector as u16);
                     TASKS[idx].tss.eip = 0;

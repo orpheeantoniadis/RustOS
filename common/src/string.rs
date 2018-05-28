@@ -1,7 +1,7 @@
 use core::slice::from_raw_parts;
 use core::str::from_utf8;
 
-pub const MAX_STR_LEN : usize = 500;
+pub const MAX_STR_LEN : usize = 256;
 
 #[derive(Debug, Clone, Copy)]
 #[repr(C)]
@@ -15,13 +15,12 @@ pub fn bytes_to_str(bytes: &[u8]) -> &str {
     for &byte in bytes {
         if byte == 0 {
             break;
+        } else if byte > 0x7f {
+            return "\0";
         }
         cnt += 1;
     }
-    match from_utf8(&bytes[0..cnt]) {
-        Ok(s) => s,
-        Err(_) => ""
-    }
+    from_utf8(&bytes[0..cnt]).expect("Found invalid UTF-8")
 }
 
 impl String {
