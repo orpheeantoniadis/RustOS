@@ -44,9 +44,9 @@ pub fn puts(s: &str) {
     }
 }
 
-pub fn exec(s: &str) {
+pub fn exec(s: &str) -> i32 {
     unsafe { 
-        syscall(Syscall::Exec, String::new(s).as_ptr() as u32,  0, 0, 0);
+        syscall(Syscall::Exec, String::new(s).as_ptr() as u32,  0, 0, 0)
     }
 }
 

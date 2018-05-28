@@ -29,7 +29,6 @@ use gdt::gdt_init;
 use pic::pic_init;
 use idt::idt_init;
 use timer::*;
-use keyboard::*;
 use fs::*;
 use task::*;
 use common::bytes_to_str;
@@ -40,6 +39,7 @@ pub use idt::irq_handler;
 pub use syscall::syscall_handler;
 
 fn splash_screen() {
+    sleep(3000);
     vga_clear();
     vga_set_cursor(22,10);
     let fd = file_open("splash.txt");
@@ -54,6 +54,9 @@ fn splash_screen() {
     }
     file_close(fd);
     disable_cursor();
+    sleep(5000);
+    enable_cursor();
+    vga_clear();
 }
 
 #[no_mangle]
@@ -72,22 +75,10 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     println!("PIT initialized.");
     set_superblock();
     println!("Available Memory = {} kB", unsafe { (*multiboot_infos) }.mem_upper);
-    sleep(3000);
     splash_screen();
-    sleep(5000);
-    enable_cursor();
-    vga_clear();
-    
     exec("shell");
-    
-    loop {
-        let key = getc();
-        if key == 'Q' {
-            println!("\nKernel stopped.");
-            break;
-        }
-        print!("{}", key);
-    }
+    disable_cursor();
+    print!("\nKernel stopped.\nYou can turn off you computer.");
 }
 
 #[cfg(not(test))]

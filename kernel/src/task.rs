@@ -5,6 +5,7 @@ use x86::*;
 use gdt::*;
 use fs::*;
 use common::*;
+use vga::*;
 
 pub const TASKS_NB: usize = 8; 
 pub const ADDR_SPACE_SIZE: usize = 0x100000;
@@ -85,8 +86,12 @@ pub fn exec(filename: &str) -> i8 {
                     TASKS[idx].is_free = true;
                     return 0;
                 }
+            } else {
+                println!("exec: {}: not found", filename);
             }
         }
+    } else {
+        println!("exec: no free task slot found");
     }
     return -1;
 }

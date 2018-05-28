@@ -14,7 +14,18 @@ fn cat(filename: &str) {
         file_read(fd as u32, &mut data[0], MAX_STR_LEN as u32);
         println!("{}", bytes_to_str(&data));
         file_close(fd as u32);
+    } else {
+        println!("cat: {}: No such file or directory", filename);
     }
+}
+
+fn help() {
+	puts("\n");
+	puts("ls           : list files present in the file system\n");
+	puts("cat <file>   : dump the content of <file> to the screen\n");
+	puts("<prog>       : execute the program <prog>.\n");
+	puts("sleep <ms>   : sleep the specified number of milliseconds\n");
+	puts("exit         : exit the shell\n");
 }
 
 fn ls() {
@@ -29,15 +40,6 @@ fn ls() {
     }
 }
 
-fn help() {
-	puts("\n");
-	puts("ls           : list files present in the file system\n");
-	puts("cat <file>   : dump the content of <file> to the screen\n");
-	puts("<prog>       : execute the program <prog>.\n");
-	puts("sleep <ms>   : sleep the specified number of milliseconds\n");
-	puts("exit         : exit the shell\n");
-}
-
 fn read_cmd(cmd: *mut u8) {
     let mut key = 0;
     let mut cnt = 0;
@@ -45,6 +47,7 @@ fn read_cmd(cmd: *mut u8) {
         if key == 0x8 {
             if cnt > 0 {
                 cnt -= 1;
+                unsafe { *cmd.offset(cnt as isize) = 0; }
                 print!("{}", key as char);
             }
         } else if key != b'\t' && key != b'\0' {
@@ -58,8 +61,8 @@ fn read_cmd(cmd: *mut u8) {
 
 #[no_mangle]
 pub extern fn main() {
-    let mut cmd : [u8;MAX_CMD_LEN] = [0;MAX_CMD_LEN];
     loop {
+        let mut cmd : [u8;MAX_CMD_LEN] = [0;MAX_CMD_LEN];
         print!("$ ");
         read_cmd(&mut cmd[0]);
         println!();
@@ -72,16 +75,26 @@ pub extern fn main() {
                     _ => ""
                 };
                 match cmd {
+                    "cat" => cat(arg),
+                    "exit" => break,
                     "help" => help(),
                     "ls" => ls(),
-                    "cat" => cat(arg),
-                    "sleep" => sleep(u32::from_str(arg).unwrap()),
-                    "exit" => break,
-                    _ => exec(cmd)
+                    "sleep" => {
+                        let ms = match u32::from_str(arg) {
+                            Ok(num) => num,
+                            Err(_) => {
+                                println!("sleep: invalid time interval '{}'", arg);
+                                continue;
+                            }
+                        };
+                        println!("Sleeping for {}ms..", ms);
+                        sleep(ms);
+                    }
+                    _ => { exec(cmd); }
                 }
             }
             _ => continue
         }
-        cmd = [0;MAX_CMD_LEN]
     }
+    println!("exit");
 }
