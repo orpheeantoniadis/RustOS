@@ -1,24 +1,56 @@
+//! Module for the memory management of RustOS using a Global Descriptor Table
+
 #![allow(dead_code)]
 
 use core::mem::size_of;
 use x86::*;
 use task::*;
 
+/// The GDT size (not including the tss and ldt entries)
 pub const GDT_SIZE: usize = 4;
 
+/// Converts a descriptor index in the GDT into a selector
 pub const fn gdt_index_to_selector(idx: u32) -> u32 {idx << 3}
+/// Converts a descriptor selector in the GDT into an index
 pub const fn selector_to_gdt_index(idx: u32) -> u32 {idx >> 3}
 
+/// The Global Descriptor Table of RustOS
 pub static mut GDT: Gdt = [GdtEntry::null();GDT_SIZE+TASKS_NB*2];
 static mut GDT_PTR: GdtPtr = GdtPtr::null();
 
+/// Defines a Global Descriptor Table
 pub type Gdt = [GdtEntry; GDT_SIZE+TASKS_NB*2];
+
+/// Structure of a GDT descriptor. There are 2 types of descriptors: segments and TSS.
+/// Section 3.4.5 of Intel 64 & IA32 architectures software developer's manual describes
+/// segment descriptors while section 6.2.2 describes TSS descriptors.
+#[derive(Debug, Clone, Copy)]
+#[repr(C, packed)]
+pub struct GdtEntry {
+    lim15_0: u16,
+    base15_0: u16,
+    base23_16: u8,
+
+    flags7_0: u8,
+    flags15_8: u8,
+
+    base31_24: u8
+}
+
+// Structure describing a pointer to the GDT descriptor table.
+// This format is required by the lgdt instruction.
+#[derive(Debug, Clone, Copy)]
+#[repr(C, packed)]
+struct GdtPtr {
+    limit: u16, // Limit of the table (ie. its size)
+    base: *const Gdt // Address of the first entry
+}
 
 extern "C" {
     fn gdt_load(gdt_ptr: *const GdtPtr);
 }
 
-// Initialize the GDT
+/// Initialize the Global Descriptor Table
 pub fn gdt_init() {
     unsafe {
         // initialize 3 segment descriptors: NULL, code segment, data segment.
@@ -35,20 +67,8 @@ pub fn gdt_init() {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-#[repr(C, packed)]
-pub struct GdtEntry {
-    lim15_0: u16,
-    base15_0: u16,
-    base23_16: u8,
-
-    flags7_0: u8,
-    flags15_8: u8,
-
-    base31_24: u8
-}
-
 impl GdtEntry {
+    /// Create a null segment
     pub const fn null() -> GdtEntry {
         GdtEntry { 
             lim15_0:    0,
@@ -71,40 +91,39 @@ impl GdtEntry {
         }
     }
     
+    /// Create a code segment specified by the base, limit and privilege level passed in arguments
     pub fn make_code_segment(base: u32, limit: u32, dpl: u8) -> GdtEntry {
         GdtEntry::build_entry(base, limit, TYPE_CODE_EXECREAD, S_CODE_OR_DATA, DB_SEG, 1, dpl)
     }
     
+    /// Create a data segment specified by the base, limit and privilege level passed in arguments
     pub fn make_data_segment(base: u32, limit: u32, dpl: u8) -> GdtEntry {
         GdtEntry::build_entry(base, limit, TYPE_DATA_READWRITE, S_CODE_OR_DATA, DB_SEG, 1, dpl)
     }
     
+    /// Create a TSS segment
     pub fn make_tss(base: u32, dpl: u8) -> GdtEntry {
         GdtEntry::build_entry(base, (size_of::<Tss>() - 1) as u32, TYPE_TSS, S_SYSTEM, DB_SYS, 0, dpl)
     }
     
+    /// Create an LDT segment
     pub fn make_ldt(base: u32, limit: u32, dpl: u8) -> GdtEntry {
         GdtEntry::build_entry(base, limit, TYPE_LDT, S_SYSTEM, DB_SYS, 0, dpl)
     }
     
+    /// Converts a GDT entry to its index in the GDT
     pub fn to_index(&mut self) -> u32 {
         unsafe {
             ((self as *mut _ as u32) - (&GDT as *const _ as u32)) >> 3
         }
     }
     
+    /// Converts a GDT entry to its selector in the GDT
     pub fn to_selector(&mut self) -> u32 {
         unsafe {
             (self as *mut _ as u32) - (&GDT as *const _ as u32)
         }
     }
-}
-
-#[derive(Debug, Clone, Copy)]
-#[repr(C, packed)]
-struct GdtPtr {
-    limit: u16, // Limit of the table (ie. its size)
-    base: *const Gdt // Address of the first entry
 }
 
 impl GdtPtr {

@@ -1,3 +1,4 @@
+//! Module for the intrruption management of RustOS using an Interrupt Descriptor Table
 #![allow(dead_code)]
 
 use core::mem::size_of;
@@ -36,7 +37,43 @@ const EXCEPTION_MESSAGES: [&str;21] = [
 static mut IDT: Idt = [IdtEntry::null();IDT_SIZE];
 static mut IDT_PTR: IdtPtr = IdtPtr::null();
 
-// Initialize the IDT
+type Idt = [IdtEntry; IDT_SIZE];
+
+// Structure of an IDT descriptor. There are 3 types of descriptors:
+// a task-gate, an interrupt-gate, and a trap-gate.
+// See 5.11 of Intel 64 & IA32 architectures software developer's manual for more details.
+// For task gates, offset must be 0.
+#[derive(Debug, Clone, Copy)]
+#[repr(C, packed)]
+struct IdtEntry {
+    offset15_0: u16,   // only used by trap and interrupt gates
+	selector: u16,     // segment selector for trap and interrupt gates; TSS segment selector for task gates
+	reserved: u8,
+	flags: u8,
+	offset31_16: u16   // only used by trap and interrupt gates
+}
+
+// Structure describing a pointer to the IDT gate table.
+// This format is required by the lgdt instruction.
+#[derive(Debug, Clone, Copy)]
+#[repr(C, packed)]
+struct IdtPtr {
+    limit: u16, // Limit of the table (ie. its size)
+	base: *const Idt   // Address of the first entry
+}
+
+/// CPU context used when saving/restoring context from an interrupt
+#[derive(Debug, Clone, Copy)]
+#[repr(C, packed)]
+pub struct Regs {
+    gs: u32, fs: u32, es: u32, ds: u32,
+	ebp: u32, edi: u32, esi: u32,
+	edx: u32, ecx: u32, ebx: u32, eax: u32,
+	number: u32, error_code: u32,
+	eip: u32, cs: u32, eflags: u32, esp: u32, ss: u32
+}
+
+/// Initialize the Interrupt Descriptor Table
 pub fn idt_init() {
     unsafe {
         // CPU exceptions
@@ -90,7 +127,8 @@ pub fn idt_init() {
     }
 }
 
-// Exception handler
+/// Handler called by the low-level subroutine exception_wrapper contain in idt_asm.s
+/// when an exception occurs
 #[no_mangle]
 pub extern fn exception_handler(regs: *mut Regs) {
     unsafe {
@@ -98,7 +136,8 @@ pub extern fn exception_handler(regs: *mut Regs) {
     }
 }
 
-// Irq handler
+/// Handler called by the low-level subroutine irq_wrapper contain in idt_asm.s
+/// when an interruption occurs
 #[no_mangle]
 pub extern fn irq_handler(regs: *mut Regs) {
     let irq = unsafe { (*regs).number };
@@ -111,21 +150,6 @@ pub extern fn irq_handler(regs: *mut Regs) {
     pic_eoi(irq);
 }
 
-type Idt = [IdtEntry; IDT_SIZE];
-
-// Structure of an IDT descriptor. There are 3 types of descriptors:
-// a task-gate, an interrupt-gate, and a trap-gate.
-// See 5.11 of Intel 64 & IA32 architectures software developer's manual for more details.
-// For task gates, offset must be 0.
-#[derive(Debug, Clone, Copy)]
-#[repr(C, packed)]
-struct IdtEntry {
-    offset15_0: u16,   // only used by trap and interrupt gates
-	selector: u16,     // segment selector for trap and interrupt gates; TSS segment selector for task gates
-	reserved: u8,
-	flags: u8,
-	offset31_16: u16   // only used by trap and interrupt gates
-}
 impl IdtEntry {
     const fn null() -> IdtEntry {
         IdtEntry {
@@ -153,14 +177,6 @@ impl IdtEntry {
     }
 }
 
-// Structure describing a pointer to the IDT gate table.
-// This format is required by the lgdt instruction.
-#[derive(Debug, Clone, Copy)]
-#[repr(C, packed)]
-struct IdtPtr {
-    limit: u16, // Limit of the table (ie. its size)
-	base: *const Idt   // Address of the first entry
-}
 impl IdtPtr {
     const fn null() -> IdtPtr {
         IdtPtr {
@@ -175,17 +191,6 @@ impl IdtPtr {
             base:   base
         }
     }
-}
-
-// CPU context used when saving/restoring context from an interrupt
-#[derive(Debug, Clone, Copy)]
-#[repr(C, packed)]
-pub struct Regs {
-    gs: u32, fs: u32, es: u32, ds: u32,
-	ebp: u32, edi: u32, esi: u32,
-	edx: u32, ecx: u32, ebx: u32, eax: u32,
-	number: u32, error_code: u32,
-	eip: u32, cs: u32, eflags: u32, esp: u32, ss: u32
 }
 
 extern "C" {

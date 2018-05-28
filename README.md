@@ -1,5 +1,7 @@
 # RustOS
-RustOS is a kernel written in Rust
+RustOS is a kernel written in Rust for IA-32 architecture
+
+![RustOS running on QEMU](doc/rust_os.gif)
 
 ## User manual
 
@@ -18,6 +20,9 @@ RustOS is a kernel written in Rust
     
 ### Usage
     make run
+    
+### Documentation
+    make doc
     
 ## Resources
 * [Rust book first edition](https://doc.rust-lang.org/book/first-edition)

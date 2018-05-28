@@ -1,22 +1,26 @@
+//! # RustOS
+//!
+//! `rust_os` is a kernel running on IA-32 architecture
+
 #![feature(lang_items, asm, const_fn)]
 #![no_std]
 
 extern crate rlibc;
 extern crate common;
 
-mod x86;
-mod vga;
-mod pio;
-mod multiboot;
-mod gdt;
-mod pic;
-mod idt;
-mod timer;
-mod keyboard;
-mod ide;
-mod fs;
-mod task;
-mod syscall;
+pub mod x86;
+pub mod vga;
+pub mod pio;
+pub mod multiboot;
+pub mod gdt;
+pub mod pic;
+pub mod idt;
+pub mod timer;
+pub mod keyboard;
+pub mod ide;
+pub mod fs;
+pub mod task;
+pub mod syscall;
 
 #[cfg(test)]
 mod test;
@@ -38,6 +42,7 @@ pub use idt::exception_handler;
 pub use idt::irq_handler;
 pub use syscall::syscall_handler;
 
+/// Displays the splash screen of the kernel
 fn splash_screen() {
     sleep(3000);
     vga_clear();
@@ -59,6 +64,8 @@ fn splash_screen() {
     vga_clear();
 }
 
+/// Entrypoint to the rust code. This function is called by the bootstrap code
+/// contain in bootstrap_asm.s
 #[no_mangle]
 pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     vga_init(Color::Black, Color::White);

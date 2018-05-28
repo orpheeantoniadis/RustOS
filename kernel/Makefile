@@ -17,6 +17,9 @@ run:
 
 test:
 	cargo test
+	
+doc :
+	$(CC) doc --open
 
 clean:
 	$(MAKE) -C $(SOURCE_PATH) clean
