@@ -4,56 +4,16 @@
 use core::fmt::{Error, Write, Arguments};
 use pio::*;
 
+pub const BUFFER_HEIGHT: usize =    25;
+pub const BUFFER_WIDTH: usize =     80;
+const TAB_SIZE: usize = 4;
+
 pub static mut SCREEN: Screen = Screen {
     buffer: 0xb8000 as *mut _,
     attribute: ColorAttribute::new(Color::Black, Color::White),
     cursor_x: 0,
     cursor_y: 0
 };
-
-pub const BUFFER_HEIGHT: usize =    25;
-pub const BUFFER_WIDTH: usize =     80;
-
-const TAB_SIZE: usize = 4;
-
-macro_rules! print {
-    ($($arg:tt)*) => (vga_write_fmt(format_args!($($arg)*)));
-}
-
-macro_rules! println {
-    () => (print!("\n"));
-    ($fmt:expr) => (print!(concat!($fmt, "\n")));
-    ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
-}
-
-pub fn vga_init(background: Color, foreground: Color) {
-    unsafe {
-        SCREEN.set_color(background, foreground);
-        SCREEN.clear();
-    }
-}
-
-pub fn vga_write_fmt(args: Arguments) {
-    unsafe {
-        SCREEN.write_fmt(args).ok();
-    }
-}
-
-pub fn vga_clear() {
-    unsafe { SCREEN.clear(); }
-}
-
-pub fn vga_set_cursor(x: usize, y: usize) {
-    unsafe { SCREEN.set_cursor(x, y); }
-}
-
-pub fn vga_get_cursor() -> (usize, usize) {
-    unsafe {
-        return (SCREEN.cursor_x, SCREEN.cursor_y);
-    }
-}
-
-type FrameBuffer = [[Character; BUFFER_WIDTH]; BUFFER_HEIGHT];
 
 #[repr(u8)]
 pub enum Color {
@@ -89,14 +49,8 @@ pub struct Character {
     ascii: u8,
     attribute: ColorAttribute,
 }
-impl Character {
-    pub fn new(ascii: u8, attribute: ColorAttribute) -> Character {
-        Character {
-            ascii: ascii,
-            attribute: attribute
-        }
-    }
-}
+
+type FrameBuffer = [[Character; BUFFER_WIDTH]; BUFFER_HEIGHT];
 
 pub struct Screen {
     buffer: *mut FrameBuffer,
@@ -104,8 +58,74 @@ pub struct Screen {
     cursor_x: usize,
     cursor_y: usize
 }
+
+macro_rules! print {
+    ($($arg:tt)*) => (vga_write_fmt(format_args!($($arg)*)));
+}
+
+macro_rules! println {
+    () => (print!("\n"));
+    ($fmt:expr) => (print!(concat!($fmt, "\n")));
+    ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
+}
+
+pub fn vga_init(background: Color, foreground: Color) {
+    unsafe {
+        SCREEN.set_color(background, foreground);
+        SCREEN.clear();
+    }
+}
+
+pub fn vga_write_byte(byte: u8) {
+    unsafe {
+        SCREEN.write_byte(byte);
+    }
+}
+
+pub fn vga_write_str(s: &str) {
+    unsafe {
+        SCREEN.write_str(s);
+    }
+}
+
+pub fn vga_write_fmt(args: Arguments) {
+    unsafe {
+        SCREEN.write_fmt(args).ok();
+    }
+}
+
+pub fn vga_clear() {
+    unsafe { SCREEN.clear(); }
+}
+
+pub fn vga_set_cursor(x: usize, y: usize) {
+    unsafe { SCREEN.set_cursor(x, y); }
+}
+
+pub fn vga_get_cursor() -> (usize, usize) {
+    unsafe {
+        return (SCREEN.cursor_x, SCREEN.cursor_y);
+    }
+}
+
+impl Character {
+    fn new(ascii: u8, attribute: ColorAttribute) -> Character {
+        Character {
+            ascii: ascii,
+            attribute: attribute
+        }
+    }
+}
+
+impl Write for Screen {
+    fn write_str(&mut self, s: &str) -> Result<(), Error> {
+        self.write_str(s);
+        Ok(())
+    }
+}
+
 impl Screen {    
-    pub fn clear(&mut self) {
+    fn clear(&mut self) {
         unsafe {
             for i in 0..BUFFER_HEIGHT {
                 for j in 0..BUFFER_WIDTH {
@@ -116,20 +136,19 @@ impl Screen {
         }
     }
     
-    pub fn write_byte(&mut self, byte: u8) {
-        if self.cursor_y == BUFFER_HEIGHT-1 {
-            if self.cursor_x >= BUFFER_WIDTH {
+    fn write_byte(&mut self, byte: u8) {
+        if byte == b'\n' || self.cursor_x >= BUFFER_WIDTH {
+            if self.cursor_y == BUFFER_HEIGHT-1 {
                 self.shift_up();
                 self.cursor_x = 0;
-            }
-        } else {
-            if self.cursor_x >= BUFFER_WIDTH {
+            } else {
                 self.cursor_x = 0;
                 self.cursor_y += 1;
             }
         }
         match byte {
             b'\0' => return,
+            b'\n' => return,
             b'\t' => {
                 for _i in 0..TAB_SIZE {
                     self.write_byte(b' ');
@@ -149,26 +168,16 @@ impl Screen {
                 self.cursor_x += 1;
             }
         }
-    }
-    
-    pub fn write_str(&mut self, buf: &str) {
-        for byte in buf.bytes() {
-            if byte == b'\n' {
-                if self.cursor_y == BUFFER_HEIGHT-1 {
-                    self.shift_up();
-                    self.cursor_x = 0;
-                } else {
-                    self.cursor_x = 0;
-                    self.cursor_y += 1;
-                }
-            } else {
-                self.write_byte(byte);
-            }
-        }
         move_cursor(self.get_pos());
     }
     
-    pub fn shift_up(&mut self) {
+    fn write_str(&mut self, buf: &str) {
+        for byte in buf.bytes() {
+            self.write_byte(byte);
+        }
+    }
+    
+    fn shift_up(&mut self) {
         unsafe {
             for i in 0..BUFFER_HEIGHT-1 {
                 for j in 0..BUFFER_WIDTH {
@@ -181,27 +190,21 @@ impl Screen {
         }
     }
     
-    pub fn get_pos(&mut self) -> u16 {
+    fn get_pos(&mut self) -> u16 {
         (self.cursor_y*BUFFER_WIDTH+self.cursor_x) as u16
     }
     
-    pub fn get_color(&mut self) -> ColorAttribute {
+    fn get_color(&mut self) -> ColorAttribute {
         return self.attribute;
     }
     
-    pub fn set_color(&mut self, background: Color, foreground: Color) {
+    fn set_color(&mut self, background: Color, foreground: Color) {
         self.attribute = ColorAttribute::new(background, foreground);
     }
     
-    pub fn set_cursor(&mut self, x: usize, y: usize) {
+    fn set_cursor(&mut self, x: usize, y: usize) {
         self.cursor_x = x;
         self.cursor_y = y;
         move_cursor(self.get_pos());
-    }
-}
-impl Write for Screen {
-    fn write_str(&mut self, s: &str) -> Result<(), Error> {
-        self.write_str(s);
-        Ok(())
     }
 }

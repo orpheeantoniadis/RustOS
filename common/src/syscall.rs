@@ -1,16 +1,17 @@
 #[repr(u8)]
 pub enum Syscall {
     Puts            = 0x0,
-    Exec            = 0x1,
-    Keypressed      = 0x2,
-    Getc            = 0x3,
-    FileStat        = 0x4,
-    FileOpen        = 0x5,
-    FileClose       = 0x6,
-    FileRead        = 0x7,
-    FileSeek        = 0x8,
-    FileIterator    = 0x9,
-    FileNext        = 0xa,
-    GetTicks        = 0xb,
-    Sleep           = 0xc
+    Putc            = 0x1,
+    Exec            = 0x2,
+    Keypressed      = 0x3,
+    Getc            = 0x4,
+    FileStat        = 0x5,
+    FileOpen        = 0x6,
+    FileClose       = 0x7,
+    FileRead        = 0x8,
+    FileSeek        = 0x9,
+    FileIterator    = 0xa,
+    FileNext        = 0xb,
+    GetTicks        = 0xc,
+    Sleep           = 0xd
 }

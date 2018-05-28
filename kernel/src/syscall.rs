@@ -19,7 +19,8 @@ pub unsafe extern fn syscall_handler(nb: Syscall, _arg1: u32, _arg2: u32, _arg3:
     let idx = (selector_to_gdt_index(caller_tss_selector) as usize - GDT_SIZE) / 2;
     let addr = TASKS[idx].addr_space;
     match nb {
-        Syscall::Puts => {syscall_puts(addr, _arg1)}
+        Syscall::Puts => syscall_puts(addr, _arg1),
+        Syscall::Putc => syscall_putc(_arg1),
         Syscall::Exec => syscall_exec(addr, _arg1),
         Syscall::Keypressed => syscall_keypressed(),
         Syscall::Getc => syscall_getc(),
@@ -38,7 +39,12 @@ pub unsafe extern fn syscall_handler(nb: Syscall, _arg1: u32, _arg2: u32, _arg3:
 unsafe fn syscall_puts(base_addr: u32, string_offset: u32) -> i32 {
     let mut string = *((base_addr + string_offset) as *mut String);
     string.offset(base_addr);
-    SCREEN.write_str(string.to_string());
+    vga_write_str(string.to_string());
+    return 0;
+}
+
+unsafe fn syscall_putc(c: u32) -> i32 {
+    vga_write_byte(c as u8);
     return 0;
 }
 

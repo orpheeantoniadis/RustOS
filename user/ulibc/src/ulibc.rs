@@ -44,6 +44,12 @@ pub fn puts(s: &str) {
     }
 }
 
+pub fn putc(byte: u8) {
+    unsafe {
+        syscall(Syscall::Putc, byte as u32,  0, 0, 0);
+    }
+}
+
 pub fn exec(s: &str) -> i32 {
     unsafe { 
         syscall(Syscall::Exec, String::new(s).as_ptr() as u32,  0, 0, 0)
@@ -56,9 +62,9 @@ pub fn keypressed() -> i32 {
     }
 }
 
-pub fn getc() -> i32 {
+pub fn getc() -> u8 {
     unsafe {
-        syscall(Syscall::Getc, 0, 0, 0, 0)
+        syscall(Syscall::Getc, 0, 0, 0, 0) as u8
     }
 }
 
@@ -108,9 +114,9 @@ pub fn file_next(bytes: *const u8, it: *const FileIterator) -> i32 {
     }
 }
 
-pub fn get_ticks() -> i32 {
+pub fn get_ticks() -> u32 {
     unsafe {
-        syscall(Syscall::GetTicks, 0, 0, 0, 0)
+        syscall(Syscall::GetTicks, 0, 0, 0, 0) as u32
     }
 }
 

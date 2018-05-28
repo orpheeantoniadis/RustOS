@@ -50,14 +50,14 @@ fn read_cmd(cmd: *mut u8) {
             if cnt > 0 {
                 cnt -= 1;
                 unsafe { *cmd.offset(cnt as isize) = 0; }
-                print!("{}", key as char);
+                putc(key);
             }
         } else if key != b'\t' && key != b'\0' {
             unsafe { *cmd.offset(cnt as isize) = key; }
             cnt += 1;
-            print!("{}", key as char);
+            putc(key);
         }
-        key = getc() as u8;
+        key = getc();
     }
 }
 

@@ -29,6 +29,7 @@ $(BUILD_FOLDER)/%.o : %.s
 clean :
 	$(MAKE) -C hello clean
 	$(MAKE) -C demo clean
+	$(MAKE) -C shell clean
 	rm -rf build
 	
 rebuild : clean build
