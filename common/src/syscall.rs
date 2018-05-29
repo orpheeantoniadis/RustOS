@@ -17,5 +17,5 @@ pub enum Syscall {
     SetCursor       = 0x0e,
     GetCursor       = 0x0f,
     CursorDisable   = 0x10,
-    SetColor        = 0x11
+    CopyScr         = 0x11
 }

@@ -1,8 +1,8 @@
 #![no_std]
-#![macro_use]
 
 extern crate ulibc;
-pub use ulibc::*;
+use ulibc::*;
+use io::*;
 
 #[no_mangle]
 pub extern fn main() {

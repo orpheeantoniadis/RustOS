@@ -22,6 +22,18 @@ pub enum Color {
     White      = 0xf,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct ColorAttribute(u8);
+
+#[derive(Debug, Clone, Copy)]
+#[repr(C)]
+pub struct Character {
+    pub ascii: u8,
+    pub attribute: ColorAttribute,
+}
+
+pub type FrameBuffer = [[Character; BUFFER_WIDTH]; BUFFER_HEIGHT];
+
 impl Color {
     pub fn from_u32(color: u32) -> Color {
         match color {
@@ -63,6 +75,28 @@ impl Color {
             Color::Pink => 0xd,
             Color::Yellow => 0xe,
             Color::White => 0xf,
+        }
+    }
+}
+
+impl ColorAttribute {
+    pub const fn new(background: Color, foreground: Color) -> ColorAttribute {
+        ColorAttribute((background as u8) << 4 | (foreground as u8))
+    }
+}
+
+impl Character {
+    pub const fn null() -> Character {
+        Character {
+            ascii: 0,
+            attribute: ColorAttribute::new(Color::Black, Color::White)
+        }
+    }
+    
+    pub const fn new(ascii: u8, attribute: ColorAttribute) -> Character {
+        Character {
+            ascii: ascii,
+            attribute: attribute
         }
     }
 }

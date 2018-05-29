@@ -37,7 +37,7 @@ pub unsafe extern fn syscall_handler(nb: Syscall, _arg1: u32, _arg2: u32, _arg3:
         Syscall::SetCursor => syscall_set_cursor(_arg1, _arg2),
         Syscall::GetCursor => syscall_get_cursor(addr + _arg1, addr + _arg2),
         Syscall::CursorDisable => syscall_cursor_disable(_arg1),
-        Syscall::SetColor => syscall_set_color(_arg1, _arg2)
+        Syscall::CopyScr => syscall_copy_scr(addr + _arg1)
     }
 }
 
@@ -138,7 +138,7 @@ unsafe fn syscall_cursor_disable(cd: u32) -> i32 {
     return 0;
 }
 
-unsafe fn syscall_set_color(background: u32, foreground: u32) -> i32 {
-    vga_set_color(Color::from_u32(background), Color::from_u32(foreground));
+unsafe fn syscall_copy_scr(scr_addr: u32) -> i32 {
+    vga_copy_scr(scr_addr as *const FrameBuffer);
     return 0;
 }

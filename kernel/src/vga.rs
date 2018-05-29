@@ -14,18 +14,6 @@ static mut SCREEN: Screen = Screen {
     cursor_y: 0
 };
 
-#[derive(Clone, Copy)]
-struct ColorAttribute(u8);
-
-#[derive(Clone, Copy)]
-#[repr(C)]
-struct Character {
-    ascii: u8,
-    attribute: ColorAttribute,
-}
-
-type FrameBuffer = [[Character; BUFFER_WIDTH]; BUFFER_HEIGHT];
-
 struct Screen {
     buffer: *mut FrameBuffer,
     attribute: ColorAttribute,
@@ -86,17 +74,12 @@ pub fn vga_set_color(background: Color, foreground: Color) {
     unsafe { SCREEN.set_color(background, foreground); }
 }
 
-impl ColorAttribute {
-    const fn new(background: Color, foreground: Color) -> ColorAttribute {
-        ColorAttribute((background as u8) << 4 | (foreground as u8))
-    }
-}
-
-impl Character {
-    fn new(ascii: u8, attribute: ColorAttribute) -> Character {
-        Character {
-            ascii: ascii,
-            attribute: attribute
+pub fn vga_copy_scr(scr: *const FrameBuffer) {
+    unsafe {
+        for i in 0..BUFFER_HEIGHT {
+            for j in 0..BUFFER_WIDTH {
+                (*SCREEN.buffer)[i][j] = (*scr)[i][j];
+            }
         }
     }
 }

@@ -1,8 +1,8 @@
 #![no_std]
-#![macro_use]
 
 extern crate ulibc;
 use ulibc::*;
+use io::*;
 use core::str::FromStr;
 
 const MAX_CMD_LEN: usize = MAX_FILENAME_LENGTH;
