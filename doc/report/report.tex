@@ -7,6 +7,7 @@
 \usepackage{amsmath}
 \usepackage{hyperref}
 \usepackage{tabularx}
+\usepackage{wrapfig}
 \newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
 \setlength{\parindent}{0pt}
 \usepackage{hyperref}
@@ -103,6 +104,9 @@ Lors de la rédaction de ce document, les conventions typographique ci-dessous o
 \newacronym{vga}{VGA}{\textit{Video Graphics Array}}
 \newacronym{pio}{PIO}{\textit{Port Input/Output}}
 \newacronym{cpu}{CPU}{\textit{Central Processing Unit}}
+\newacronym{IA-32}{IA-32}{\textit{Intel Architecture, 32-bit}}
+\newacronym{ram}{RAM}{\textit{Random Access Memory}}
+\newacronym{mmu}{MMU}{\textit{Memory Management Unit}}
 \printglossary[type=\acronymtype,title={Acronymes}]
 \newpage
 
@@ -351,12 +355,60 @@ Cette commande génerera une image \acrshort{iso} \textit{bootable} nommée \min
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Tables de descripteurs}
-\subsection{\acrshort{gdt}}
+\section{Gestion mémoire}
+\subsection{Introduction}
+Le système d'exploitation développé est exécuté sur une architecture \acrshort{IA-32}
+aussi appelée i386. Ceci qui veut dire que la mémoire est adressée sur 32 bits.
+$2^{32}=4Go$, donc la mémoire physique (\acrshort{ram}) a une taille totale de
+4Go dans notre système d'exploitation. Lorsqu'une tache est exécutée, elle est chargée
+en mémoire et est définie par la paire base et limite. La base est son adresse physique
+dans la \acrshort{ram} et la limite est sa taille. La figure \ref{ex_base_limit}
+donne un exemple d'adressage de plusieurs processus.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.65]{images/ex_base_limit.png}
+  \caption{Exemple d'adressage mémoire}
+  \label{ex_base_limit}
+\end{figure}
+
+Une tache possède son propre espace d'adressage dit virtuel. Pour le processus 1
+de la figure \ref{ex_base_limit}, l'adresse $0$ est en fait à l'adresse physique
+$300040$. Il y a donc besoin de translater l'adresse virtuelle en adresse physique.
+C'est là qu'entre en jeu le \acrshort{mmu} (Memory Mangement Unit). Le \acrshort{mmu}
+est un dispositif matériel permettant de faire cette translation d'adresses. A chaque
+référencement mémoire, il va convertir l'adresse virtuelle en adresse physique et
+regarder si elle ne dépasse pas la limite du processus. Le \acrshort{mmu} permet donc
+aussi de protéger la mémoire car il va empêcher toute référence à une zone extérieure
+au processus (voir figure \ref{mmu}).
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.75]{images/mmu.png}
+  \caption{Protection mémoire avec un \acrshort{mmu}}
+  \label{mmu}
+\end{figure}
+
+Dans une architecture \acrshort{IA-32}, la translation d'adresses se fait à l'aide
+de descripteurs définissant des segments de mémoire. Ces descripteurs sont contenus
+dans une table de descripteurs.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{\acrshort{idt}}
+\subsection{Tables de descripteurs}
+
+\subsubsection{\acrshort{gdt}}
+
+\subsubsection{\acrshort{idt}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Segmentation}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Pagination}
+
 
 \newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
