@@ -38,6 +38,13 @@ macro_rules! println {
     ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
 }
 
+pub fn clear() {
+    for _i in 0..BUFFER_HEIGHT {
+        putc(b'\n');
+    }
+    set_cursor(0, 0);
+}
+
 pub fn puts(s: &str) {
     unsafe {
         syscall(Syscall::Puts, String::new(s).as_ptr() as u32,  0, 0, 0);
@@ -123,6 +130,34 @@ pub fn get_ticks() -> u32 {
 pub fn sleep(ms: u32) {
     unsafe {
         syscall(Syscall::Sleep, ms, 0, 0, 0);
+    }
+}
+
+pub fn set_cursor(x: u32, y: u32) {
+    unsafe {
+        syscall(Syscall::SetCursor, x, y, 0, 0);
+    }
+}
+
+pub fn get_cursor(x: *const u32, y: *const u32) {
+    unsafe {
+        syscall(Syscall::GetCursor, x as u32, y as u32, 0, 0);
+    }
+}
+
+pub fn cursor_disable(cd: bool) {
+    unsafe {
+        if cd {
+            syscall(Syscall::CursorDisable, 1, 0, 0, 0);
+        } else {
+            syscall(Syscall::CursorDisable, 0, 0, 0, 0);
+        }
+    }
+}
+
+pub fn set_color(background: Color, foreground: Color) {
+    unsafe {
+        syscall(Syscall::SetColor, Color::to_u32(background), Color::to_u32(foreground), 0, 0);
     }
 }
 

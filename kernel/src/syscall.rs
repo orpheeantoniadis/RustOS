@@ -2,6 +2,7 @@
 
 use vga::*;
 use gdt::*;
+use pio::*;
 use timer::*;
 use keyboard::*;
 use fs::*;
@@ -32,7 +33,11 @@ pub unsafe extern fn syscall_handler(nb: Syscall, _arg1: u32, _arg2: u32, _arg3:
         Syscall::FileIterator => syscall_file_iterator(addr + _arg1),
         Syscall::FileNext => syscall_file_next(addr, _arg1, addr + _arg2),
         Syscall::GetTicks => syscall_get_ticks(),
-        Syscall::Sleep => syscall_sleep(_arg1)
+        Syscall::Sleep => syscall_sleep(_arg1),
+        Syscall::SetCursor => syscall_set_cursor(_arg1, _arg2),
+        Syscall::GetCursor => syscall_get_cursor(addr + _arg1, addr + _arg2),
+        Syscall::CursorDisable => syscall_cursor_disable(_arg1),
+        Syscall::SetColor => syscall_set_color(_arg1, _arg2)
     }
 }
 
@@ -109,5 +114,31 @@ unsafe fn syscall_get_ticks() -> i32 {
 
 unsafe fn syscall_sleep(ms: u32) -> i32 {
     sleep(ms);
+    return 0;
+}
+
+unsafe fn syscall_set_cursor(x: u32, y: u32) -> i32 {
+    vga_set_cursor(x as usize, y as usize);
+    return 0;
+}
+
+unsafe fn syscall_get_cursor(x_addr: u32, y_addr: u32) -> i32 {
+    let cursor = vga_get_cursor();
+    *(x_addr as *mut u32) = cursor.0 as u32;
+    *(y_addr as *mut u32) = cursor.1 as u32;
+    return 0;
+}
+
+unsafe fn syscall_cursor_disable(cd: u32) -> i32 {
+    if cd == 0 {
+        enable_cursor();
+    } else {
+        disable_cursor();
+    }
+    return 0;
+}
+
+unsafe fn syscall_set_color(background: u32, foreground: u32) -> i32 {
+    vga_set_color(Color::from_u32(background), Color::from_u32(foreground));
     return 0;
 }

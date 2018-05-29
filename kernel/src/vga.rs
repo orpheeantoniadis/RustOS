@@ -3,56 +3,30 @@
 
 use core::fmt::{Error, Write, Arguments};
 use pio::*;
+use common::*;
 
-pub const BUFFER_HEIGHT: usize =    25;
-pub const BUFFER_WIDTH: usize =     80;
 const TAB_SIZE: usize = 4;
 
-pub static mut SCREEN: Screen = Screen {
+static mut SCREEN: Screen = Screen {
     buffer: 0xb8000 as *mut _,
     attribute: ColorAttribute::new(Color::Black, Color::White),
     cursor_x: 0,
     cursor_y: 0
 };
 
-#[repr(u8)]
-pub enum Color {
-    Black      = 0x0,
-    Blue       = 0x1,
-    Green      = 0x2,
-    Cyan       = 0x3,
-    Red        = 0x4,
-    Magenta    = 0x5,
-    Brown      = 0x6,
-    LightGray  = 0x7,
-    DarkGray   = 0x8,
-    LightBlue  = 0x9,
-    LightGreen = 0xa,
-    LightCyan  = 0xb,
-    LightRed   = 0xc,
-    Pink       = 0xd,
-    Yellow     = 0xe,
-    White      = 0xf,
-}
-
 #[derive(Clone, Copy)]
-pub struct ColorAttribute(u8);
-impl ColorAttribute {
-    pub const fn new(background: Color, foreground: Color) -> ColorAttribute {
-        ColorAttribute((background as u8) << 4 | (foreground as u8))
-    }
-}
+struct ColorAttribute(u8);
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub struct Character {
+struct Character {
     ascii: u8,
     attribute: ColorAttribute,
 }
 
 type FrameBuffer = [[Character; BUFFER_WIDTH]; BUFFER_HEIGHT];
 
-pub struct Screen {
+struct Screen {
     buffer: *mut FrameBuffer,
     attribute: ColorAttribute,
     cursor_x: usize,
@@ -105,6 +79,16 @@ pub fn vga_set_cursor(x: usize, y: usize) {
 pub fn vga_get_cursor() -> (usize, usize) {
     unsafe {
         return (SCREEN.cursor_x, SCREEN.cursor_y);
+    }
+}
+
+pub fn vga_set_color(background: Color, foreground: Color) {
+    unsafe { SCREEN.set_color(background, foreground); }
+}
+
+impl ColorAttribute {
+    const fn new(background: Color, foreground: Color) -> ColorAttribute {
+        ColorAttribute((background as u8) << 4 | (foreground as u8))
     }
 }
 

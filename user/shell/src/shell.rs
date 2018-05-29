@@ -25,6 +25,7 @@ fn help() {
 	puts("\n");
 	puts("ls           : list files present in the file system\n");
 	puts("cat <file>   : dump the content of <file> to the screen\n");
+    puts("clear        : clear the screen\n");
 	puts("<prog>       : execute the program <prog>.\n");
 	puts("sleep <ms>   : sleep the specified number of milliseconds\n");
 	puts("exit         : exit the shell\n");
@@ -77,10 +78,11 @@ pub extern fn main() {
                     _ => ""
                 };
                 match cmd {
-                    "cat" => cat(arg),
-                    "exit" => break,
-                    "help" => help(),
-                    "ls" => ls(),
+                    "cat"   => cat(arg),
+                    "clear" => clear(),
+                    "exit"  => break,
+                    "help"  => help(),
+                    "ls"    => ls(),
                     "sleep" => {
                         let ms = match u32::from_str(arg) {
                             Ok(num) => num,

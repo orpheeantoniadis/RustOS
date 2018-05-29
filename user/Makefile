@@ -5,7 +5,7 @@ BUILD_FOLDER = build
 LINKER = app.ld
 FLAGS = -T $(LINKER) -m32 -MMD -g -ffreestanding -nostdlib -Wall -Wextra -fno-pie
 
-APPS = hello demo shell
+APPS = hello demo shell splash
 
 SRCS = $(wildcard *.s)
 OBJS = $(patsubst %.s, $(BUILD_FOLDER)/%.o, $(SRCS))

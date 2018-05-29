@@ -35,34 +35,12 @@ use idt::idt_init;
 use timer::*;
 use fs::*;
 use task::*;
-use common::bytes_to_str;
+use common::Color;
 
 // exports
 pub use idt::exception_handler;
 pub use idt::irq_handler;
 pub use syscall::syscall_handler;
-
-/// Displays the splash screen of the kernel
-fn splash_screen() {
-    sleep(3000);
-    vga_clear();
-    vga_set_cursor(22,10);
-    let fd = file_open("splash.txt");
-    let mut data = [0;300];
-    file_read(fd, &mut data[0], 300);
-    for c in bytes_to_str(&data).chars() {
-        print!("{}", c);
-        if c == '\n' {
-            let cursor = vga_get_cursor();
-            vga_set_cursor(22,cursor.1);
-        }
-    }
-    file_close(fd);
-    disable_cursor();
-    sleep(5000);
-    enable_cursor();
-    vga_clear();
-}
 
 /// Entrypoint to the rust code. This function is called by the bootstrap code
 /// contain in bootstrap_asm.s
@@ -82,7 +60,8 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     println!("PIT initialized.");
     set_superblock();
     println!("Available Memory = {} kB", unsafe { (*multiboot_infos) }.mem_upper);
-    splash_screen();
+    sleep(3000);
+    exec("splash");
     exec("shell");
     disable_cursor();
     print!("\nKernel stopped.\nYou can turn off you computer.");
