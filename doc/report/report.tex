@@ -220,7 +220,7 @@ gcc $(OBJS) -T $(LINKER) -static -m32 -ffreestanding -nostdlib -o $@ $(RUST)
 Ici, \mintinline{shell}{$(OBJS)} représente les fichiers objets générés par
 \mintinline{rust}{nasm}, \mintinline{shell}{$(LINKER)} est un fichier permettant
 de faire l'édition des liens et \mintinline{shell}{$(RUST)} représente les fichiers
-objets générés par Rust.
+objets générés par Rust.\cite{ref42}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -267,7 +267,7 @@ Pour un simple programme en C l'entrée serait le \textit{main}. Ici, ce sera
 l'entrée de notre \textit{kernel} donc la première fonction exécutée au \textit{boot}.
 \mintinline{text}{SECTION} va dire au linker où placer les parties du code. Par exemple, 
 la section \mintinline{text}{.text} contiendra le code et la section \mintinline{text}{.data}
-contiendra les variables initialisées \cite{ref9,ref10,ref11}. Voici donc la structure
+contiendra les variables initialisées \cite{ref42,ref9,ref10,ref11}. Voici donc la structure
 du fichier \acrshort{elf} qui serait généré à l'aide de ce \textit{script}.
 
 \begin{figure}[!h]
@@ -277,7 +277,7 @@ du fichier \acrshort{elf} qui serait généré à l'aide de ce \textit{script}.
 \end{figure}
 
 A noter que les sections commencent avec un \textit{offset} de 1MB. Nous avons eu
-besoin de faire ça car les premiers 1MB dans un \acrshort{os} sont reservés \cite{ref13}.
+besoin de faire ça car les premiers 1MB dans un \acrshort{os} sont reservés \cite{ref42,ref13}.
 La mémoire vidéo (\acrshort{vram}) se situe par exemple dans cette zone.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -293,7 +293,7 @@ est alimenté et que la mémoire est ok puis initialise chaque périphérique 
 redonne la main au \acrshort{bios} qui continue le \textit{boot}. Le \acrshort{bios}
 charge ensuite les 512 premiers bytes (\acrshort{mbr}) du premier disque qui doit
 charger le \textit{kernel} en mémoire et l'exécuter. Pour résumer, le \textit{boot}
-d'une machine à base de \acrshort{bios} se déroule de la manière ci-dessous.
+d'une machine à base de \acrshort{bios} se déroule de la manière ci-dessous.\cite{ref42}
 
 \begin{figure}[!h]
   \centering
@@ -318,7 +318,7 @@ Son initialisation se fait par étapes.
 
 \acrshort{grub} permet de charger n'importe quel type de système d'exploitation
 grace au standard \textit{Multiboot}. Ce standard permet à tout \textit{bootloader}
-de charger tout \acrshort{os} compatible \cite{ref12}.
+de charger tout \acrshort{os} compatible \cite{ref42,ref12}.
 
 \subsubsection{Image \acrshort{iso}}
 Nous avons déjà pu voir que le \textit{boot} du \textit{kernel} se faisait à partie
@@ -351,7 +351,7 @@ Pour finir, il faut exécuter la commande :
 genisoimage -R -b boot/grub/stage2_eltorito -input-charset utf8 -no-emul-boot \
 -boot-info-table -o os.iso isofiles
 \end{minted}
-Cette commande génerera une image \acrshort{iso} \textit{bootable} nommée \mintinline{text}{os.iso}.
+Cette commande génerera une image \acrshort{iso} \textit{bootable} nommée \mintinline{text}{os.iso}\cite{ref42}.
 
 \newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -365,11 +365,11 @@ $2^{32}=4Go$, donc la mémoire physique (\acrshort{ram}) a une taille totale de
 4Go dans notre système d'exploitation. Lorsqu'une tache est exécutée, elle est chargée
 en mémoire et est définie par la paire base et limite. La base est son adresse physique
 dans la \acrshort{ram} et la limite est sa taille. La figure \ref{ex_base_limit}
-donne un exemple d'adressage de plusieurs processus.
+donne un exemple d'adressage de plusieurs processus.\cite{ref42}
 
 \begin{figure}[!h]
   \centering
-  \includegraphics[scale=0.85]{images/ex_base_limit.png}
+  \includegraphics[scale=0.5]{images/ex_base_limit.png}
   \caption{Exemple d'adressage mémoire}
   \label{ex_base_limit}
 \end{figure}
@@ -382,9 +382,7 @@ est un dispositif matériel permettant de faire cette translation d'adresses. A 
 référencement mémoire, il va convertir l'adresse virtuelle en adresse physique et
 regarder si elle ne dépasse pas la limite du processus. Le \acrshort{mmu} permet donc
 aussi de protéger la mémoire car il va empêcher toute référence à une zone extérieure
-au processus (voir figure \ref{mmu}).
-
-\newpage
+au processus (voir figure \ref{mmu}).\cite{ref42}
 
 \begin{figure}[!h]
   \centering
@@ -393,19 +391,16 @@ au processus (voir figure \ref{mmu}).
   \label{mmu}
 \end{figure}
 
-Dans une architecture \acrshort{IA-32}, la translation d'adresses se fait à l'aide
-de descripteurs définissant des segments de mémoire. Ces descripteurs sont contenus
-dans une table de descripteurs.
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{\acrshort{gdt}}
-Comme dit précedement, la translation d'adresses se fait à l'aide de descripteurs
-de segment de mémoire contenus dans une table de descripteurs. Cette table est
-la \acrshort{gdt} (Global Descriptor Table) \cite{ref14}. Chaque descripteur est défini par sa
-base (son adresse physique), sa limite (sa taille) et son niveau de privilèges
-(allant de 0 à 3, le niveau 0 ayant le plus de privilèges et le niveau 3 le moins).
-Ci dessous, la figure \ref{gdt} montre un exemple d'une \acrshort{gdt}.
+Dans une architecture \acrshort{IA-32}, la translation d'adresses se fait à l'aide
+de descripteurs définissant des segments de mémoire. Ces descripteurs sont contenus
+dans une table de descripteurs. Cette table est la \acrshort{gdt} (Global Descriptor
+Table) \cite{ref14}. Chaque descripteur est défini par sa base (son adresse physique),
+sa limite (sa taille) et son niveau de privilèges (allant de 0 à 3, le niveau 0 
+ayant le plus de privilèges et le niveau 3 le moins). Ci dessous, la figure \ref{gdt}
+montre un exemple d'une \acrshort{gdt}.\cite{ref42}
 
 \begin{figure}[!h]
   \centering
@@ -416,7 +411,7 @@ Ci dessous, la figure \ref{gdt} montre un exemple d'une \acrshort{gdt}.
 
 La \acrshort{gdt} est contenue en mémoire. Chaque entrée (ou descripteur) de
 la table de descripteurs sont sur 64 bits et sont définis par la structure de
-la figure \ref{gdt_entry}.
+la figure \ref{gdt_entry}.\cite{ref14}
 
 \begin{figure}[!h]
   \centering
@@ -434,7 +429,7 @@ la figure \ref{gdt_entry}.
     du segment (privilèges, écriture ou lecture, etc...). Il est décrit plus en détails
     dans la figure \ref{gdt_bits}
     \item Les \textit{Flags} sont aussi des bits de contrôle et sont décrits plus
-    en détails dans la la figure \ref{gdt_bits}
+    en détails dans la la figure \ref{gdt_bits}\cite{ref14}
 \end{itemize}
 
 \begin{figure}[!h]
@@ -454,20 +449,18 @@ la figure \ref{gdt_entry}.
     \item RW : Bit de lecture/ écriture
     \item Ac : \textit{Accessed bit}, ce bit est mis à 1 lorsque le \acrshort{cpu}
     accède à ce segment
-    \item Gr : Bit de granularité, à 0 la limite est en octets, à 1 la limite est en blocks
+    \item Gr : Bit de granularité, à 0 la limite est en octets, à 1 la limite est en blocs
     de 4Ko
     \item Sz : \textit{Size bit}, à 0 le segment est sur 16 bits, à 1 le segment
     est sur 32 bits
 \end{itemize}
 
-\newpage
-
 Par exemple, pour obtenir un segment sur toute la mémoire disponible, il faut mettre
-le bit de granularité à 1 (pour avoir une limite en blocks de 4Ko) et mettre la
+le bit de granularité à 1 (pour avoir une limite en blocs de 4Ko) et mettre la
 limite à 0xFFFFF. Une fois la \acrshort{gdt} construite, il faut utiliser l'instruction
 \mintinline{text}{lgdt} pour la charger. L'adresse du descripteur de la \acrshort{gdt}
 doit être donnée en argument à cette instruction. Le descripteur de \acrshort{gdt}
-est défini par la structure 48-bits décrite dans la figure \ref{gdt_descriptor}.
+est défini par la structure 48-bits décrite dans la figure \ref{gdt_descriptor}.\cite{ref14}
 
 \begin{figure}[!h]
   \centering
@@ -482,16 +475,18 @@ est défini par la structure 48-bits décrite dans la figure \ref{gdt_descriptor
 	\item \textit{Offset} est l'adresse physique de la \acrshort{gdt} sur 32 bits
 \end{itemize}
 
+\newpage
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Segmentation}
 La segmentation est une technique permettant de découper la mémoire en segments
 de mémoire logique. Une adresse logique est convertie par le \acrshort{mmu} en
-adresse linéaire en utilisant une \acrshort{gdt} ou plusieurs \acrshort{ldt}.
+adresse linéaire en utilisant une \acrshort{gdt} ou une \acrshort{ldt}.
 Si la pagination (dont on parlera plus tard) est activée, l'adresse linéaire
-et convertie en adresse physique. Toute cette mécanique est décrite dans la figure
+est convertie en adresse physique. Toute cette mécanique est décrite dans la figure
 \ref{addr_translation}. La segmentation permet de faire la convertion d'adresse
-logique en adresse linéaire et est obligatoire en mode protégé (32-bits).
+logique en adresse linéaire et est obligatoire en mode protégé (32-bits).\cite{ref17}
 
 \begin{figure}[!h]
   \centering
@@ -502,7 +497,7 @@ logique en adresse linéaire et est obligatoire en mode protégé (32-bits).
 
 La gestion de la segmentation par le \acrshort{cpu} se fait à l'aide de registres
 spéciaux nommés registres de segment. Ces registres sont au nombre de 6 et ont
-chacun une taille de 16 bits.
+chacun une taille de 16 bits.\cite{ref42,ref18}
 
 \begin{center}
 	\scalebox{1}{
@@ -535,7 +530,7 @@ l'integralité d'une entrée dans la \acrshort{gdt} mais un sélecteur de cette 
 Un sélecteur a une taille de 16 bits (comme les registres de segment) et contient
 l'index du descripteur dans la \acrshort{gdt}, un bit indiquant si l'entrée est
 dans la \acrshort{gdt} ou dans la \acrshort{ldt} ainsi que son niveau de privilège
-(figure \ref{seg_sel}).
+(figure \ref{seg_sel}).\cite{ref42}
 
 \begin{figure}[!h]
   \centering
@@ -558,12 +553,43 @@ Les segments de code et de données adressent donc les mêmes zones de mémoire.
 On verra par la suite que d'autres entrées ont été aujoutées à la \acrshort{gdt}
 pour la gestion des tâches.
 
-\newpage
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Pagination}
+La pagination est une autres techinque de gestion de mémoire qui diffère de la
+segmentation. Alors que la segmentation permet d'allouer des morceaux de mémoire
+de taille variable, la pagination divise la mémoire en blocs de taille fixe appelés
+pages. De plus, la segmentation est obligatoire dans une architecture i386 alors que
+la pagination ne l'est pas\cite{ref16}. Pour rappel, le mecanisme de segmentation
+permet de convertir une adresse logique en adresse linéaire. Sur x86, lorsque la
+pagination est activée, l'adresse linéaire est divisée en trois parties. 
 
+\begin{itemize}[label=\textbullet]
+	\item 10 bits pour le \textit{directory index}
+	\item 10 bits pour le \textit{page index}
+    \item 12 bits pour l'\textit{offset}
+\end{itemize}
+
+On dit que cette pagination est une pagination à trois niveaux. En général, une
+pagination à trois niveaux est utilisée mais il peut exister des systèmes utilisant
+plus de niveaux. Le système d'exploitation doit créer un répertoire (\textit{Page Directory})
+et au moins une table de pages (\textit{Page Table}) pour chaque tâche. Quand une
+adresse linéaire est lue, le \textit{directory index} permet de lire la bonne
+entrée dans le \textit{Page Directory}. Cette entrée pointe sur la bonne page
+dans la table des pages et c'est le \textit{page index} qui permet de récupérer
+la bonne entrée dans cette page. Cette entrée pointe elle même sur la bonne page
+dans les \textit{Page Frames} et l'\textit{offset} va être utilisé pour trouver
+la donnée souhaitée. La figure \ref{paging3} résume bien ce mécanisme. A noter que le
+\textit{Page Directory} est pointé par le registre CR3. A chaque fois qu'un changement
+de tâche a lieu, le registre CR3 doit être mis à jour avec le \textit{Page Directory}
+de la nouvelle tâche.\cite{ref15}
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.75]{images/paging3.png}
+  \caption{Exemple de pagination à 3 niveaux}
+  \label{paging3}
+\end{figure}
 
 \newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -586,14 +612,14 @@ pour accéder aux périphériques \acrshort{pio}. Ces instructions sont les inst
 \mintinline{text}{IN} et \mintinline{text}{OUT}. \mintinline{text}{IN} permet de lire
 tandis que \mintinline{text}{OUT} permet d'écrire. A noter que l'adresse du port
 doit toujours être spécifiée dans le registre \mintinline{text}{dx} et la lecture
-et l'écriture se font toujours avec les registres \mintinline{text}{ax/al}.
+et l'écriture se font toujours avec les registres \mintinline{text}{ax/al}.\cite{ref42}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{\acrshort{vga}}
 Dans l'\acrshort{os} développé, le mode texte \acrshort{vga} a été utilisé pour
 l'affichage. Toute carte graphique offre ce mode texte de 80 colonnes par 25 lignes.
-Les 16 couleurs disponibles sont les suivantes :
+Les 16 couleurs disponibles sont les suivantes :\cite{ref19}
 \begin{figure}[!h]
   \centering
   \includegraphics[scale=0.7]{images/colors.png}
