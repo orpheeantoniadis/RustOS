@@ -1,4 +1,4 @@
-\documentclass[a4paper]{article}
+\documentclass[a4paper, 12pt]{article}
 \usepackage[francais]{babel}
 \usepackage{fontspec}
 \usepackage{enumitem}
@@ -7,6 +7,7 @@
 \usepackage{amsmath}
 \usepackage{hyperref}
 \usepackage{tabularx}
+\usepackage{multirow}
 \usepackage{wrapfig}
 \newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
 \setlength{\parindent}{0pt}
@@ -107,6 +108,7 @@ Lors de la rédaction de ce document, les conventions typographique ci-dessous o
 \newacronym{IA-32}{IA-32}{\textit{Intel Architecture, 32-bit}}
 \newacronym{ram}{RAM}{\textit{Random Access Memory}}
 \newacronym{mmu}{MMU}{\textit{Memory Management Unit}}
+\newacronym{ldt}{LDT}{\textit{Local Descriptor Table}}
 \printglossary[type=\acronymtype,title={Acronymes}]
 \newpage
 
@@ -228,7 +230,7 @@ pour faire l'édition des liens. Si ce fichier n'est pas donné, il en utilise u
 défaut. Le \textit{linker} permet de structurer le code par sections. Prenons
 pour exemple le \textit{script} utilisé pour ce projet.
 
-\begin{minted}[linenos,frame=single,tabsize=4]{c}
+\begin{minted}[fontsize=\footnotesize,linenos,frame=single,tabsize=4]{c}
 ENTRY(entrypoint)
 SECTIONS {
   . = 1M;
@@ -367,7 +369,7 @@ donne un exemple d'adressage de plusieurs processus.
 
 \begin{figure}[!h]
   \centering
-  \includegraphics[scale=0.65]{images/ex_base_limit.png}
+  \includegraphics[scale=0.85]{images/ex_base_limit.png}
   \caption{Exemple d'adressage mémoire}
   \label{ex_base_limit}
 \end{figure}
@@ -382,9 +384,11 @@ regarder si elle ne dépasse pas la limite du processus. Le \acrshort{mmu} perme
 aussi de protéger la mémoire car il va empêcher toute référence à une zone extérieure
 au processus (voir figure \ref{mmu}).
 
+\newpage
+
 \begin{figure}[!h]
   \centering
-  \includegraphics[scale=0.75]{images/mmu.png}
+  \includegraphics[scale=0.4]{images/mmu.png}
   \caption{Protection mémoire avec un \acrshort{mmu}}
   \label{mmu}
 \end{figure}
@@ -395,8 +399,7 @@ dans une table de descripteurs.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Tables de descripteurs}
-\subsubsection{\acrshort{gdt}}
+\subsection{\acrshort{gdt}}
 Comme dit précedement, la translation d'adresses se fait à l'aide de descripteurs
 de segment de mémoire contenus dans une table de descripteurs. Cette table est
 la \acrshort{gdt} (Global Descriptor Table) \cite{ref14}. Chaque descripteur est défini par sa
@@ -406,7 +409,7 @@ Ci dessous, la figure \ref{gdt} montre un exemple d'une \acrshort{gdt}.
 
 \begin{figure}[!h]
   \centering
-  \includegraphics[scale=0.75]{images/gdt.png}
+  \includegraphics[scale=0.7]{images/gdt.png}
   \caption{Exemple d'une \acrshort{gdt}}
   \label{gdt}
 \end{figure}
@@ -442,10 +445,10 @@ la figure \ref{gdt_entry}.
 \end{figure}
 
 \begin{itemize}[label=\textbullet]
-	\item Pr : \textit{Present} bit, doit être à 1 si le sélecteur est valide
+	\item Pr : \textit{Present} bit, doit être à 1 si le segment est valide
 	\item Privl : Niveau de privilèges sur deux bits
 	\item Ex : \textit{Executable bit}, est à 1 si le segment peut être exécuté
-    (par exemple dans un sélecteur de code, ce bit est à 1 alors que dans un sélecteur
+    (par exemple dans un segment de code, ce bit est à 1 alors que dans un segment
     de données, ce bit est à 0)
     \item DC : \textit{Direction bit}
     \item RW : Bit de lecture/ écriture
@@ -456,6 +459,8 @@ la figure \ref{gdt_entry}.
     \item Sz : \textit{Size bit}, à 0 le segment est sur 16 bits, à 1 le segment
     est sur 32 bits
 \end{itemize}
+
+\newpage
 
 Par exemple, pour obtenir un segment sur toute la mémoire disponible, il faut mettre
 le bit de granularité à 1 (pour avoir une limite en blocks de 4Ko) et mettre la
@@ -477,11 +482,83 @@ est défini par la structure 48-bits décrite dans la figure \ref{gdt_descriptor
 	\item \textit{Offset} est l'adresse physique de la \acrshort{gdt} sur 32 bits
 \end{itemize}
 
-\subsubsection{\acrshort{idt}}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Segmentation}
+La segmentation est une technique permettant de découper la mémoire en segments
+de mémoire logique. Une adresse logique est convertie par le \acrshort{mmu} en
+adresse linéaire en utilisant une \acrshort{gdt} ou plusieurs \acrshort{ldt}.
+Si la pagination (dont on parlera plus tard) est activée, l'adresse linéaire
+et convertie en adresse physique. Toute cette mécanique est décrite dans la figure
+\ref{addr_translation}. La segmentation permet de faire la convertion d'adresse
+logique en adresse linéaire et est obligatoire en mode protégé (32-bits).
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.5]{images/addr_translation.png}
+  \caption{Translation d'adresse}
+  \label{addr_translation}
+\end{figure}
+
+La gestion de la segmentation par le \acrshort{cpu} se fait à l'aide de registres
+spéciaux nommés registres de segment. Ces registres sont au nombre de 6 et ont
+chacun une taille de 16 bits.
+
+\begin{center}
+	\scalebox{1}{
+		\begin{tabular}{| C{5cm} | C{5cm} | }
+			\hline
+			Registre & Segment \\ \hline
+			CS & \textit{Code Segment} \\ \hline
+			DS & \textit{Data Segment} \\ \hline
+			SS & \textit{Stack Segment} \\ \hline
+			ES & \textit{Extra Segment} \\ \hline
+			FS & \multirow{2}{*}{\textit{General Purpose Segments}} \\
+            GS & \\ \hline
+		\end{tabular}
+	}
+\end{center}
+
+En mode protégé (32-bits), ces registres doivent pointer sur des descripteurs
+de segment de la \acrshort{gdt}. Au minimum les trois premiers registres décrits
+doivent être utilisé en mode protégé (CS, DS, et SS). Les opératons adressant le
+code (décodage des instructons en mémoire, sauts, etc...) référencent le descripteur
+de segment sur lequel pointe le registre CS. Les opératons adressant les données
+(adressage de variables ou d'adresses mémoires) référencent le descripteur de segment
+sur lequel pointe le registre DS. Les opératons adressant la pile (\mintinline{text}{push}
+et \mintinline{text}{pop}) référencent le descripteur de segment sur lequel pointe
+le registre SS. \\
+
+Nous avons vu qu'un descripteur de segment fait 64 bits et un registre de segment
+fait 16 bits. Ceci est possible car le registre de segment ne va pas contenir
+l'integralité d'une entrée dans la \acrshort{gdt} mais un sélecteur de cette entrée.
+Un sélecteur a une taille de 16 bits (comme les registres de segment) et contient
+l'index du descripteur dans la \acrshort{gdt}, un bit indiquant si l'entrée est
+dans la \acrshort{gdt} ou dans la \acrshort{ldt} ainsi que son niveau de privilège
+(figure \ref{seg_sel}).
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.75]{images/seg_sel.png}
+  \caption{Structure d'un sélecteur de segment}
+  \label{seg_sel}
+\end{figure}
+
+Pour récupérer l'index dans la \acrshort{gdt} d'un segment à partir de son descripteur,
+il faut donc faire un décallage de 3 bits. Prennons un segment si situant à l'index
+2 de la \acrshort{gdt}. Si on veut initialiser le segment de code (registre CS)
+avec ce segment, il faut mettre la valeur 16 dans le registre CS ($2 << 3 = 16$). \\
+
+Dans un premier temps, l'\acrshort{os} développé a eu un adressage segmenté de type
+\textit{FLAT}, c'est-à-dire que toute la mémoire était accédée de manière linéaire.
+Ceci se fait en initialisant trois descripteurs dans la \acrshort{gdt}. Un descripteur
+nul à l'index 0 (obligatoire dans touts les modèles de segmentation), un segment
+de code couvrant toute la mémoire et un segment de données couvrant aussi toute la mémoire.
+Les segments de code et de données adressent donc les mêmes zones de mémoire.
+On verra par la suite que d'autres entrées ont été aujoutées à la \acrshort{gdt}
+pour la gestion des tâches.
+
+\newpage
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -493,6 +570,13 @@ est défini par la structure 48-bits décrite dans la figure \ref{gdt_descriptor
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Periphériques}
+\subsection{Interruptions}
+\subsubsection{Introduction}
+
+\subsubsection{\acrshort{idt}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \subsection{Ports}
 Les ports d'entrées/sorties sur architecture x86 se situent dans un espace d'adresses
 séparé de la mémoire physique. Il n'est donc pas possible d'écrire dans un \acrshort{pio}
