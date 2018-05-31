@@ -556,6 +556,7 @@ pour la gestion des tâches.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Pagination}
+\subsubsection{Principe général}
 La pagination est une autres techinque de gestion de mémoire qui diffère de la
 segmentation. Alors que la segmentation permet d'allouer des morceaux de mémoire
 de taille variable, la pagination divise la mémoire en blocs de taille fixe appelés
@@ -590,6 +591,42 @@ de la nouvelle tâche.\cite{ref15}
   \caption{Exemple de pagination à 3 niveaux}
   \label{paging3}
 \end{figure}
+
+\subsubsection{Activer la Pagination}
+Pour initialiser la pagination sur architecture x86, il faut faire pointer le
+registre CR3 vers un \textit{Page Directory} initial. Il faut donc commencer
+par initialiser un \textit{Page Directory} "vierge" (qui ne pointe sur aucune 
+table de pages). Chaque entrée de ce répertoire de pages doit être initialisé
+à 0x2 (10 en binaire) car le bit 1 d'une entrée de page permet d'autoriser l'écriture
+et la lecture. Il faut ensuite faire pointer la première entrée vers une table
+de pages. La table de pages initiale se construit presque de la même manière
+que le répertoire de pages sauf qu'il faut rajouter un bit d'attribut. Ce bit
+est le bit 1 et indique que la page est utilisée. Toutes les pages dans la table
+de pages doivent être utilisés donc toutes les entrées seront initialisées à 0x3
+(11 en binaire). A noter qu'il faut mettre le bit 0 de la première entrée du
+répertoire de pages à 1 aussi ce qui donne en rust :
+
+\begin{minted}[fontsize=\footnotesize,tabsize=4]{rust}
+    INITIAL_PAGE_DIRECTORY[0] = &INITIAL_PAGE_TABLE as *const _ as u32 | 0x3;
+\end{minted}
+
+Il n'est pas possible d'accéder au registre CR3 depuis le code rust, une fonction
+assembleur qui a comme argument l'adresse vers le répertoire de pages initial doit
+être appelée. Cette fonction effectue les instructions suivantes :
+
+\begin{minted}[fontsize=\footnotesize,tabsize=4]{text}
+    global enable_paging    ; Rend accessible la fonction depuis l'extérieur
+    section .text:          ; Début de la section .text (code)
+    enable_paging:
+        mov eax,[esp+4]     ; Met l'adresse du répertoire de pages dans le registre eax
+        mov cr3, eax        ; Fait pointer le registre cr3 sur le répertoire de pages
+        
+        mov ebx, cr0        ; Met le contenu du registre cr0 dans le registre ebx
+        or  ebx, 1 << 31    ; Met le bit 31 du registre ebx à 1
+        mov cr0, ebx        ; Met le contenu du registre ebx dans le registre cr0
+        
+        ret                 ; Retour de fonction
+\end{minted}
 
 \newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
