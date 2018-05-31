@@ -7,7 +7,7 @@ use x86::*;
 use task::*;
 
 /// The GDT size (not including the tss and ldt entries)
-pub const GDT_SIZE: usize = 4;
+pub const GDT_SIZE: usize = 5;
 
 /// Converts a descriptor index in the GDT into a selector
 pub const fn gdt_index_to_selector(idx: u32) -> u32 {idx << 3}
@@ -56,14 +56,14 @@ pub fn gdt_init() {
         // initialize 3 segment descriptors: NULL, code segment, data segment.
         // Code and data segments must have a privilege level of 0.
         GDT[0] = GdtEntry::null();
-        GDT[1] = GdtEntry::make_code_segment(0, 0xfffff, 0);
-        GDT[2] = GdtEntry::make_data_segment(0, 0xfffff, 0);
+        GDT[1] = GdtEntry::make_code_segment(0, 0xfffff, DPL_KERNEL);
+        GDT[2] = GdtEntry::make_data_segment(0, 0xfffff, DPL_KERNEL);
+        GDT[3] = GdtEntry::make_code_segment(0, 0xfffff, DPL_USER);
+        GDT[4] = GdtEntry::make_data_segment(0, 0xfffff, DPL_USER);
         // setup gdt_ptr so it points to the GDT and ensure it has the right limit.
         GDT_PTR = GdtPtr::new((size_of::<Gdt>() - 1) as u16, &GDT);
         // Load the GDT
         gdt_load(&GDT_PTR);
-        // Init tasks
-        tasks_init();
     }
 }
 

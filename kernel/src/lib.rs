@@ -21,20 +21,15 @@ pub mod ide;
 pub mod fs;
 pub mod task;
 pub mod syscall;
+pub mod paging;
 
 #[cfg(test)]
 mod test;
 
-use x86::*;
 use vga::*;
-use pio::*;
 use multiboot::*;
 use gdt::gdt_init;
-use pic::pic_init;
-use idt::idt_init;
-use timer::*;
-use fs::*;
-use task::*;
+use paging::*;
 use common::Color;
 
 // exports
@@ -50,21 +45,10 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     println!("Screen initialized.");
     gdt_init();
     println!("GDT initialized.");
-    pic_init();
-    println!("PIC initialized.");
-    idt_init();
-    println!("IDT initialized.");
-    sti();
-    println!("Interrupts unmasked.");
-    timer_init(50);
-    println!("PIT initialized.");
-    set_superblock();
+    paging_init();
+    println!("Paging initialized.");
+    println!("Welcome to RustOS!");
     println!("Available Memory = {} kB", unsafe { (*multiboot_infos) }.mem_upper);
-    sleep(3000);
-    exec("splash");
-    exec("shell");
-    disable_cursor();
-    print!("\nKernel stopped.\nYou can turn off you computer.");
 }
 
 #[cfg(not(test))]
