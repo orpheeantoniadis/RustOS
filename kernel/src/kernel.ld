@@ -2,6 +2,7 @@ ENTRY(entrypoint)            /* the entry point */
 
 SECTIONS {
   . = 1M;            /* all sections located above 1MB */
+  kernel_start = .;
 
   .boot ALIGN(4):     /* multiboot header first (needs to reside within the first 8KB) */
   {
@@ -33,5 +34,7 @@ SECTIONS {
     *(COMMON)
     *(.bss*)
   }
+  
+  kernel_end = .;
 }
 

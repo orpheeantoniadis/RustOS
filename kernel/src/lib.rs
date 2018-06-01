@@ -41,14 +41,15 @@ pub use syscall::syscall_handler;
 /// contain in bootstrap_asm.s
 #[no_mangle]
 pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
+    let mboot = unsafe { (*multiboot_infos) };
     vga_init(Color::Black, Color::White);
     println!("Screen initialized.");
     gdt_init();
     println!("GDT initialized.");
-    paging_init();
+    paging_init(multiboot_infos);
     println!("Paging initialized.");
     println!("Welcome to RustOS!");
-    println!("Available Memory = {} kB", unsafe { (*multiboot_infos) }.mem_upper);
+    println!("Available Memory = {} kB", mboot.mem_upper);
 }
 
 #[cfg(not(test))]
