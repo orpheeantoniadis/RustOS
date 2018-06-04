@@ -26,9 +26,13 @@ pub mod paging;
 #[cfg(test)]
 mod test;
 
+use x86::*;
 use vga::*;
 use multiboot::*;
 use gdt::gdt_init;
+use pic::pic_init;
+use idt::idt_init;
+use timer::*;
 use paging::*;
 use common::Color;
 
@@ -46,6 +50,14 @@ pub extern fn kernel_entry(multiboot_infos: *mut MultibootInfo) {
     println!("Screen initialized.");
     gdt_init();
     println!("GDT initialized.");
+    pic_init();
+    println!("PIC initialized.");
+    idt_init();
+    println!("IDT initialized.");
+    sti();
+    println!("Interrupts unmasked.");
+    timer_init(50);
+    println!("PIT initialized.");
     paging_init(multiboot_infos);
     println!("Paging initialized.");
     println!("Welcome to RustOS!");
