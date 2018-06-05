@@ -1,37 +1,24 @@
-ENTRY(entrypoint)            /* the entry point */
+ENTRY(loader)
 
 SECTIONS {
-  . = 1M;            /* all sections located above 1MB */
+   /* The kernel will live at 3GB + 1MB in the virtual
+      address space, which will be mapped to 1MB in the
+      physical address space. */
+   . = 0xC0100000;
 
-  .boot ALIGN(4):     /* multiboot header first (needs to reside within the first 8KB) */
-  {
-    *(.multiboot)
-  }
+   .text : AT(ADDR(.text) - 0xC0000000) {
+       *(.text)
+       *(.rodata*)
+   }
 
-  .stack ALIGN(4):         /* kernel stack */
-  {
-    *(.stack)
-  }
+   .data ALIGN (0x1000) : AT(ADDR(.data) - 0xC0000000) {
+       *(.data)
+   }
 
-  .text ALIGN(4K) :        /* code */
-  {
-    *(.text*)
-  }
-
-  .rodata ALIGN(4K) :      /* read-only data */
-  {
-    *(.rodata*)
-  }
-
-  .data ALIGN(4K) :        /* initialized data */
-  {
-    *(.data*)
-  }
-
-  .bss ALIGN(4K) :         /* unitialized data */
-  {
-    *(COMMON)
-    *(.bss*)
-  }
+   .bss : AT(ADDR(.bss) - 0xC0000000) {
+       _sbss = .;
+       *(COMMON)
+       *(.bss)
+       _ebss = .;
+   }
 }
-

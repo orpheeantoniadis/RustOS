@@ -1,10 +1,10 @@
 ARCH = i386
 CC = xargo
 TARGET = $(ARCH)-rust_os
-FLAGS = -v --target $(TARGET)
+FLAGS = --release -v --target $(TARGET)
 SOURCE_PATH = src/
 
-.PHONY: all build run test clean mrproper
+.PHONY: all build run crun test clean mrproper
 	
 all: build
 
@@ -14,6 +14,9 @@ build:
 	
 run:
 	$(MAKE) -C $(SOURCE_PATH) run
+	
+crun:
+	$(MAKE) -C $(SOURCE_PATH) crun
 
 test:
 	cargo test
