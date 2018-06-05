@@ -7,7 +7,7 @@ use x86::*;
 use task::*;
 
 /// The GDT size (not including the tss and ldt entries)
-pub const GDT_SIZE: usize = 5;
+pub const GDT_SIZE: usize = 6;
 
 /// Converts a descriptor index in the GDT into a selector
 pub const fn gdt_index_to_selector(idx: u32) -> u32 {idx << 3}
@@ -15,11 +15,11 @@ pub const fn gdt_index_to_selector(idx: u32) -> u32 {idx << 3}
 pub const fn selector_to_gdt_index(idx: u32) -> u32 {idx >> 3}
 
 /// The Global Descriptor Table of RustOS
-pub static mut GDT: Gdt = [GdtEntry::null();GDT_SIZE+TASKS_NB*2];
+pub static mut GDT: Gdt = [GdtEntry::null();GDT_SIZE+TASKS_NB];
 static mut GDT_PTR: GdtPtr = GdtPtr::null();
 
 /// Defines a Global Descriptor Table
-pub type Gdt = [GdtEntry; GDT_SIZE+TASKS_NB*2];
+pub type Gdt = [GdtEntry; GDT_SIZE+TASKS_NB];
 
 /// Structure of a GDT descriptor. There are 2 types of descriptors: segments and TSS.
 /// Section 3.4.5 of Intel 64 & IA32 architectures software developer's manual describes

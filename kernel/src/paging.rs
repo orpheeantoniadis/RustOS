@@ -2,7 +2,6 @@
 
 use core::mem::size_of;
 use rlibc::memset;
-use vga::*;
 use multiboot::*;
 
 const MAX_ENTRIES: usize = 1024;
