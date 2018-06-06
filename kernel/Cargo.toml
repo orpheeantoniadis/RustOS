@@ -4,8 +4,14 @@ version = "0.1.0"
 authors = ["orpheeantoniadis <orphee.antoniadis@gmail.com>"]
 
 [lib]
+name = "kernel"
+path = "src/kernel.rs"
 crate-type = ["staticlib"]
 
 [dependencies]
 rlibc = "1.0"
 common = { path = "../common" }
+
+[profile.release]
+lto = true
+panic = 'abort'

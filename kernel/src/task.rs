@@ -7,7 +7,7 @@ use fs::*;
 use common::*;
 use vga::*;
 
-pub const TASKS_NB: usize = 8; 
+pub const TASKS_NB: usize = 0; 
 pub const ADDR_SPACE_SIZE: usize = 0x100000;
 pub const STACK_SIZE: usize = 0x10000;
 

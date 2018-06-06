@@ -9,7 +9,7 @@ build:
 	
 run:
 	$(MAKE) -C $(KERNEL_PATH) run
-
+	
 test:
 	$(MAKE) -C $(KERNEL_PATH) test
 	

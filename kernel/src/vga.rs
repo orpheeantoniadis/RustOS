@@ -8,7 +8,7 @@ use common::*;
 const TAB_SIZE: usize = 4;
 
 static mut SCREEN: Screen = Screen {
-    buffer: 0xb8000 as *mut _,
+    buffer: 0xC00B8000 as *mut _,
     attribute: ColorAttribute::new(Color::Black, Color::White),
     cursor_x: 0,
     cursor_y: 0
@@ -115,7 +115,7 @@ impl Screen {
         }
         match byte {
             b'\0' => return,
-            b'\n' => return,
+            b'\n' => (),
             b'\t' => {
                 for _i in 0..TAB_SIZE {
                     self.write_byte(b' ');
