@@ -1,7 +1,7 @@
 ARCH = i386
 CC = xargo
 TARGET = $(ARCH)-rust_os
-FLAGS = --release -v --target $(TARGET)
+FLAGS = -v --target $(TARGET)
 SOURCE_PATH = src/
 
 .PHONY: all build run crun test clean mrproper

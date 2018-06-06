@@ -32,7 +32,7 @@ CFLAGS=-m32 \
 
 SRCS = $(wildcard *.s)
 OBJS = $(patsubst %.s, $(BUILD_FOLDER)/%.o, $(SRCS))
-RUST = ../target/$(ARCH)-rust_os/release/libkernel.a
+RUST = ../target/$(ARCH)-rust_os/debug/libkernel.a
 
 KERNEL = kernel.elf
 CKERNEL = ckernel.elf

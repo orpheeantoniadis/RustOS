@@ -1,95 +1,135 @@
-global _loader                          ; Make entry point visible to linker.
-extern kmain                            ; kmain is defined elsewhere
+extern kernel_start
+extern kernel_end
+
+extern low_kernel_start
+extern low_kernel_end
+
+extern kmain
+global entrypoint
+
+; Values for the multiboot header
+MULTIBOOT_MAGIC        equ 0x1BADB002
+MULTIBOOT_ALIGN_MODS   equ 1
+MULTIBOOT_MEMINFO      equ 2
+MULTIBOOT_VIDINFO      equ 4
+
+MULTIBOOT_FLAGS     equ (MULTIBOOT_ALIGN_MODS|MULTIBOOT_MEMINFO)
+
+; Magic + checksum + flags must equal 0!
+MULTIBOOT_CHECKSUM  equ -(MULTIBOOT_MAGIC + MULTIBOOT_FLAGS)
+
+KERNEL_BASE equ 0xC0000000
+KERNEL_PAGE_NUMBER equ (KERNEL_BASE >> 22)
+
+STACK_SIZE  equ 0x100000
+
+;-------------------------------------------------------------------------------
+; .multiboot section
+; This section must be located at the very beginning of the kernel image.
+
+section .multiboot
+
+; Mandatory part of the multiboot header
+; see http://git.savannah.gnu.org/cgit/grub.git/tree/doc/multiboot.h?h=multiboot
+dd MULTIBOOT_MAGIC
+dd MULTIBOOT_FLAGS
+dd MULTIBOOT_CHECKSUM
+
+;-------------------------------------------------------------------------------
+section .low_text
  
-; setting up the Multiboot header - see GRUB docs for details
-MODULEALIGN equ  1<<0             ; align loaded modules on page boundaries
-MEMINFO     equ  1<<1             ; provide memory map
-FLAGS       equ  MODULEALIGN | MEMINFO  ; this is the Multiboot 'flag' field
-MAGIC       equ    0x1BADB002     ; 'magic number' lets bootloader find the header
-CHECKSUM    equ -(MAGIC + FLAGS)  ; checksum required
- 
-; This is the virtual base address of kernel space. It must be used to convert virtual
-; addresses into physical addresses until paging is enabled. Note that this is not
-; the virtual address where the kernel image itself is loaded -- just the amount that must
-; be subtracted from a virtual address to get a physical address.
-KERNEL_VIRTUAL_BASE equ 0xC0000000                  ; 3GB
-KERNEL_PAGE_NUMBER equ (KERNEL_VIRTUAL_BASE >> 22)  ; Page directory index of kernel's 4MB PTE.
- 
- 
-section .data
-align 0x1000
-BootPageDirectory:
-    ; This page directory entry identity-maps the first 4MB of the 32-bit physical address space.
-    ; All bits are clear except the following:
-    ; bit 7: PS The kernel page is 4MB.
-    ; bit 1: RW The kernel page is read/write.
-    ; bit 0: P  The kernel page is present.
-    ; This entry must be here -- otherwise the kernel will crash immediately after paging is
-    ; enabled because it can't fetch the next instruction! It's ok to unmap this page later.
-    dd 0x00000083
-    times (KERNEL_PAGE_NUMBER - 1) dd 0                 ; Pages before kernel space.
-    ; This page directory entry defines a 4MB page containing the kernel.
-    dd 0x00000083
-    times (1024 - KERNEL_PAGE_NUMBER - 1) dd 0  ; Pages after the kernel image.
- 
- 
+entrypoint:
+    ; save multiboot infos
+    mov [multiboot_magic], eax
+    mov [multiboot_info],  ebx
+    
+    ; map low kernel pt in pd
+    mov eax, low_kernel_pt
+    mov [page_directory], eax
+    or dword [page_directory], 0x3
+    
+    mov eax, 0
+    .low_kernel_pt_init:
+        mov ecx, eax
+        shr ecx, 12
+        and ecx, 0x3ff
+        mov [low_kernel_pt + ecx * 4], eax
+        or dword [low_kernel_pt + ecx * 4], 0x3 
+
+        add eax, 0x1000
+        cmp eax, low_kernel_end
+        jl .low_kernel_pt_init
+        
+    ; map higher kernel pt in pd
+    mov eax, kernel_pt
+    mov [page_directory + KERNEL_PAGE_NUMBER * 4], eax
+    or dword [page_directory + KERNEL_PAGE_NUMBER * 4], 0x3
+    
+    mov eax, kernel_start
+    .high_kernel_pt_init:
+        mov ecx, eax
+        shr ecx, 12
+        and ecx, 0x3ff
+
+        mov ebx, eax 
+        sub ebx, KERNEL_BASE ; convert virt->physical
+        mov [kernel_pt + ecx * 4], ebx
+        or dword [kernel_pt + ecx * 4], 0x3
+
+        add eax, 0x1000
+        cmp eax, kernel_end
+        jl .high_kernel_pt_init
+
+    ; init paging
+    mov eax, page_directory
+    mov cr3, eax
+    mov eax, cr0
+    or eax, 0x80000000
+    mov cr0, eax
+    
+    lea ecx, [higher_half]
+    jmp ecx
+
+;-------------------------------------------------------------------------------
+section .low_data
+
+multiboot_magic:
+    dd 0
+multiboot_info:
+    dd 0
+
+;-------------------------------------------------------------------------------
+section .low_bss nobits
+
+alignb 4096
+page_directory:
+    resd 1024
+low_kernel_pt:
+    resd 1024
+kernel_pt:
+    resd 1024
+
+;-------------------------------------------------------------------------------
 section .text
-align 4
-MultiBootHeader:
-    dd MAGIC
-    dd FLAGS
-    dd CHECKSUM
- 
-; reserve initial kernel stack space -- that's 16k.
-STACKSIZE equ 0x4000
- 
-; setting up entry point for linker
-loader equ (_loader - 0xC0000000)
-global loader
- 
-_loader:
-    ; NOTE: Until paging is set up, the code must be position-independent and use physical
-    ; addresses, not virtual ones!
-    mov ecx, (BootPageDirectory - KERNEL_VIRTUAL_BASE)
-    mov cr3, ecx                                        ; Load Page Directory Base Register.
- 
-    mov ecx, cr4
-    or ecx, 0x00000010                          ; Set PSE bit in CR4 to enable 4MB pages.
-    mov cr4, ecx
- 
-    mov ecx, cr0
-    or ecx, 0x80000000                          ; Set PG bit in CR0 to enable paging.
-    mov cr0, ecx
- 
-    ; Start fetching instructions in kernel space.
-    ; Since eip at this point holds the physical address of this command (approximately 0x00100000)
-    ; we need to do a long jump to the correct virtual address of StartInHigherHalf which is
-    ; approximately 0xC0100000.
-    lea ecx, [StartInHigherHalf]
-    jmp ecx                                                     ; NOTE: Must be absolute jump!
- 
-StartInHigherHalf:
-    ; Unmap the identity-mapped first 4MB of physical address space. It should not be needed
-    ; anymore.
-    mov dword [BootPageDirectory], 0
-    invlpg [0]
- 
-    ; NOTE: From now on, paging should be enabled. The first 4MB of physical address space is
-    ; mapped starting at KERNEL_VIRTUAL_BASE. Everything is linked to this address, so no more
-    ; position-independent code or funny business with virtual-to-physical address translation
-    ; should be necessary. We now have a higher-half kernel.
-    mov esp, stack+STACKSIZE           ; set up the stack
-    push eax                           ; pass Multiboot magic number
- 
-    ; pass Multiboot info structure -- WARNING: This is a physical address and may not be
-    ; in the first 4MB!
-    push ebx
- 
-    call  kmain                  ; call kernel proper
-    hlt                          ; halt machine should kernel return
- 
- 
-section .bss
-align 32
+higher_half:
+    ; code starts executing here
+    cli  ; disable hardware interrupts
+
+    ; Initialize the stack pointer and EBP (both to the same value)
+    mov esp, stack + STACK_SIZE
+    mov ebp, stack + STACK_SIZE
+
+    ; pass the multiboot info to the kernel
+    push dword [multiboot_info]
+
+    call kmain
+
+    .forever:
+        hlt
+        jmp .forever
+
+;-------------------------------------------------------------------------------
+; .stack section 1MB long
+section .stack nobits
 stack:
-    resb STACKSIZE      ; reserve 16k stack on a uint64_t boundary
+resb STACK_SIZE ; reserve 1MB for the stack
