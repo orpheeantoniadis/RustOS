@@ -1,3 +1,5 @@
+%include "const.inc"
+
 extern kernel_start
 extern kernel_end
 
@@ -5,7 +7,9 @@ extern low_kernel_start
 extern low_kernel_end
 
 extern kmain
+
 global entrypoint
+global page_directory
 
 ; Values for the multiboot header
 MULTIBOOT_MAGIC        equ 0x1BADB002
@@ -17,11 +21,6 @@ MULTIBOOT_FLAGS     equ (MULTIBOOT_ALIGN_MODS|MULTIBOOT_MEMINFO)
 
 ; Magic + checksum + flags must equal 0!
 MULTIBOOT_CHECKSUM  equ -(MULTIBOOT_MAGIC + MULTIBOOT_FLAGS)
-
-KERNEL_BASE equ 0xC0000000
-KERNEL_PAGE_NUMBER equ (KERNEL_BASE >> 22)
-
-STACK_SIZE  equ 0x100000
 
 ;-------------------------------------------------------------------------------
 ; .multiboot section

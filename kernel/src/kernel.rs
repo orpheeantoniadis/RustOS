@@ -33,6 +33,7 @@ use idt::idt_init;
 use timer::{timer_init,sleep};
 use keyboard::getc;
 use fs::*;
+use paging::*;
 use common::{Color,bytes_to_str};
 
 // exports
@@ -71,6 +72,8 @@ pub extern fn kmain(_multiboot_magic: u32, multiboot_info: *mut MultibootInfo) {
     println!("Screen initialized.");
     gdt_init();
     println!("GDT initialized.");
+    mmap_init();
+    println!("Memory map initialized.");
     pic_init();
     println!("PIC initialized.");
     idt_init();

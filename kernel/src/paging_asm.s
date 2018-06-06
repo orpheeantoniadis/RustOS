@@ -1,12 +1,17 @@
+%include "const.inc"
+
 extern kernel_start
 extern kernel_end
-global enable_paging
+extern page_directory
+
+global load_directory
 global get_kernel_start
 global get_kernel_end
+global get_kernel_page_directory
 
 section .text:          ; start of the text (code) section
 
-enable_paging:
+load_directory:
     push ebp
     mov ebp, esp
     
@@ -34,6 +39,16 @@ get_kernel_end:
     mov ebp, esp
     
     mov eax, kernel_end
+    
+    leave
+    ret
+    
+get_kernel_page_directory:
+    push ebp
+    mov ebp, esp
+    
+    mov eax, page_directory
+    add eax, KERNEL_BASE
     
     leave
     ret
