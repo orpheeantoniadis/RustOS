@@ -18,7 +18,8 @@ pub extern fn kmain() {
     }
 
     // write `Hello World!` to the center of the VGA text buffer
-    let buffer_ptr = (0xb8000 + 1988) as *mut _;
+    let buffer_addr: u32 = 0xC00B8000;
+    let buffer_ptr = (buffer_addr + 1988) as *mut _;
     unsafe { *buffer_ptr = hello_colored };
 
     loop{}

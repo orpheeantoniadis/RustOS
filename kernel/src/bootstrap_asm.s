@@ -43,7 +43,7 @@ entrypoint:
     mov [multiboot_magic], eax
     mov [multiboot_info],  ebx
     
-    ; map low kernel pt in pd
+    ; map lower-half kernel pt in pd
     mov eax, low_kernel_pt
     mov [page_directory], eax
     or dword [page_directory], 0x3
@@ -53,14 +53,18 @@ entrypoint:
         mov ecx, eax
         shr ecx, 12
         and ecx, 0x3ff
+        ; map first MB in lower-half
         mov [low_kernel_pt + ecx * 4], eax
-        or dword [low_kernel_pt + ecx * 4], 0x3 
-
+        or dword [low_kernel_pt + ecx * 4], 0x3
+        ; map first MB in higher-half
+        mov [kernel_pt + ecx * 4], eax
+        or dword [kernel_pt + ecx * 4], 0x3 
+        
         add eax, 0x1000
         cmp eax, low_kernel_end
         jl .low_kernel_pt_init
         
-    ; map higher kernel pt in pd
+    ; map higher-half kernel pt in pd
     mov eax, kernel_pt
     mov [page_directory + KERNEL_PAGE_NUMBER * 4], eax
     or dword [page_directory + KERNEL_PAGE_NUMBER * 4], 0x3
@@ -70,16 +74,16 @@ entrypoint:
         mov ecx, eax
         shr ecx, 12
         and ecx, 0x3ff
-
+        
         mov ebx, eax 
-        sub ebx, KERNEL_BASE ; convert virt->physical
+        sub ebx, KERNEL_BASE
         mov [kernel_pt + ecx * 4], ebx
         or dword [kernel_pt + ecx * 4], 0x3
-
+        
         add eax, 0x1000
         cmp eax, kernel_end
         jl .high_kernel_pt_init
-
+        
     ; init paging
     mov eax, page_directory
     mov cr3, eax
@@ -112,24 +116,27 @@ kernel_pt:
 ;-------------------------------------------------------------------------------
 section .text
 higher_half:
-    ; code starts executing here
     cli  ; disable hardware interrupts
-
+    
     ; Initialize the stack pointer and EBP (both to the same value)
     mov esp, stack + STACK_SIZE
     mov ebp, stack + STACK_SIZE
-
+    
     ; pass the multiboot info to the kernel
     push dword [multiboot_info]
-
+    
+    ; unmap lower-half kernel
+    mov eax, 0
+    mov [page_directory], eax
+    
     call kmain
-
+    
     .forever:
         hlt
         jmp .forever
-
+        
 ;-------------------------------------------------------------------------------
 ; .stack section 1MB long
 section .stack nobits
 stack:
-resb STACK_SIZE ; reserve 1MB for the stack
+    resb STACK_SIZE ; reserve 1MB for the stack
