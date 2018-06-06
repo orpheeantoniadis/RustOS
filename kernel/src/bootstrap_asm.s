@@ -122,8 +122,11 @@ higher_half:
     mov esp, stack + STACK_SIZE
     mov ebp, stack + STACK_SIZE
     
-    ; pass the multiboot info to the kernel
-    push dword [multiboot_info]
+    ; pass the multiboot infos to the kernel
+    mov ebx, [multiboot_info]
+    add ebx, KERNEL_BASE
+    push ebx
+    push dword [multiboot_magic]
     
     ; unmap lower-half kernel
     mov eax, 0

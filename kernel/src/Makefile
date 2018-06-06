@@ -3,75 +3,71 @@ BUILD_FOLDER = build
 
 LD = gcc
 QEMU = qemu-system-$(ARCH)
-GCC_KERNEL=-nostdlib \
-	-nostdinc \
-	-fno-builtin \
-	-nostartfiles \
-	-nodefaultlibs
-
-LDFLAGS=-Wl,-m,elf_i386 \
-	-Wl,-Map,kernel.map \
-	-ggdb \
-	-T $(LINKER) \
-	-L lib \
-	$(GCC_KERNEL)
-	
-CLDFLAGS=-Wl,-m,elf_i386 \
-	-Wl,-Map,ckernel.map \
-	-ggdb \
-	-T $(LINKER) \
-	-L lib \
-	$(GCC_KERNEL)
-	
-CFLAGS=-m32 \
-	-I$(CURDIR)/include/ \
-	-ggdb \
-	-Wall \
-	-Wextra \
-	$(GCC_KERNEL)
+GCC_KERNEL = -static -m32 -ffreestanding -nostdlib
+LDFLAGS = -T $(LINKER) $(GCC_KERNEL) -Wl,-Map,$(BUILD_FOLDER)/kernel.map
 
 SRCS = $(wildcard *.s)
 OBJS = $(patsubst %.s, $(BUILD_FOLDER)/%.o, $(SRCS))
 RUST = ../target/$(ARCH)-rust_os/debug/libkernel.a
 
 KERNEL = kernel.elf
-CKERNEL = ckernel.elf
 LINKER = kernel.ld
 
-.PHONY: all run crun elf celf clean mrproper
+GRUB = ../../grub
+OS = rust_os
+ISO = $(OS).iso
+IFLAGS = -input-charset utf8 -no-emul-boot -boot-info-table
 
-all: elf celf
+FS_FOLDER = ../../tools/MicroFS
+USER_PATH = ../../user
+FS = fs.img
+SPLASH = ../../doc/splash.txt
 
-run: elf
-	$(QEMU) -name RustOS -m 32 -no-reboot -kernel $(BUILD_FOLDER)/$(KERNEL)
+.PHONY : all run iso elf fs user clean mrproper
 
-crun: celf
-	$(QEMU) -name RustOS -m 32 -no-reboot -kernel $(BUILD_FOLDER)/$(CKERNEL)
+all : iso fs
 
-elf: $(BUILD_FOLDER)/$(KERNEL)
+run : iso fs
+	$(QEMU) -cdrom $(BUILD_FOLDER)/$(ISO) -hda $(BUILD_FOLDER)/$(FS)
 	
-celf: $(BUILD_FOLDER)/$(CKERNEL)
+iso : $(BUILD_FOLDER)/$(ISO)
 	
-$(BUILD_FOLDER)/$(KERNEL): $(OBJS) $(LINKER) $(RUST)
-	$(LD) $(LDFLAGS) $(OBJS) $(RUST) -o $@ -lgcc
+elf : $(BUILD_FOLDER)/$(KERNEL)
 	
-$(BUILD_FOLDER)/$(CKERNEL): $(OBJS) $(BUILD_FOLDER)/kernel.o
-	$(LD) $(CLDFLAGS) $^ -o $@ -lgcc
+fs : $(BUILD_FOLDER)/$(FS)
+	
+user :
+	$(MAKE) -C $(USER_PATH)
+	
+$(BUILD_FOLDER)/$(ISO) : elf
+	mkdir -p $(BUILD_FOLDER)/isofiles/boot/grub
+	cp $(BUILD_FOLDER)/$(KERNEL) $(BUILD_FOLDER)/isofiles/boot/$(KERNEL)
+	cp -r $(GRUB) $(BUILD_FOLDER)/isofiles/boot
+	genisoimage -R -b boot/grub/stage2_eltorito $(IFLAGS) -o $(@) $(BUILD_FOLDER)/isofiles
+	rm -r $(BUILD_FOLDER)/isofiles
+	
+$(BUILD_FOLDER)/$(KERNEL) : $(LINKER) $(OBJS) $(RUST)
+	$(LD) $(LDFLAGS) $(OBJS) $(RUST) -o $@
 
-$(BUILD_FOLDER)/%.o: %.s
+$(BUILD_FOLDER)/%.o : %.s
 	mkdir -p $(shell dirname $@)
 	nasm -f elf $< -o $@
 	
-$(BUILD_FOLDER)/kernel.o: kernel.c
-	gcc $(CFLAGS) -c $< -o $@
-	
-$(RUST):
+$(RUST) :
 	$(MAKE) -C ../
 	
-clean:
-	rm -rf $(BUILD_FOLDER)
-	rm -f kernel.map
-	rm -f ckernel.map
+$(BUILD_FOLDER)/$(FS) : $(SPLASH) user
+	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) create MicroFS 1 1000000
+	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(SPLASH)
+	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(USER_PATH)/build/hello
+	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(USER_PATH)/build/demo
+	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(USER_PATH)/build/shell
+	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(USER_PATH)/build/splash
 	
-mrproper: clean
+clean :
+	rm -rf $(BUILD_FOLDER) *.map
+	$(MAKE) -C $(USER_PATH) clean
 	
+mrproper : clean
+	cargo clean --manifest-path $(FS_FOLDER)/Cargo.toml
+	$(MAKE) -C $(USER_PATH) mrproper
