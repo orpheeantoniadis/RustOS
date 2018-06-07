@@ -44,6 +44,7 @@ pub use syscall::syscall_handler;
 #[cfg(test)]
 mod test;
 
+#[allow(dead_code)]
 fn splash_screen() {
     disable_cursor();
     vga_clear();
@@ -72,8 +73,8 @@ pub extern fn kmain(_multiboot_magic: u32, multiboot_info: *mut MultibootInfo) {
     println!("Screen initialized.");
     gdt_init();
     println!("GDT initialized.");
-    mmap_init();
-    println!("Memory map initialized.");
+    paging_init();
+    println!("Paging initialized.");
     pic_init();
     println!("PIC initialized.");
     idt_init();
@@ -85,9 +86,15 @@ pub extern fn kmain(_multiboot_magic: u32, multiboot_info: *mut MultibootInfo) {
     set_superblock();
     println!("Welcome to RustOS!");
     println!("Available Memory = {} kB", mboot.mem_upper);
-    sleep(3000);
-    splash_screen();
-    vga_clear();
+    unsafe {
+        let frame = alloc_frame();
+        let pd = PageTable::from_ptr(PD_ADDR);
+        (*pd).set_page(frame / FRAME_SIZE as u32);
+        // *(frame as *mut u8) = 0x42;
+    }
+    // sleep(3000);
+    // splash_screen();
+    // vga_clear();
     loop {
         let key = getc() as u8;
         if key == b'Q' {

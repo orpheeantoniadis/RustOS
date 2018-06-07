@@ -10,6 +10,7 @@ extern kmain
 
 global entrypoint
 global page_directory
+global kernel_pt
 
 ; Values for the multiboot header
 MULTIBOOT_MAGIC        equ 0x1BADB002
