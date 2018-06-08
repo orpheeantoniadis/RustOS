@@ -6,6 +6,7 @@ extern page_directory
 extern kernel_pt
 
 global load_directory
+global update_cr3
 global get_kernel_start
 global get_kernel_end
 global get_kernel_page_directory

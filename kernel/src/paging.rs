@@ -31,6 +31,10 @@ extern "C" {
     fn get_kernel_page_table() -> u32;
 }
 
+macro_rules! phys {
+    ($addr:expr) => ($addr - KERNEL_BASE);
+}
+
 pub fn paging_init() {
     unsafe {
         KHEAP_ADDR = get_kernel_end();
@@ -119,9 +123,30 @@ impl IndexMut<usize> for PageTable {
 }
 
 impl PageTable {
-    fn new() -> PageTable {
+    fn null() -> PageTable {
         PageTable {
             entries: [0;MAX_ENTRIES]
+        }
+    }
+    
+    fn new_table(&mut self) -> u32 {
+        unsafe {
+            // create a new table on the heap
+            let phys_addr = phys!(kmalloc(FRAME_SIZE));
+            let virt_addr = alloc_frame();
+            let frame_idx = virt_addr / FRAME_SIZE as u32;
+            let table_idx = frame_idx as usize / MAX_ENTRIES;
+            let entry_idx = frame_idx as usize % MAX_ENTRIES;
+            // create a temporary table
+            let mut tmp_table = PageTable::null();
+            tmp_table[entry_idx] = phys_addr | 0x3;
+            self[table_idx] = phys!(tmp_table.as_ptr()) | 0x3;
+            // now that the new table is mapped we can modify it
+            let table_ptr = virt_addr as *mut PageTable;
+            memset(virt_addr as *mut u8, 0, size_of::<PageTable>());
+            (*table_ptr)[entry_idx] = phys_addr | 0x3;
+            self[table_idx] = phys_addr | 0x3;
+            return virt_addr;
         }
     }
     
@@ -137,28 +162,13 @@ impl PageTable {
         unsafe {
             let table_idx = idx as usize / MAX_ENTRIES;
             let entry_idx = idx as usize % MAX_ENTRIES;
+            let entry_addr = phys!(kmalloc(FRAME_SIZE));
             if self[table_idx] == 0 {
-                // create a new table on the heap
-                let table_addr = kmalloc(FRAME_SIZE);
-                let table_frame_addr = alloc_frame();
-                let table_frame_idx = table_frame_addr / FRAME_SIZE as u32;
-                // create a temporary table
-                let mut tmp_table = PageTable::new();
-                tmp_table[table_frame_idx as usize % MAX_ENTRIES] = table_addr | 0x3;
-                self[769] = tmp_table.as_ptr() | 0x3;
-                // now that the new table is mapped we can modify it
-                println!("Table idx = 0x{:x}", table_idx);
-                println!("Tmp table addr = 0x{:x}", tmp_table.as_ptr());
-                println!("New table phys addr = 0x{:x}", table_addr);
-                println!("New table addr = 0x{:x}", table_frame_addr);
-                println!("New table frame idx = 0x{:x}", table_frame_idx);
-                println!("Directory entry = 0x{:x}", self[table_idx]);
-                println!("Table entry = 0x{:x}", (*PageTable::from_ptr(self[table_idx]&!3))[2]);
-                memset(0xC0402000 as *mut u8, 0, size_of::<PageTable>());
-                // (*(table_addr as *mut PageTable))[entry_idx] = (idx * FRAME_SIZE as u32) | 0x3;
+                let table_ptr = self.new_table() as *mut PageTable;
+                (*table_ptr)[entry_idx] = entry_addr | 0x3;
             } else {
-                let table_addr = self[table_idx] &! 0x3;
-                (*(table_addr as *mut PageTable))[entry_idx] = (idx * FRAME_SIZE as u32) | 0x3;
+                let table_ptr = (self[table_idx] &! 0x3) as *mut PageTable;
+                (*table_ptr)[entry_idx] = entry_addr | 0x3;
             }
         }
     }

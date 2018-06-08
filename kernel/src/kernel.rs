@@ -90,7 +90,10 @@ pub extern fn kmain(_multiboot_magic: u32, multiboot_info: *mut MultibootInfo) {
         let frame = alloc_frame();
         let pd = PageTable::from_ptr(PD_ADDR);
         (*pd).set_page(frame / FRAME_SIZE as u32);
-        // *(frame as *mut u8) = 0x42;
+        *(frame as *mut u8) = 0x42;
+        // let other_frame = alloc_frame();
+        // (*pd).set_page(other_frame / FRAME_SIZE as u32);
+        // *(other_frame as *mut u8) = 0x42;
     }
     // sleep(3000);
     // splash_screen();
