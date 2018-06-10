@@ -3,7 +3,7 @@
 use core::mem::size_of;
 use core::ops::{Index, IndexMut};
 use rlibc::memset;
-use vga::*;
+// use vga::*;
 
 const KERNEL_BASE: u32 = 0xC0000000;
 const KERNEL_PAGE_NUMBER: u32 = KERNEL_BASE >> 22;
@@ -35,6 +35,10 @@ macro_rules! phys {
     ($addr:expr) => ($addr - KERNEL_BASE);
 }
 
+macro_rules! virt {
+    ($addr:expr) => ($addr + KERNEL_BASE);
+}
+
 pub fn paging_init() {
     unsafe {
         KHEAP_ADDR = get_kernel_end();
@@ -55,8 +59,12 @@ pub fn kmalloc(size: usize) -> u32 {
     }
 }
 
-pub fn alloc_frame() -> u32 {
-    let frame = get_free_frame();
+pub fn alloc_frame(addr: u32) -> u32 {
+    let frame = if addr == 0 {
+        get_free_frame()
+    } else {
+        addr / FRAME_SIZE as u32
+    };
     if frame != 0 {
         set_mmap_frame(frame)
     }
@@ -133,19 +141,26 @@ impl PageTable {
         unsafe {
             // create a new table on the heap
             let phys_addr = phys!(kmalloc(FRAME_SIZE));
-            let virt_addr = alloc_frame();
+            let virt_addr = alloc_frame(virt!(phys_addr));
             let frame_idx = virt_addr / FRAME_SIZE as u32;
             let table_idx = frame_idx as usize / MAX_ENTRIES;
             let entry_idx = frame_idx as usize % MAX_ENTRIES;
-            // create a temporary table
-            let mut tmp_table = PageTable::null();
-            tmp_table[entry_idx] = phys_addr | 0x3;
-            self[table_idx] = phys!(tmp_table.as_ptr()) | 0x3;
-            // now that the new table is mapped we can modify it
-            let table_ptr = virt_addr as *mut PageTable;
-            memset(virt_addr as *mut u8, 0, size_of::<PageTable>());
-            (*table_ptr)[entry_idx] = phys_addr | 0x3;
-            self[table_idx] = phys_addr | 0x3;
+            if self[table_idx] == 0 {
+                // create a temporary table
+                let mut tmp_table = PageTable::null();
+                tmp_table[entry_idx] = phys_addr | 0x3;
+                self[table_idx] = phys!(tmp_table.as_ptr()) | 0x3;
+                // now that the new table is mapped we can modify it
+                let table_ptr = virt_addr as *mut PageTable;
+                memset(virt_addr as *mut u8, 0, size_of::<PageTable>());
+                (*table_ptr)[entry_idx] = phys_addr | 0x3;
+                self[table_idx] = phys_addr | 0x3;
+            } else {
+                // page table already exists, just create new entry
+                let table_ptr = virt!(self[table_idx] &! 0xfff) as *mut PageTable;
+                (*table_ptr)[entry_idx] = phys_addr | 0x3;
+                memset(virt_addr as *mut u8, 0, size_of::<PageTable>());
+            }
             return virt_addr;
         }
     }
@@ -164,12 +179,10 @@ impl PageTable {
             let entry_idx = idx as usize % MAX_ENTRIES;
             let entry_addr = phys!(kmalloc(FRAME_SIZE));
             if self[table_idx] == 0 {
-                let table_ptr = self.new_table() as *mut PageTable;
-                (*table_ptr)[entry_idx] = entry_addr | 0x3;
-            } else {
-                let table_ptr = (self[table_idx] &! 0x3) as *mut PageTable;
-                (*table_ptr)[entry_idx] = entry_addr | 0x3;
+                self[table_idx] = phys!(self.new_table()) | 0x3;
             }
+            let table_ptr = virt!(self[table_idx] &! 0xfff) as *mut PageTable;
+            (*table_ptr)[entry_idx] = entry_addr | 0x3;
         }
     }
 }
