@@ -3,6 +3,7 @@
 use core::mem::size_of;
 use x86::*;
 use gdt::*;
+use paging::*;
 use fs::*;
 use common::*;
 use vga::*;
@@ -60,8 +61,9 @@ pub fn tasks_init() {
     unsafe {
         INITIAL_TSS.ss0 = GDT_KERNEL_DATA_SELECTOR as u16;
         INITIAL_TSS.esp0 = &INITIAL_TSS_KERNEL_STACK as *const _ as u32 + STACK_SIZE as u32;
-        GDT[3] = GdtEntry::make_tss(&INITIAL_TSS as *const _ as u32, DPL_KERNEL);
-        task_ltr(GDT[3].to_selector() as u16);
+        // INITIAL_TSS.cr3 = PD_ADDR;
+        GDT[5] = GdtEntry::make_tss(&INITIAL_TSS as *const _ as u32, DPL_KERNEL);
+        task_ltr(GDT[5].to_selector() as u16);
         
         for task in &mut TASKS {
             task.setup();
@@ -77,6 +79,9 @@ pub fn exec(filename: &str) -> i8 {
             let fd = file_open(filename);
             if fd != -1 {
                 let stat = Stat::new(filename);
+                // let frame = alloc_frame(0);
+                // let pd = PageTable::from_ptr(PD_ADDR);
+                // (*pd).set_page(frame / FRAME_SIZE as u32);
                 if file_read(fd, TASKS[idx].addr_space as *mut u8, stat.size) != -1 {
                     let addr_space = *(TASKS[idx].addr_space as *const [u8;MAX_STR_LEN]);
                     if bytes_to_str(&addr_space) != "\0" {
