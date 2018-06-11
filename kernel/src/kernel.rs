@@ -23,7 +23,7 @@ pub mod fs;
 pub mod task;
 pub mod syscall;
 
-use x86::sti;
+use x86::*;
 use multiboot::*;
 use vga::*;
 use pio::{enable_cursor,disable_cursor};
@@ -106,7 +106,8 @@ pub extern fn kmain(_multiboot_magic: u32, multiboot_info: *mut MultibootInfo) {
 #[no_mangle]
 pub extern fn panic_fmt(details: ::core::fmt::Arguments, file: &'static str, line: u32, column: u32) -> ! {
     println!("panicked at {}, {}:{}:{}", details, file, line, column);
-    loop{};
+    halt();
+    loop {}
 }
 
 #[no_mangle]

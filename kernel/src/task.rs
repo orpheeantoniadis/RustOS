@@ -8,8 +8,8 @@ use fs::*;
 use common::*;
 use vga::*;
 
-pub const TASKS_NB: usize = 2; 
-pub const STACK_SIZE: usize = 0x50000;
+pub const TASKS_NB: usize = 8; 
+pub const STACK_SIZE: usize = 0x10000;
 
 pub static mut INITIAL_TSS: Tss = Tss::new();
 pub static mut INITIAL_TSS_KERNEL_STACK: [u8;STACK_SIZE] = [0;STACK_SIZE];
@@ -57,7 +57,7 @@ pub fn tasks_init() {
     unsafe {
         INITIAL_TSS.ss0 = GDT_KERNEL_DATA_SELECTOR as u16;
         INITIAL_TSS.esp0 = &INITIAL_TSS_KERNEL_STACK as *const _ as u32 + STACK_SIZE as u32;
-        INITIAL_TSS.cr3 = phys!(INIT_PD.tables as u32);
+        INITIAL_TSS.cr3 = phys!(INITIAL_PD.tables as u32);
         GDT[5] = GdtEntry::make_tss(&INITIAL_TSS as *const _ as u32, DPL_KERNEL);
         task_ltr(GDT[5].to_selector() as u16);
         
@@ -71,38 +71,46 @@ pub fn exec(filename: &str) -> i8 {
     let idx = free_task();
     if idx != -1 {
         unsafe {
-            let idx = idx as usize;
             let fd = file_open(filename);
             if fd != -1 {
-                let mut task_pd = PageDirectory::new(INIT_PD.new_table(USER_MODE));
-                *task_pd.tables = (*INIT_PD.tables).clone();
+                // Create new directory using initial directory 
                 let cr3 = get_cr3();
-                load_directory(phys!(task_pd.tables as u32));
-                let mut frame = task_pd.alloc_frame(USER_MODE);
-                if file_read(fd, frame as *mut u8, FRAME_SIZE) != -1 {
-                    let first_bytes = *(frame as *const [u8;MAX_STR_LEN]);
-                    if bytes_to_str(&first_bytes) != "\0" {
-                        println!("exec: {}: not an executable", filename);
-                        return -1;
-                    }
-                    loop {
-                        frame = task_pd.alloc_frame(USER_MODE);
-                        if file_read(fd, frame as *mut u8, FRAME_SIZE) == 0 {
-                            break;
-                        }
-                    }
-                    let stack_ptr = (frame + 0x1000) as u32;
-                    TASKS[idx].is_free = false;
-                    TASKS[idx].tss.eip = 0;
-                    TASKS[idx].tss.esp = stack_ptr;
-                    TASKS[idx].tss.ebp = stack_ptr;
-                    TASKS[idx].tss.cr3 = phys!(task_pd.tables as u32);
-                    task_switch(TASKS[idx].tss_selector as u16);
-                    load_directory(cr3);
-                    TASKS[idx].is_free = true;
-                    return 0;
+                if cr3 != phys!(INITIAL_PD.tables as u32) {
+                    load_directory(phys!(INITIAL_PD.tables as u32));
                 }
+                let mut task_pd = PageDirectory::new();
+                *task_pd.tables = (*INITIAL_PD.tables).clone();
+                load_directory(phys!(task_pd.tables as u32));
+                
+                // Alloc frames starting at address 0
+                // An additional frame is allocated for the stack
+                let mut frame = task_pd.alloc_frame(USER_MODE);
+                file_read(fd, frame as *mut u8, FRAME_SIZE);
+                let first_bytes = *(frame as *const [u8;MAX_STR_LEN]);
+                if bytes_to_str(&first_bytes) != "\0" {
+                    println!("exec: {}: not an executable", filename);
+                    return -1;
+                }
+                loop {
+                    frame = task_pd.alloc_frame(USER_MODE);
+                    if file_read(fd, frame as *mut u8, FRAME_SIZE) == 0 {
+                        break;
+                    }
+                }
+                
+                // Setup task with page directory previously allocated
+                let stack_ptr = (frame + 0x1000) as u32;
+                TASKS[idx as usize].is_free = false;
+                TASKS[idx as usize].tss.eip = 0;
+                TASKS[idx as usize].tss.esp = stack_ptr;
+                TASKS[idx as usize].tss.ebp = stack_ptr;
+                TASKS[idx as usize].tss.cr3 = phys!(task_pd.tables as u32);
+                
+                // Switch task and re-load original cr3
+                task_switch(TASKS[idx as usize].tss_selector as u16);
                 load_directory(cr3);
+                TASKS[idx as usize].is_free = true;
+                return 0;
             } else {
                 println!("exec: {}: not found", filename);
             }
