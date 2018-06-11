@@ -103,8 +103,8 @@ pub fn file_read(fd: i32, buf: *mut u8, n: usize) -> i32 {
         } else {
             read_sector(sector_id as u32, &mut sector[0] as *mut u16);
             let data = mem::transmute::<[u16;SECTOR_SIZE/2], [u8;SECTOR_SIZE]>(sector);
-            memcpy(buf.offset(cnt as isize), &data[FDT[fd as usize].pos % SECTOR_SIZE], n % SECTOR_SIZE);
-            FDT[fd as usize].pos += n % SECTOR_SIZE;
+            memcpy(buf.offset(cnt as isize), &data[FDT[fd as usize].pos % SECTOR_SIZE], size % SECTOR_SIZE);
+            FDT[fd as usize].pos += size % SECTOR_SIZE;
             return n as i32;
         }
     }

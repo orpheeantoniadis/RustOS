@@ -64,6 +64,8 @@ pub fn gdt_init() {
         GDT_PTR = GdtPtr::new((size_of::<Gdt>() - 1) as u16, &GDT);
         // Load the GDT
         gdt_load(&GDT_PTR);
+        // Init tasks
+        tasks_init();
     }
 }
 

@@ -12,6 +12,7 @@ pub mod x86;
 pub mod multiboot;
 pub mod vga;
 pub mod pio;
+pub mod paging;
 pub mod gdt;
 pub mod pic;
 pub mod idt;
@@ -21,19 +22,19 @@ pub mod ide;
 pub mod fs;
 pub mod task;
 pub mod syscall;
-pub mod paging;
 
 use x86::sti;
 use multiboot::*;
 use vga::*;
 use pio::{enable_cursor,disable_cursor};
+use paging::*;
 use gdt::gdt_init; 
 use pic::pic_init;
 use idt::idt_init;
 use timer::{timer_init,sleep};
 use keyboard::getc;
 use fs::*;
-use paging::*;
+use task::*;
 use common::{Color,bytes_to_str};
 
 // exports
@@ -86,8 +87,9 @@ pub extern fn kmain(_multiboot_magic: u32, multiboot_info: *mut MultibootInfo) {
     set_superblock();
     println!("Welcome to RustOS!");
     println!("Available Memory = {} kB", mboot.mem_upper);
+    exec("hello");
     unsafe {
-        let frame = INIT_PD.alloc_frame(0);
+        let frame = INIT_PD.alloc_frame(KERNEL_MODE);
         *(frame as *mut u8) = 0x42;
     }
     // sleep(3000);

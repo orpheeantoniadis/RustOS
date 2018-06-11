@@ -34,6 +34,8 @@ pub const  DB_SYS: u8 = 0;
 // kernel code and data selectors in the GDT
 pub const  GDT_KERNEL_CODE_SELECTOR: u8 = 0x08;
 pub const  GDT_KERNEL_DATA_SELECTOR: u8 = 0x10;
+pub const  GDT_USER_CODE_SELECTOR: u8 = 0x18;
+pub const  GDT_USER_DATA_SELECTOR: u8 = 0x20;
 
 // Disable hardware interrupts.
 pub fn cli() {

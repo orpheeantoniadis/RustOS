@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 
 use vga::*;
-use gdt::*;
 use pio::*;
 use timer::*;
 use keyboard::*;
@@ -16,9 +15,8 @@ extern "C" {
 /// System call handler: call the appropriate system call according to the nb argument.
 /// Called by the assembly code _syscall_handler
 #[no_mangle]
-pub unsafe extern fn syscall_handler(nb: Syscall, _arg1: u32, _arg2: u32, _arg3: u32, _arg4: u32, caller_tss_selector: u32) -> i32 {
-    let idx = (selector_to_gdt_index(caller_tss_selector) as usize - GDT_SIZE) / 2;
-    let addr = TASKS[idx].addr_space;
+pub unsafe extern fn syscall_handler(nb: Syscall, _arg1: u32, _arg2: u32, _arg3: u32, _arg4: u32, _caller_tss_selector: u32) -> i32 {
+    let addr = 0;
     match nb {
         Syscall::Puts => syscall_puts(addr, _arg1),
         Syscall::Putc => syscall_putc(_arg1),
