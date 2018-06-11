@@ -87,11 +87,7 @@ pub extern fn kmain(_multiboot_magic: u32, multiboot_info: *mut MultibootInfo) {
     set_superblock();
     println!("Welcome to RustOS!");
     println!("Available Memory = {} kB", mboot.mem_upper);
-    exec("hello");
-    unsafe {
-        let frame = INIT_PD.alloc_frame(KERNEL_MODE);
-        *(frame as *mut u8) = 0x42;
-    }
+    exec("shell");
     // sleep(3000);
     // splash_screen();
     // vga_clear();

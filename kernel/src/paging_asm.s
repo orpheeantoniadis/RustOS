@@ -6,7 +6,7 @@ extern page_directory
 extern kernel_pt
 
 global load_directory
-global update_cr3
+global get_cr3
 global get_kernel_start
 global get_kernel_end
 global get_kernel_page_directory
@@ -25,6 +25,15 @@ load_directory:
     or  ebx, 1 << 31    ; set PG
     mov cr0, ebx        ; update cr0
     
+    leave
+    ret
+    
+get_cr3:
+    push ebp
+    mov ebp, esp
+
+    mov eax, cr3
+
     leave
     ret
     

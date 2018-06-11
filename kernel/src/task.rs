@@ -8,8 +8,8 @@ use fs::*;
 use common::*;
 use vga::*;
 
-pub const TASKS_NB: usize = 8; 
-pub const STACK_SIZE: usize = 0x10000;
+pub const TASKS_NB: usize = 2; 
+pub const STACK_SIZE: usize = 0x50000;
 
 pub static mut INITIAL_TSS: Tss = Tss::new();
 pub static mut INITIAL_TSS_KERNEL_STACK: [u8;STACK_SIZE] = [0;STACK_SIZE];
@@ -74,30 +74,35 @@ pub fn exec(filename: &str) -> i8 {
             let idx = idx as usize;
             let fd = file_open(filename);
             if fd != -1 {
-                let stat = Stat::new(filename);
                 let mut task_pd = PageDirectory::new(INIT_PD.new_table(USER_MODE));
                 *task_pd.tables = (*INIT_PD.tables).clone();
+                let cr3 = get_cr3();
                 load_directory(phys!(task_pd.tables as u32));
-                loop {
-                    let new_frame = task_pd.alloc_frame(USER_MODE);
-                    if file_read(fd, new_frame as *mut u8, FRAME_SIZE) == 0 {
-                        break;
-                    }
-                    let first_bytes = *(new_frame as *const [u8;MAX_STR_LEN]);
+                let mut frame = task_pd.alloc_frame(USER_MODE);
+                if file_read(fd, frame as *mut u8, FRAME_SIZE) != -1 {
+                    let first_bytes = *(frame as *const [u8;MAX_STR_LEN]);
                     if bytes_to_str(&first_bytes) != "\0" {
                         println!("exec: {}: not an executable", filename);
                         return -1;
                     }
+                    loop {
+                        frame = task_pd.alloc_frame(USER_MODE);
+                        if file_read(fd, frame as *mut u8, FRAME_SIZE) == 0 {
+                            break;
+                        }
+                    }
+                    let stack_ptr = (frame + 0x1000) as u32;
+                    TASKS[idx].is_free = false;
+                    TASKS[idx].tss.eip = 0;
+                    TASKS[idx].tss.esp = stack_ptr;
+                    TASKS[idx].tss.ebp = stack_ptr;
+                    TASKS[idx].tss.cr3 = phys!(task_pd.tables as u32);
+                    task_switch(TASKS[idx].tss_selector as u16);
+                    load_directory(cr3);
+                    TASKS[idx].is_free = true;
+                    return 0;
                 }
-                let stack_ptr = ((stat.size & 0xfffff000) + 0x1000) as u32;
-                TASKS[idx].is_free = false;
-                TASKS[idx].tss.eip = 0;
-                TASKS[idx].tss.esp = stack_ptr;
-                TASKS[idx].tss.ebp = stack_ptr;
-                TASKS[idx].tss.cr3 = phys!(task_pd.tables as u32);
-                task_switch(TASKS[idx].tss_selector as u16);
-                TASKS[idx].is_free = true;
-                return 0;
+                load_directory(cr3);
             } else {
                 println!("exec: {}: not found", filename);
             }

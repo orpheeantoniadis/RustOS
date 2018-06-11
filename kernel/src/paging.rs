@@ -4,7 +4,7 @@
 use core::mem::size_of;
 use core::ops::{Index, IndexMut};
 use rlibc::memset;
-// use vga::*;
+use vga::*;
 
 pub const KERNEL_BASE: u32 = 0xC0000000;
 pub const KERNEL_PAGE_NUMBER: u32 = KERNEL_BASE >> 22;
@@ -35,6 +35,7 @@ pub struct PageTable {
 
 extern "C" {
     pub fn load_directory(pd_addr: u32);
+    pub fn get_cr3() -> u32;
     fn get_kernel_start() -> u32;
     fn get_kernel_end() -> u32;
     fn get_kernel_page_directory() -> u32;
@@ -144,7 +145,7 @@ impl PageDirectory {
             return virt_addr;
         }
     }
-    
+
     fn mmap_alloc_frame(&mut self, addr: u32) -> u32 {
         let frame = if addr == 0 {
             self.mmap_get_free_frame()

@@ -98,7 +98,7 @@ pub fn file_read(fd: i32, buf: *mut u8, n: usize) -> i32 {
             }
         }
         
-        if FDT[fd as usize].pos >= size {
+        if FDT[fd as usize].pos >= FDT[fd as usize].stat.size {
             return 0;
         } else {
             read_sector(sector_id as u32, &mut sector[0] as *mut u16);

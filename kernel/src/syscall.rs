@@ -15,7 +15,7 @@ extern "C" {
 /// System call handler: call the appropriate system call according to the nb argument.
 /// Called by the assembly code _syscall_handler
 #[no_mangle]
-pub unsafe extern fn syscall_handler(nb: Syscall, _arg1: u32, _arg2: u32, _arg3: u32, _arg4: u32, _caller_tss_selector: u32) -> i32 {
+pub unsafe extern fn syscall_handler(nb: Syscall, _arg1: u32, _arg2: u32, _arg3: u32, _arg4: u32) -> i32 {
     let addr = 0;
     match nb {
         Syscall::Puts => syscall_puts(addr, _arg1),

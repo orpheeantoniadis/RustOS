@@ -60,6 +60,8 @@ $(BUILD_FOLDER)/$(FS) : $(SPLASH) user
 	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) create MicroFS 1 1000000
 	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(SPLASH)
 	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(USER_PATH)/build/hello
+	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(USER_PATH)/build/demo
+	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(USER_PATH)/build/shell
 	
 clean :
 	rm -rf $(BUILD_FOLDER)
