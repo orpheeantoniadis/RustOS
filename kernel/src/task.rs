@@ -82,18 +82,18 @@ pub fn exec(filename: &str) -> i8 {
                 if cr3 != phys!(INITIAL_PD.tables as u32) {
                     load_directory(phys!(INITIAL_PD.tables as u32));
                 }
-                let mut task_pd = PageDirectory::new();
+                let mut task_pd = INITIAL_PD.new_directory();
                 *task_pd.tables = (*INITIAL_PD.tables).clone();
                 load_directory(phys!(task_pd.tables as u32));
                 
                 // Alloc frames starting at address 0
-                // An additional frame is allocated for the stack
-                let mut frame;
-                loop {
+                // Additional frames are allocated for the stack
+                let mut frame = task_pd.alloc_frame(USER_MODE);
+                while file_read(fd, frame as *mut u8, FRAME_SIZE) != 0 {
                     frame = task_pd.alloc_frame(USER_MODE);
-                    if file_read(fd, frame as *mut u8, FRAME_SIZE) == 0 {
-                        break;
-                    }
+                }
+                for _i in 0..(STACK_SIZE / FRAME_SIZE - 1) {
+                    frame = task_pd.alloc_frame(USER_MODE);
                 }
                 
                 // Setup task with page directory previously allocated

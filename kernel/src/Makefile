@@ -15,31 +15,27 @@ LINKER = kernel.ld
 
 GRUB = ../../grub
 OS = rust_os
-ISO = $(OS).iso
+ISO = $(BUILD_FOLDER)/$(OS).iso
 IFLAGS = -input-charset utf8 -no-emul-boot -boot-info-table
 
 FS_FOLDER = ../../tools/MicroFS
 USER_PATH = ../../user
-FS = fs.img
+FS = $(BUILD_FOLDER)/fs.img
 SPLASH = ../../doc/splash.txt
 
-.PHONY : all run iso elf fs user clean mrproper
+.PHONY : all run kernel user clean mrproper
 
-all : iso fs
+all : $(ISO) $(FS)
 
-run : iso fs
-	$(QEMU) -cdrom $(BUILD_FOLDER)/$(ISO) -hda $(BUILD_FOLDER)/$(FS)
+run : $(ISO) $(FS)
+	$(QEMU) -cdrom $(ISO) -hda $(FS)
 	
-iso : $(BUILD_FOLDER)/$(ISO)
-	
-elf : $(BUILD_FOLDER)/$(KERNEL)
-	
-fs : $(BUILD_FOLDER)/$(FS)
+kernel : $(BUILD_FOLDER)/$(KERNEL)
 	
 user :
 	$(MAKE) -C $(USER_PATH)
 	
-$(BUILD_FOLDER)/$(ISO) : elf
+$(ISO) : | kernel
 	mkdir -p $(BUILD_FOLDER)/isofiles/boot/grub
 	cp $(BUILD_FOLDER)/$(KERNEL) $(BUILD_FOLDER)/isofiles/boot/$(KERNEL)
 	cp -r $(GRUB) $(BUILD_FOLDER)/isofiles/boot
@@ -56,13 +52,13 @@ $(BUILD_FOLDER)/%.o : %.s
 $(RUST) :
 	$(MAKE) -C ../
 	
-$(BUILD_FOLDER)/$(FS) : $(SPLASH) user
-	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) create MicroFS 1 1000000
-	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(SPLASH)
-	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(USER_PATH)/build/hello
-	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(USER_PATH)/build/demo
-	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(USER_PATH)/build/shell
-	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(USER_PATH)/build/splash
+$(FS) : $(SPLASH) | user
+	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $@ create MicroFS 1 1000000
+	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $@ add $(SPLASH)
+	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $@ add $(USER_PATH)/build/hello
+	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $@ add $(USER_PATH)/build/demo
+	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $@ add $(USER_PATH)/build/shell
+	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $@ add $(USER_PATH)/build/splash
 	
 clean :
 	rm -rf $(BUILD_FOLDER)
