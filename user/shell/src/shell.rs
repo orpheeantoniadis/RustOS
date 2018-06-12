@@ -12,7 +12,15 @@ fn cat(filename: &str) {
     if fd != -1 {
         let mut data = [0;MAX_STR_LEN];
         while file_read(fd as u32, &mut data[0], MAX_STR_LEN as u32) != 0 {
-            println!("{}", bytes_to_str(&data));
+            {
+                let content = bytes_to_str(&data);
+                if content == "\0" {
+                    println!("cat: {}: Not a text file", filename);
+                    break;
+                } else {
+                    println!("{}", content);
+                }
+            }
             data = [0;MAX_STR_LEN];
         }
         file_close(fd as u32);

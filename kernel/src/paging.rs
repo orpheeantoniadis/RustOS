@@ -4,7 +4,6 @@
 use core::mem::size_of;
 use core::ops::{Index, IndexMut};
 use rlibc::memset;
-// use vga::*;
 
 pub const KERNEL_BASE: u32 = 0xC0000000;
 pub const KERNEL_PAGE_NUMBER: u32 = KERNEL_BASE >> 22;
@@ -17,7 +16,7 @@ pub const FRAME_SIZE: usize = 0x1000;
 pub const KERNEL_MODE: u32 = 0x0;
 pub const USER_MODE: u32 = 0x4;
 
-static mut KHEAP_ADDR: u32 = 0;
+pub static mut KHEAP_ADDR: u32 = 0;
 static mut INITIAL_MMAP: [u8;MMAP_SIZE] = [0;MMAP_SIZE];
 pub static mut INITIAL_PD: PageDirectory = PageDirectory::null();
 pub static mut CURRENT_PD: *mut PageDirectory = 0 as *mut PageDirectory;

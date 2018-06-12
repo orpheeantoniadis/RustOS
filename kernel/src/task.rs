@@ -5,7 +5,6 @@ use x86::*;
 use gdt::*;
 use paging::*;
 use fs::*;
-use common::*;
 use vga::*;
 
 pub const TASKS_NB: usize = 8; 
@@ -73,6 +72,11 @@ pub fn exec(filename: &str) -> i8 {
         unsafe {
             let fd = file_open(filename);
             if fd != -1 {
+                if file_type(fd) != TYPE_EXEC {
+                    println!("exec: {}: not an executable", filename);
+                    return -1;
+                }
+                let mut alloc_memory = KHEAP_ADDR;
                 // Create new directory using initial directory 
                 let cr3 = get_cr3();
                 if cr3 != phys!(INITIAL_PD.tables as u32) {
@@ -84,13 +88,7 @@ pub fn exec(filename: &str) -> i8 {
                 
                 // Alloc frames starting at address 0
                 // An additional frame is allocated for the stack
-                let mut frame = task_pd.alloc_frame(USER_MODE);
-                file_read(fd, frame as *mut u8, FRAME_SIZE);
-                let first_bytes = *(frame as *const [u8;MAX_STR_LEN]);
-                if bytes_to_str(&first_bytes) != "\0" {
-                    println!("exec: {}: not an executable", filename);
-                    return -1;
-                }
+                let mut frame;
                 loop {
                     frame = task_pd.alloc_frame(USER_MODE);
                     if file_read(fd, frame as *mut u8, FRAME_SIZE) == 0 {
@@ -108,8 +106,10 @@ pub fn exec(filename: &str) -> i8 {
                 
                 // Switch task and re-load original cr3
                 task_switch(TASKS[idx as usize].tss_selector as u16);
-                load_directory(cr3);
                 TASKS[idx as usize].is_free = true;
+                load_directory(cr3);
+                alloc_memory = KHEAP_ADDR - alloc_memory;
+                kfree(alloc_memory as usize);
                 return 0;
             } else {
                 println!("exec: {}: not found", filename);

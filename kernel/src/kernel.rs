@@ -26,16 +26,15 @@ pub mod syscall;
 use x86::*;
 use multiboot::*;
 use vga::*;
-use pio::{enable_cursor,disable_cursor};
+use pio::disable_cursor;
 use paging::*;
 use gdt::gdt_init; 
 use pic::pic_init;
 use idt::idt_init;
 use timer::{timer_init,sleep};
-use keyboard::getc;
 use fs::*;
 use task::*;
-use common::{Color,bytes_to_str};
+use common::Color;
 
 // exports
 pub use idt::exception_handler;
@@ -44,26 +43,6 @@ pub use syscall::syscall_handler;
 
 #[cfg(test)]
 mod test;
-
-#[allow(dead_code)]
-fn splash_screen() {
-    disable_cursor();
-    vga_clear();
-    vga_set_cursor(22,10);
-    let fd = file_open("splash.txt");
-    let mut data = [0;300];
-    file_read(fd, &mut data[0], 300);
-    for c in bytes_to_str(&data).chars() {
-        print!("{}", c);
-        if c == '\n' {
-            let cursor = vga_get_cursor();
-            vga_set_cursor(22,cursor.1);
-        }
-    }
-    file_close(fd);
-    sleep(5000);
-    enable_cursor();
-}
 
 /// Entrypoint to the rust code. This function is called by the bootstrap code
 /// contain in bootstrap_asm.s
@@ -87,17 +66,10 @@ pub extern fn kmain(_multiboot_magic: u32, multiboot_info: *mut MultibootInfo) {
     set_superblock();
     println!("Welcome to RustOS!");
     println!("Available Memory = {} kB", mboot.mem_upper);
+    sleep(3000);
+    exec("splash");
     exec("shell");
-    // sleep(3000);
-    // splash_screen();
-    // vga_clear();
-    loop {
-        let key = getc() as u8;
-        if key == b'Q' {
-            break;
-        }
-        vga_write_byte(key);
-    }
+    disable_cursor();
     print!("\nKernel stopped.\nYou can turn off you computer.");
 }
 

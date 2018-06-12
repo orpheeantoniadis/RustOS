@@ -62,6 +62,7 @@ $(BUILD_FOLDER)/$(FS) : $(SPLASH) user
 	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(USER_PATH)/build/hello
 	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(USER_PATH)/build/demo
 	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(USER_PATH)/build/shell
+	cargo run --manifest-path $(FS_FOLDER)/Cargo.toml $(BUILD_FOLDER)/$(FS) add $(USER_PATH)/build/splash
 	
 clean :
 	rm -rf $(BUILD_FOLDER)

@@ -9,6 +9,8 @@ use common::*;
 
 const FDT_SIZE : usize = 128;
 const ENTRY_SIZE : usize = 32;
+pub const TYPE_TEXT: i32 = 0;
+pub const TYPE_EXEC: i32 = 1;
 
 pub static mut FDT: Fdt = [FdtEntry::null();FDT_SIZE];
 pub static mut SB : Superblock = Superblock::null();
@@ -122,6 +124,12 @@ pub fn file_seek(fd: i32, offset: usize) -> i32 {
     }
 }
 
+pub fn rewind(fd: i32) {
+    unsafe {    
+        FDT[fd as usize].pos = 0;
+    }
+}
+
 pub fn file_close(fd: i32) -> i32 {
     if fd < 0 || unsafe { FDT[fd as usize].stat.start } == 0 {
         println!("fd {} does not exist.", fd);
@@ -130,6 +138,23 @@ pub fn file_close(fd: i32) -> i32 {
         unsafe { FDT[fd as usize] = FdtEntry::null() };
         return 0;
     }
+}
+
+pub fn file_type(fd: i32) -> i32 {
+    let mut buf = [0;MAX_STR_LEN];
+    if file_read(fd, &mut buf[0], MAX_STR_LEN) != -1 {
+        rewind(fd);
+        if bytes_to_str(&buf) != "\0" {
+            return TYPE_TEXT;
+        } else {
+            return TYPE_EXEC;
+        }
+    }
+    return -1;
+}
+
+pub fn set_superblock() {
+    unsafe { SB = Superblock::new(); }
 }
 
 fn free_fd() -> i32 {
@@ -143,10 +168,6 @@ fn free_fd() -> i32 {
         }
         return -1;
     }
-}
-
-pub fn set_superblock() {
-    unsafe { SB = Superblock::new(); }
 }
 
 impl FdtEntry {
