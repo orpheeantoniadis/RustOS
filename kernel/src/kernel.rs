@@ -84,5 +84,6 @@ pub extern fn panic_fmt(details: ::core::fmt::Arguments, file: &'static str, lin
 
 #[no_mangle]
 pub extern "C" fn __floatundisf() {
+    halt();
     loop {}
 }
