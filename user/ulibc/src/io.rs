@@ -152,15 +152,3 @@ pub fn copy_scr(scr: *const FrameBuffer) {
         syscall(Syscall::CopyScr, scr as u32, 0, 0, 0);
     }
 }
-
-pub fn malloc(size: usize) -> u32 {
-    unsafe {
-        syscall(Syscall::Malloc, size as u32, 0, 0, 0) as u32
-    }
-}
-
-pub fn free(addr: u32) {
-    unsafe {
-        syscall(Syscall::Free, addr, 0, 0, 0);
-    }
-}

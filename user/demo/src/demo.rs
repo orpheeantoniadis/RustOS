@@ -3,6 +3,7 @@
 extern crate ulibc;
 use ulibc::*;
 use io::*;
+use mem::*;
 
 #[no_mangle]
 pub extern fn main() {
