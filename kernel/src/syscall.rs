@@ -6,6 +6,7 @@ use timer::*;
 use keyboard::*;
 use fs::*;
 use task::*;
+use heap::*;
 use common::*;
 
 extern "C" {
@@ -35,7 +36,9 @@ pub unsafe extern fn syscall_handler(nb: Syscall, _arg1: u32, _arg2: u32, _arg3:
         Syscall::SetCursor => syscall_set_cursor(_arg1, _arg2),
         Syscall::GetCursor => syscall_get_cursor(addr + _arg1, addr + _arg2),
         Syscall::CursorDisable => syscall_cursor_disable(_arg1),
-        Syscall::CopyScr => syscall_copy_scr(addr + _arg1)
+        Syscall::CopyScr => syscall_copy_scr(addr + _arg1),
+        Syscall::Malloc => syscall_malloc(_arg1),
+        Syscall::Free => syscall_free(_arg1),
     }
 }
 
@@ -138,5 +141,14 @@ unsafe fn syscall_cursor_disable(cd: u32) -> i32 {
 
 unsafe fn syscall_copy_scr(scr_addr: u32) -> i32 {
     vga_copy_scr(scr_addr as *const FrameBuffer);
+    return 0;
+}
+
+unsafe fn syscall_malloc(size: u32) -> i32 {
+    malloc(size as usize) as i32
+}
+
+unsafe fn syscall_free(addr: u32) -> i32 {
+    free(addr);
     return 0;
 }

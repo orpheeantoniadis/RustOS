@@ -27,15 +27,15 @@ pub mod syscall;
 use x86::*;
 use multiboot::*;
 use vga::*;
-// use pio::disable_cursor;
+use pio::disable_cursor;
 use paging::*;
 use heap::*;
 use gdt::gdt_init; 
 use pic::pic_init;
 use idt::idt_init;
-use timer::{timer_init/*,sleep*/};
+use timer::*;
 use fs::*;
-// use task::*;
+use task::*;
 use common::Color;
 
 // exports
@@ -70,29 +70,11 @@ pub extern fn kmain(_multiboot_magic: u32, multiboot_info: *mut MultibootInfo) {
     set_superblock();
     println!("Welcome to RustOS!");
     println!("Available Memory = {} kB", mboot.mem_upper);
-    unsafe {
-        let addr1 = malloc(0x1000);
-        print_alloc_list();
-        let addr2 = malloc(300);
-        *(addr1 as *mut u8) = 42;
-        *(addr2 as *mut u8) = 0x42;
-        println!("addr1 = 0x{:x}, [addr1] = 0x{:x}", addr1, *(addr1 as *mut u8));
-        println!("addr2 = 0x{:x}, [addr2] = 0x{:x}", addr2, *(addr2 as *mut u8));
-        print_alloc_list();
-        free(addr2);
-        println!("addr1 = 0x{:x}, [addr1] = 0x{:x}", addr1, *(addr1 as *mut u8));
-        println!("addr2 = 0x{:x}, [addr2] = 0x{:x}", addr2, *(addr2 as *mut u8));
-        print_alloc_list();
-        let addr2 = malloc(100);
-        println!("addr1 = 0x{:x}, [addr1] = 0x{:x}", addr1, *(addr1 as *mut u8));
-        println!("addr2 = 0x{:x}, [addr2] = 0x{:x}", addr2, *(addr2 as *mut u8));
-        print_alloc_list();
-    }
-    // sleep(3000);
-    // exec("splash");
-    // exec("shell");
-    // disable_cursor();
-    // print!("\nKernel stopped.\nYou can turn off you computer.");
+    sleep(3000);
+    exec("splash");
+    exec("shell");
+    disable_cursor();
+    print!("\nKernel stopped.\nYou can turn off you computer.");
 }
 
 #[cfg(not(test))]

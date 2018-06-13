@@ -17,5 +17,7 @@ pub enum Syscall {
     SetCursor       = 0x0e,
     GetCursor       = 0x0f,
     CursorDisable   = 0x10,
-    CopyScr         = 0x11
+    CopyScr         = 0x11,
+    Malloc          = 0x12,
+    Free            = 0x13
 }

@@ -7,16 +7,20 @@ use io::*;
 #[no_mangle]
 pub extern fn main() {
     puts("Starting demo.\n");
+    
+    println!("\nIO demo :");
     println!("Executing hello app..");
     exec("hello");
     println!("Waiting on keypressed..");
     while keypressed() == 0 {}
     getc();
-    println!("Waiting 3 sec..");
-    sleep(3000);
+    println!("Waiting 1 sec..");
+    sleep(1000);
     println!("Waiting on getc..");
     let key = getc();
     println!("{} pressed.", key as u8 as char);
+    
+    println!("\nFile system demo :");
     println!("Opening file splash.txt..");
     let fd = file_open("splash.txt");
     if fd != -1 {
@@ -36,6 +40,21 @@ pub extern fn main() {
             println!("{} {}", filename, file_stat(filename).size);
         }
         bytes = [0;MAX_FILENAME_LENGTH];
+    }
+    
+    println!("\nMemory management demo :");
+    unsafe {
+        println!("Allocating 1M on the heap..", );
+        let addr1 = malloc(0x100000);
+        *(addr1 as *mut u8) = 42;
+        println!("addr1 = 0x{:x}, [addr1] = 0x{:x}", addr1, *(addr1 as *mut u8));
+        println!("Allocating 256 bytes on the heap..", );
+        let addr2 = malloc(0x100);
+        *(addr2 as *mut u8) = 0x42;
+        println!("addr2 = 0x{:x}, [addr2] = 0x{:x}", addr2, *(addr2 as *mut u8));
+        println!("Freeing all allocated memory..", );
+        free(addr1);
+        free(addr2);
     }
     println!("Ok.");
 }
