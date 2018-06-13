@@ -72,13 +72,21 @@ pub extern fn kmain(_multiboot_magic: u32, multiboot_info: *mut MultibootInfo) {
     println!("Available Memory = {} kB", mboot.mem_upper);
     unsafe {
         let addr1 = malloc(0x1000);
+        print_alloc_list();
         let addr2 = malloc(300);
-        println!("0x{:x}", addr1);
-        println!("0x{:x}", addr2);
         *(addr1 as *mut u8) = 42;
         *(addr2 as *mut u8) = 0x42;
-        println!("0x{:x}", *(addr1 as *mut u8));
-        println!("0x{:x}", *(addr2 as *mut u8));
+        println!("addr1 = 0x{:x}, [addr1] = 0x{:x}", addr1, *(addr1 as *mut u8));
+        println!("addr2 = 0x{:x}, [addr2] = 0x{:x}", addr2, *(addr2 as *mut u8));
+        print_alloc_list();
+        free(addr2);
+        println!("addr1 = 0x{:x}, [addr1] = 0x{:x}", addr1, *(addr1 as *mut u8));
+        println!("addr2 = 0x{:x}, [addr2] = 0x{:x}", addr2, *(addr2 as *mut u8));
+        print_alloc_list();
+        let addr2 = malloc(100);
+        println!("addr1 = 0x{:x}, [addr1] = 0x{:x}", addr1, *(addr1 as *mut u8));
+        println!("addr2 = 0x{:x}, [addr2] = 0x{:x}", addr2, *(addr2 as *mut u8));
+        print_alloc_list();
     }
     // sleep(3000);
     // exec("splash");

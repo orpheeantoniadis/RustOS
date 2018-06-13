@@ -3,7 +3,7 @@
 use core::mem::size_of;
 use rlibc::{memset,memcpy};
 use paging::*;
-// use vga::*;
+use vga::*;
 
 const HEAP_SIZE: usize = KHEAP_SIZE;
 
@@ -35,7 +35,7 @@ pub fn heap_init() {
         let table_ptr = virt!(INITIAL_PD[table_idx] &! 0xfff) as *mut PageTable;
         (*table_ptr)[entry_idx] = entry_addr | 0x3 | USER_MODE;
         memset(entry_addr as *mut u8, 0, FRAME_SIZE);
-        memcpy(entry_addr as *mut u8, Header::null(entry_addr, HEAP_SIZE).as_ptr(), size_of::<Header>());
+        memcpy(entry_addr as *mut u8, Header::null(0, HEAP_SIZE).as_ptr(), size_of::<Header>());
     }
 }
 
@@ -72,6 +72,7 @@ pub fn malloc(size: usize) -> u32 {
                     let entry_idx = frame_idx as usize % TABLE_SIZE;
                     let table_ptr = virt!(INITIAL_PD[table_idx] &! 0xfff) as *mut PageTable;
                     (*table_ptr)[entry_idx] = entry_addr | 0x3 | USER_MODE;
+                    memset(entry_addr as *mut u8, 0, FRAME_SIZE);
                 }
                 let next_block_size = (HEAP_END - block.next) as usize - size_of::<Header>();
                 let mut next_header = Header::null(addr, next_block_size);
@@ -89,8 +90,8 @@ pub fn malloc(size: usize) -> u32 {
                 next_header.next = tmp;
                 tmp_header.previous = block.next;
                 
-                memcpy(block.next as *mut u8, next_header.as_ptr(), size_of::<Header>());
                 memcpy(addr as *mut u8, block.as_ptr(), size_of::<Header>());
+                memcpy(block.next as *mut u8, next_header.as_ptr(), size_of::<Header>());
                 memcpy(tmp as *mut u8, tmp_header.as_ptr(), size_of::<Header>());
             }
             return addr + size_of::<Header>() as u32;
@@ -99,8 +100,41 @@ pub fn malloc(size: usize) -> u32 {
     }
 }
 
-pub fn free() {
-    unimplemented!()
+pub fn free(addr: u32) {
+    let mut header_addr = addr - size_of::<Header>() as u32;
+    let mut header = Header::from_ptr(header_addr as *const u8);
+    if !header.free {
+        if header.previous != 0 {
+            let previous = Header::from_ptr(header.previous as *const u8);
+            if previous.free {
+                header_addr = header.previous;
+                header.previous = previous.previous;
+                header.size += previous.size + size_of::<Header>();
+            }
+        }
+        if header.next != 0 {
+            let next = Header::from_ptr(header.next as *const u8);
+            if next.free {
+                header.next = next.next;
+                header.size += next.size + size_of::<Header>();
+            }
+        }
+        header.free = true;
+        unsafe {
+            memcpy(header_addr as *mut u8, header.as_ptr(), size_of::<Header>());
+        }
+    }
+}
+
+pub fn print_alloc_list() {
+    unsafe {
+        let mut addr = HEAP_START;
+        while addr != 0 {
+            let block = Header::from_ptr(addr as *mut u8);
+            addr = block.next;
+            println!("{:x?}", block);
+        }
+    }
 }
 
 impl Header {
