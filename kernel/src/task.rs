@@ -6,6 +6,7 @@ use gdt::*;
 use paging::*;
 use fs::*;
 use vga::*;
+use kheap::*;
 
 pub const TASKS_NB: usize = 8; 
 pub const STACK_SIZE: usize = 0x10000;
@@ -88,16 +89,20 @@ pub fn exec(filename: &str) -> i8 {
                 
                 // Alloc frames starting at address 0
                 // Additional frames are allocated for the stack
-                let mut frame = task_pd.alloc_frame(USER_MODE);
-                while file_read(fd, frame as *mut u8, FRAME_SIZE) != 0 {
-                    frame = task_pd.alloc_frame(USER_MODE);
+                let mut phys = phys!(kmalloc(FRAME_SIZE));
+                let mut virt = 0;
+                task_pd.alloc_frame(&mut virt, &mut phys, USER_MODE);
+                while file_read(fd, virt as *mut u8, FRAME_SIZE) != 0 {
+                    phys = phys!(kmalloc(FRAME_SIZE));
+                    task_pd.alloc_frame(&mut virt, &mut phys, USER_MODE);
                 }
                 for _i in 0..(STACK_SIZE / FRAME_SIZE - 1) {
-                    frame = task_pd.alloc_frame(USER_MODE);
+                    phys = phys!(kmalloc(FRAME_SIZE));
+                    task_pd.alloc_frame(&mut virt, &mut phys, USER_MODE);
                 }
                 
                 // Setup task with page directory previously allocated
-                let stack_ptr = (frame + 0x1000) as u32;
+                let stack_ptr = (virt + 0x1000) as u32;
                 TASKS[idx as usize].is_free = false;
                 TASKS[idx as usize].tss.eip = 0;
                 TASKS[idx as usize].tss.esp = stack_ptr;
@@ -109,7 +114,7 @@ pub fn exec(filename: &str) -> i8 {
                 TASKS[idx as usize].is_free = true;
                 load_directory(cr3);
                 alloc_memory = KHEAP_ADDR - alloc_memory;
-                kfree(alloc_memory as usize);
+                kfree(alloc_memory);
                 return 0;
             } else {
                 println!("exec: {}: not found", filename);

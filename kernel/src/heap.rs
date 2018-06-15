@@ -25,8 +25,8 @@ pub fn heap_init() {
         HEAP_START = (HEAP_START & 0xfffff000) + 0x1000;
         HEAP_END = HEAP_START + HEAP_SIZE as u32;
         
-        for i in page!(HEAP_START)..page!(HEAP_END) {
-            INITIAL_PD[i as usize] = phys!(INITIAL_PD.new_table()) | 0x3 | USER_MODE;
+        for _i in page!(HEAP_START)..page!(HEAP_END) {
+            // INITIAL_PD[i as usize] = phys!(INITIAL_PD.new_table()) | 0x3 | USER_MODE;
         }
         let entry_addr = INITIAL_PD.mmap_alloc_frame(HEAP_START);
         let frame_idx = entry_addr / FRAME_SIZE as u32;
