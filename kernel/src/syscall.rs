@@ -6,7 +6,7 @@ use timer::*;
 use keyboard::*;
 use fs::*;
 use task::*;
-use heap::*;
+use kheap::*;
 use common::*;
 
 extern "C" {
@@ -145,10 +145,10 @@ unsafe fn syscall_copy_scr(scr_addr: u32) -> i32 {
 }
 
 unsafe fn syscall_malloc(size: u32) -> i32 {
-    malloc(size as usize) as i32
+    kmalloc(size as usize) as i32
 }
 
 unsafe fn syscall_free(addr: u32) -> i32 {
-    free(addr);
+    kfree(addr);
     return 0;
 }

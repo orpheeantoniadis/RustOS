@@ -7,6 +7,7 @@ use paging::*;
 use fs::*;
 use vga::*;
 use kheap::*;
+use common::*;
 
 pub const TASKS_NB: usize = 8; 
 pub const STACK_SIZE: usize = 0x10000;
@@ -21,7 +22,8 @@ pub struct Task {
     pub tss: Tss,
     pub tss_selector: u16,
     pub kernel_stack: [u8;STACK_SIZE],
-    pub is_free: bool
+    pub is_free: bool,
+    pub pd: PageDirectory
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -73,49 +75,40 @@ pub fn exec(filename: &str) -> i8 {
         unsafe {
             let fd = file_open(filename);
             if fd != -1 {
-                // let stat = Stat::new(filename);
+                let stat = Stat::new(filename);
                 if file_type(fd) != TYPE_EXEC {
                     println!("exec: {}: not an executable", filename);
                     return -1;
                 }
-                let mut alloc_memory = KHEAP_ADDR;
                 // Create new directory using initial directory 
                 let cr3 = get_cr3();
                 if cr3 != phys!(INITIAL_PD.tables as u32) {
                     load_directory(phys!(INITIAL_PD.tables as u32));
                 }
-                let mut task_pd = INITIAL_PD.new_directory();
-                *task_pd.tables = (*INITIAL_PD.tables).clone();
-                load_directory(phys!(task_pd.tables as u32));
+                TASKS[idx as usize].pd = INITIAL_PD.new_directory();
+                *TASKS[idx as usize].pd.tables = (*INITIAL_PD.tables).clone();
+                load_directory(phys!(TASKS[idx as usize].pd.tables as u32));
                 
                 // Alloc frames starting at address 0
                 // Additional frames are allocated for the stack
-                let mut phys = phys!(kmalloc(FRAME_SIZE));
-                let mut virt = 0;
-                task_pd.alloc_frame(&mut virt, &mut phys, USER_MODE);
-                while file_read(fd, virt as *mut u8, FRAME_SIZE) != 0 {
-                    phys = phys!(kmalloc(FRAME_SIZE));
-                    task_pd.alloc_frame(&mut virt, &mut phys, USER_MODE);
-                }
-                for _i in 0..(STACK_SIZE / FRAME_SIZE - 1) {
-                    phys = phys!(kmalloc(FRAME_SIZE));
-                    task_pd.alloc_frame(&mut virt, &mut phys, USER_MODE);
-                }
+                let code_addr = kmalloc(stat.size);
+                let stack_addr = kmalloc(STACK_SIZE);
+                file_read(fd, code_addr as *mut u8, stat.size);
                 
                 // Setup task with page directory previously allocated
-                let stack_ptr = (virt + 0x1000) as u32;
                 TASKS[idx as usize].is_free = false;
                 TASKS[idx as usize].tss.eip = 0;
-                TASKS[idx as usize].tss.esp = stack_ptr;
-                TASKS[idx as usize].tss.ebp = stack_ptr;
-                TASKS[idx as usize].tss.cr3 = phys!(task_pd.tables as u32);
+                TASKS[idx as usize].tss.esp = stack_addr;
+                TASKS[idx as usize].tss.ebp = stack_addr;
+                TASKS[idx as usize].tss.cr3 = phys!(TASKS[idx as usize].pd.tables as u32);
                 
-                // Switch task and re-load original cr3
-                task_switch(TASKS[idx as usize].tss_selector as u16);
+                // task_switch(TASKS[idx as usize].tss_selector as u16);
+                // re-load original cr3 and free memory
                 TASKS[idx as usize].is_free = true;
                 load_directory(cr3);
-                alloc_memory = KHEAP_ADDR - alloc_memory;
-                kfree(alloc_memory);
+                kfree(stack_addr);
+                kfree(code_addr);
+                TASKS[idx as usize].pd.free();
                 return 0;
             } else {
                 println!("exec: {}: not found", filename);
@@ -146,7 +139,8 @@ impl Task {
             tss: Tss::new(),
             tss_selector: 0,
             kernel_stack: [0;STACK_SIZE],
-            is_free: true
+            is_free: true,
+            pd: PageDirectory::null()
         }
     }
     

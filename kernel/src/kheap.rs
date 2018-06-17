@@ -5,11 +5,13 @@ use rlibc::{memset,memcpy};
 use paging::*;
 use vga::*;
 
+pub static mut KHEAP_SIZE: usize = 0x1000000;
+pub static mut KHEAP_ADDR: u32 = 0;
 pub static mut KHEAP_END: u32 = 0;
 
 #[derive(Debug, Clone, Copy)]
 #[repr(C, align(16))]
-struct Header {
+pub struct Header {
     previous: u32,
     next: u32,
     size: usize,
@@ -26,9 +28,10 @@ macro_rules! align {
     }
 }
 
-pub fn kheap_init() {
+pub fn kheap_init(ram_size: u32) {
     unsafe {
         KHEAP_ADDR = get_kernel_end();
+        KHEAP_SIZE = ((ram_size / 1000 - 1) * 0x100000 - phys!(KHEAP_ADDR)) as usize;
         KHEAP_END = KHEAP_ADDR + KHEAP_SIZE as u32;
         if (KHEAP_ADDR & 0xfffff000) != KHEAP_ADDR {
             KHEAP_ADDR &= 0xfffff000;

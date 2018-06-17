@@ -14,7 +14,6 @@ pub mod vga;
 pub mod pio;
 pub mod paging;
 pub mod kheap;
-pub mod heap;
 pub mod gdt;
 pub mod pic;
 pub mod idt;
@@ -31,13 +30,12 @@ use vga::*;
 use pio::disable_cursor;
 use paging::*;
 use kheap::*;
-// use heap::*;
 use gdt::gdt_init; 
 use pic::pic_init;
 use idt::idt_init;
 use timer::*;
 use fs::*;
-// use task::*;
+use task::*;
 use common::Color;
 
 // exports
@@ -57,8 +55,8 @@ pub extern fn kmain(_multiboot_magic: u32, multiboot_info: *mut MultibootInfo) {
     println!("Screen initialized.");
     paging_init();
     println!("Paging initialized.");
-    // heap_init();
-    // println!("Heap initialized.");
+    kheap_init(mboot.mem_upper);
+    println!("Heap initialized.");
     gdt_init();
     println!("GDT initialized.");
     pic_init();
@@ -72,20 +70,10 @@ pub extern fn kmain(_multiboot_magic: u32, multiboot_info: *mut MultibootInfo) {
     set_superblock();
     println!("Welcome to RustOS!");
     println!("Available Memory = {} kB", mboot.mem_upper);
-    unsafe {
-        let addr1 = kmalloc(0x500000);
-        let addr2 = kmalloc(0x100000);
-        *(addr1 as *mut u8) = 42;
-        println!("addr1 = 0x{:x}, [addr1] = 0x{:x}", addr1, *(addr1 as *mut u8));
-        kfree(addr1);
-        let addr3 = kmalloc(0x10000);
-        kfree(addr3);
-        kfree(addr2);
-        print_kmalloc_list();
-    }
     // sleep(3000);
     // exec("splash");
-    // exec("shell");
+    exec("shell");
+    print_kmalloc_list();
     disable_cursor();
     print!("\nKernel stopped.\nYou can turn off you computer.");
 }

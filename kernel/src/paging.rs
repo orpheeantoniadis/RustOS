@@ -15,14 +15,12 @@ const MEMORY_FSIZE: usize = 0x100000;
 pub const TABLE_FSIZE: usize = 0x400;
 pub const TABLE_SIZE: usize = 0x400000;
 pub const FRAME_SIZE: usize = 0x1000;
-pub const KHEAP_SIZE: usize = 0x1000000;
 
 pub const KERNEL_MODE: u32 = 0x0;
 pub const USER_MODE: u32 = 0x4;
 
 static mut INITIAL_MMAP: [u8;MMAP_SIZE] = [0;MMAP_SIZE];
 pub static mut INITIAL_PD: PageDirectory = PageDirectory::null();
-pub static mut KHEAP_ADDR: u32 = 0;
 
 #[derive(Clone, Copy)]
 #[repr(C, align(4096))]
@@ -54,35 +52,13 @@ macro_rules! virt {
     ($addr:expr) => ($addr + KERNEL_BASE);
 }
 
-macro_rules! page {
-    ($addr:expr) => ($addr >> 22);
-}
-
 pub fn paging_init() {
     unsafe {
         INITIAL_PD.tables = get_kernel_page_directory() as *mut PageTable;
         INITIAL_PD.mmap = &mut INITIAL_MMAP as *mut [u8;MMAP_SIZE];
         INITIAL_PD.mmap_set_area(KERNEL_BASE, KHEAP_ADDR);
-        kheap_init();
     }
 }
-
-// pub fn kmalloc(size: usize) -> u32 {
-//     unsafe {
-//         let kheap_end = get_kernel_end() + KHEAP_SIZE as u32;
-//         if (KHEAP_ADDR + size as u32) >= kheap_end {
-//             println!("kmalloc: 0x{:x} bytes left on kheap", kheap_end - KHEAP_ADDR);
-//             return 0;
-//         }
-//         if (KHEAP_ADDR & 0xfffff000) != KHEAP_ADDR {
-//             KHEAP_ADDR &= 0xfffff000;
-//             KHEAP_ADDR += 0x1000;
-//         }
-//         let addr = KHEAP_ADDR;
-//         KHEAP_ADDR += size as u32;
-//         return addr;
-//     }
-// }
 
 impl Index<usize> for PageDirectory {
     type Output = u32;
@@ -130,9 +106,14 @@ impl PageDirectory {
     
     pub fn new_directory(&mut self) -> PageDirectory {
         PageDirectory {
-            tables: self.new_table(0) as *mut PageTable,
-            mmap: self.new_mmap() as *mut [u8;MMAP_SIZE]
+            tables: (kmalloc(FRAME_SIZE) + (FRAME_SIZE - size_of::<Header>()) as u32) as *mut PageTable,
+            mmap: kmalloc(MMAP_SIZE) as *mut [u8;MMAP_SIZE]
         }
+    }
+    
+    pub fn free(&mut self) {
+        kfree(self.tables as u32 - (FRAME_SIZE - size_of::<Header>()) as u32);
+        kfree(self.mmap as u32);
     }
     
     pub fn new_table(&mut self, addr: u32) -> u32 {
@@ -156,14 +137,6 @@ impl PageDirectory {
                 memset(virt_addr as *mut u8, 0, size_of::<PageTable>());
             }
             return virt_addr;
-        }
-    }
-    
-    pub fn new_mmap(&mut self) -> u32 {
-        unsafe {
-            let addr = kmalloc(MMAP_SIZE);
-            memset(addr as *mut u8, 0, MMAP_SIZE);
-            return addr;
         }
     }
 
