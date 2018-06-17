@@ -73,6 +73,7 @@ pub fn exec(filename: &str) -> i8 {
         unsafe {
             let fd = file_open(filename);
             if fd != -1 {
+                // let stat = Stat::new(filename);
                 if file_type(fd) != TYPE_EXEC {
                     println!("exec: {}: not an executable", filename);
                     return -1;

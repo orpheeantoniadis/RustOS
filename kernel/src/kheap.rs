@@ -42,7 +42,7 @@ pub fn kheap_init() {
 }
 
 pub fn kmalloc(size: usize) -> u32 {
-    let aligned_size = align!(size + size_of::<Header>());
+    let aligned_size = align!(size + size_of::<Header>()) - size_of::<Header>();
     let mut addr = empty_block(aligned_size);
     if alloc_table(addr, aligned_size) {
         addr = empty_block(aligned_size);
@@ -60,27 +60,53 @@ pub fn kmalloc(size: usize) -> u32 {
 }
 
 pub fn kfree(addr: u32) {
-    let mut header_addr = addr - size_of::<Header>() as u32;
-    let mut header = Header::from_ptr(header_addr as *const u8);
-    if !header.free {
-        if header.previous != 0 {
-            let previous = Header::from_ptr(header.previous as *const u8);
-            if previous.free {
-                header_addr = header.previous;
-                header.previous = previous.previous;
-                header.size += previous.size + size_of::<Header>();
+    unsafe {
+        let mut header_addr = addr - size_of::<Header>() as u32;
+        let mut header = Header::from_ptr(header_addr as *const u8);
+        if !header.free {
+            let mut end = header.next;
+            if header.previous != 0 {
+                let previous = Header::from_ptr(header.previous as *const u8);
+                if previous.free {
+                    header_addr = header.previous;
+                    header.previous = previous.previous;
+                    header.size += previous.size + size_of::<Header>();
+                }
             }
-        }
-        if header.next != 0 {
-            let next = Header::from_ptr(header.next as *const u8);
-            if next.free {
-                header.next = next.next;
-                header.size += next.size + size_of::<Header>();
+            if header.next != 0 {
+                let mut next = Header::from_ptr(header.next as *const u8);
+                if next.free {
+                    header.next = next.next;
+                    header.size += next.size + size_of::<Header>();
+                }
+                if header.next != 0 {
+                    end = header.next;
+                    next = Header::from_ptr(header.next as *const u8);
+                    if next.previous != header_addr {
+                        next.previous = header_addr;
+                        memcpy(header.next as *mut u8, next.as_ptr(), size_of::<Header>());
+                    }
+                }
             }
-        }
-        header.free = true;
-        unsafe {
+            header.free = true;
             memcpy(header_addr as *mut u8, header.as_ptr(), size_of::<Header>());
+            // free unused page tables
+            let start = header_addr;
+            let mut start_idx = start as usize / TABLE_SIZE;
+            if start % TABLE_SIZE as u32 != 0 {
+                start_idx += 1;
+            }
+            let mut end_idx = end as usize / TABLE_SIZE;
+            if header.next == 0 {
+                end_idx += 1;
+            }
+            for i in start_idx..end_idx {
+                let table_addr = INITIAL_PD[i] &! 0xfff;
+                if table_addr != 0 {
+                    kfree(virt!(table_addr) - (FRAME_SIZE - size_of::<Header>()) as u32);
+                    INITIAL_PD[i] = 0;
+                }
+            }
         }
     }
 }
@@ -100,11 +126,19 @@ fn empty_block(size: usize) -> u32 {
 
 fn alloc_table(addr: u32, size: usize) -> bool {
     unsafe {
-        let aligned_size = align!(FRAME_SIZE + size_of::<Header>());
-        if (addr % 0x400000 + size as u32) > 0x400000 {
-            let table_idx = (addr as usize / FRAME_SIZE) / TABLE_SIZE;
+        let mut alloc = false;
+        let mut start_idx = addr as usize / TABLE_SIZE;
+        if addr % TABLE_SIZE as u32 != 0 {
+            start_idx += 1;
+        }
+        let mut end_idx = (addr as usize + size) / TABLE_SIZE;
+        if Header::from_ptr(addr as *mut u8).next == 0 {
+            end_idx += 1;
+        }
+        let aligned_size = align!(FRAME_SIZE + size_of::<Header>()) - size_of::<Header>();
+        for i in start_idx..end_idx {
             let block_addr = empty_block(aligned_size);
-            let mut block = Header::from_ptr(addr as *mut u8);
+            let mut block = Header::from_ptr(block_addr as *mut u8);
             if block.size >= aligned_size && block.free {
                 if block.next == 0 {
                     block.new_tail(block_addr, aligned_size);
@@ -112,11 +146,11 @@ fn alloc_table(addr: u32, size: usize) -> bool {
                     block.new_block(block_addr, aligned_size);
                 }
                 let table_addr = INITIAL_PD.new_table(block_addr + FRAME_SIZE as u32);
-                INITIAL_PD[table_idx + 1] = phys!(table_addr) | 0x3;
+                INITIAL_PD[i] = phys!(table_addr) | 0x3;
             }
-            return true;
+            alloc = true;
         }
-        return false;
+        return alloc;
     }
 }
 
@@ -128,6 +162,7 @@ pub fn print_kmalloc_list() {
             addr = block.next;
             println!("{:x?}", block);
         }
+        println!();
     }
 }
 
@@ -142,23 +177,29 @@ impl Header {
     }
     
     fn new_block(&mut self, addr: u32, size: usize) {
-        self.size = size;
         self.free = false;
-        // if the block is not the tail, need to save the next block
-        // before creating a new block at self.next
-        let tmp = self.next;
-        let mut tmp_header = Header::from_ptr(tmp as *const u8);
-        
-        self.next = addr + (size_of::<Header>() + size) as u32;
-        let next_block_size = (tmp - self.next) as usize - size_of::<Header>();
-        let mut next_header = Header::null(addr, next_block_size);
-        next_header.next = tmp;
-        tmp_header.previous = self.next;
-        
-        unsafe {
-            memcpy(addr as *mut u8, self.as_ptr(), size_of::<Header>());
-            memcpy(self.next as *mut u8, next_header.as_ptr(), size_of::<Header>());
-            memcpy(tmp as *mut u8, tmp_header.as_ptr(), size_of::<Header>());
+        if size == self.size {
+            unsafe {
+                memcpy(addr as *mut u8, self.as_ptr(), size_of::<Header>());
+            }
+        } else {
+            self.size = size;
+            // if the block is not the tail, need to save the next block
+            // before creating a new block at self.next
+            let tmp = self.next;
+            let mut tmp_header = Header::from_ptr(tmp as *const u8);
+            
+            self.next = addr + (size_of::<Header>() + size) as u32;
+            let next_block_size = (tmp - self.next) as usize - size_of::<Header>();
+            let mut next_header = Header::null(addr, next_block_size);
+            next_header.next = tmp;
+            tmp_header.previous = self.next;
+            
+            unsafe {
+                memcpy(addr as *mut u8, self.as_ptr(), size_of::<Header>());
+                memcpy(self.next as *mut u8, next_header.as_ptr(), size_of::<Header>());
+                memcpy(tmp as *mut u8, tmp_header.as_ptr(), size_of::<Header>());
+            }
         }
     }
     

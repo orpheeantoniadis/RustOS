@@ -73,11 +73,14 @@ pub extern fn kmain(_multiboot_magic: u32, multiboot_info: *mut MultibootInfo) {
     println!("Welcome to RustOS!");
     println!("Available Memory = {} kB", mboot.mem_upper);
     unsafe {
-        let addr1 = kmalloc(0x100000);
+        let addr1 = kmalloc(0x500000);
+        let addr2 = kmalloc(0x100000);
         *(addr1 as *mut u8) = 42;
         println!("addr1 = 0x{:x}, [addr1] = 0x{:x}", addr1, *(addr1 as *mut u8));
-        print_kmalloc_list();
         kfree(addr1);
+        let addr3 = kmalloc(0x10000);
+        kfree(addr3);
+        kfree(addr2);
         print_kmalloc_list();
     }
     // sleep(3000);

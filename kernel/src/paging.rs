@@ -10,9 +10,10 @@ use kheap::*;
 pub const KERNEL_BASE: u32 = 0xC0000000;
 pub const KERNEL_PAGE_NUMBER: u32 = KERNEL_BASE >> 22;
 
-const MEMORY_FSIZE: usize = 0x100000;
 const MMAP_SIZE: usize = 0x20000;
-pub const TABLE_SIZE: usize = 0x400;
+const MEMORY_FSIZE: usize = 0x100000;
+pub const TABLE_FSIZE: usize = 0x400;
+pub const TABLE_SIZE: usize = 0x400000;
 pub const FRAME_SIZE: usize = 0x1000;
 pub const KHEAP_SIZE: usize = 0x1000000;
 
@@ -33,7 +34,7 @@ pub struct PageDirectory {
 #[derive(Clone, Copy)]
 #[repr(C, align(4096))]
 pub struct PageTable {
-    pub entries: [u32;TABLE_SIZE]
+    pub entries: [u32;TABLE_FSIZE]
 }
 
 extern "C" {
@@ -117,8 +118,8 @@ impl PageDirectory {
                 self.mmap_alloc_frame(virt!(*phys))
             };
             let frame_idx = *virt / FRAME_SIZE as u32;
-            let table_idx = frame_idx as usize / TABLE_SIZE;
-            let entry_idx = frame_idx as usize % TABLE_SIZE;
+            let table_idx = frame_idx as usize / TABLE_FSIZE;
+            let entry_idx = frame_idx as usize % TABLE_FSIZE;
             
             let table_ptr = virt!(self[table_idx] &! 0xfff) as *mut PageTable;
             (*table_ptr)[entry_idx] = *phys | 0x3 | mode;
@@ -139,8 +140,8 @@ impl PageDirectory {
             let phys_addr = phys!(addr);
             let virt_addr = virt!(phys_addr);
             let frame_idx = virt_addr / FRAME_SIZE as u32;
-            let table_idx = frame_idx as usize / TABLE_SIZE;
-            let entry_idx = frame_idx as usize % TABLE_SIZE;
+            let table_idx = frame_idx as usize / TABLE_FSIZE;
+            let entry_idx = frame_idx as usize % TABLE_FSIZE;
             if self[table_idx] == 0 {
                 // create a temporary table
                 let mut tmp_table = PageTable::null();
@@ -232,7 +233,7 @@ impl IndexMut<usize> for PageTable {
 impl PageTable {
     fn null() -> PageTable {
         PageTable {
-            entries: [0;TABLE_SIZE]
+            entries: [0;TABLE_FSIZE]
         }
     }
     
