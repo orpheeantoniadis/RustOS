@@ -93,19 +93,21 @@ pub fn exec(filename: &str) -> i8 {
                 // Alloc frames starting at address 0
                 // Additional frames are allocated for the stack
                 let code_addr = umalloc(stat.size);
-                let stack_addr = umalloc(STACK_SIZE) + STACK_SIZE as u32;
+                let stack_addr = umalloc(STACK_SIZE);
                 file_read(fd, code_addr as *mut u8, stat.size);
                 
                 // Setup task with page directory previously allocated
                 TASKS[idx as usize].is_free = false;
                 TASKS[idx as usize].tss.eip = 0;
-                TASKS[idx as usize].tss.esp = stack_addr;
-                TASKS[idx as usize].tss.ebp = stack_addr;
+                TASKS[idx as usize].tss.esp = stack_addr + STACK_SIZE as u32;
+                TASKS[idx as usize].tss.ebp = stack_addr + STACK_SIZE as u32;
                 TASKS[idx as usize].tss.cr3 = phys!(TASKS[idx as usize].pd.tables as u32);
                 
                 task_switch(TASKS[idx as usize].tss_selector as u16);
                 // re-load original directory and free memory
                 TASKS[idx as usize].is_free = true;
+                ufree(code_addr);
+                ufree(stack_addr);
                 switch_directory(pd_backup);
                 TASKS[idx as usize].pd.free();
                 return 0;

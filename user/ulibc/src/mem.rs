@@ -7,15 +7,15 @@ use io::*;
 // #[derive(Debug)]
 // pub struct Allocator {}
 
-pub fn malloc(size: usize) -> u32 {
+pub fn malloc(_size: usize) -> u32 {
     unsafe {
-        syscall(Syscall::Malloc, size as u32, 0, 0, 0) as u32
+        syscall(Syscall::AllocFrame, 0, 0, 0, 0) as u32
     }
 }
 
 pub fn free(addr: u32) {
     unsafe {
-        syscall(Syscall::Free, addr, 0, 0, 0);
+        syscall(Syscall::FreeFrame, addr, 0, 0, 0);
     }
 }
 

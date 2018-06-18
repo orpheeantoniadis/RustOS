@@ -6,6 +6,7 @@ use timer::*;
 use keyboard::*;
 use fs::*;
 use task::*;
+use paging::FRAME_SIZE;
 use kheap::*;
 use common::*;
 
@@ -37,8 +38,8 @@ pub unsafe extern fn syscall_handler(nb: Syscall, _arg1: u32, _arg2: u32, _arg3:
         Syscall::GetCursor => syscall_get_cursor(addr + _arg1, addr + _arg2),
         Syscall::CursorDisable => syscall_cursor_disable(_arg1),
         Syscall::CopyScr => syscall_copy_scr(addr + _arg1),
-        Syscall::Malloc => syscall_malloc(_arg1),
-        Syscall::Free => syscall_free(_arg1),
+        Syscall::AllocFrame => syscall_alloc_frame(),
+        Syscall::FreeFrame => syscall_free_frame(_arg1),
     }
 }
 
@@ -144,11 +145,11 @@ unsafe fn syscall_copy_scr(scr_addr: u32) -> i32 {
     return 0;
 }
 
-unsafe fn syscall_malloc(size: u32) -> i32 {
-    kmalloc(size as usize) as i32
+unsafe fn syscall_alloc_frame() -> i32 {
+    umalloc(FRAME_SIZE) as i32
 }
 
-unsafe fn syscall_free(addr: u32) -> i32 {
-    kfree(addr);
+unsafe fn syscall_free_frame(addr: u32) -> i32 {
+    ufree(addr);
     return 0;
 }

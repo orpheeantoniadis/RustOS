@@ -140,6 +140,17 @@ pub fn umalloc(size: usize) -> u32 {
     }
 }
 
+pub fn ufree(addr: u32) {
+    unsafe {
+        let frame_idx = addr / FRAME_SIZE as u32;
+        let table_idx = frame_idx as usize / TABLE_FSIZE;
+        let entry_idx = frame_idx as usize % TABLE_FSIZE;
+        let table_ptr = virt!((*USER_PD)[table_idx] &! 0xfff) as *mut PageTable;
+        let entry_addr = virt!((*table_ptr)[entry_idx] &! 0xfff);
+        kfree(entry_addr - (FRAME_SIZE - size_of::<Header>()) as u32);
+    }
+}
+
 fn empty_block(size: usize) -> u32 {
     let mut addr = unsafe { KHEAP_ADDR };
     let mut block = Header::from_ptr(addr as *mut u8);

@@ -138,6 +138,14 @@ impl PageDirectory {
     }
     
     pub fn free(&mut self) {
+        for i in 0..TABLE_FSIZE {
+            let table_addr = self[i] &! 0xfff;
+            if table_addr != 0 {
+                kfree(virt!(table_addr) - (FRAME_SIZE - size_of::<Header>()) as u32);
+            } else {
+                break;
+            }
+        }
         kfree(self.tables as u32 - (FRAME_SIZE - size_of::<Header>()) as u32);
         kfree(self.mmap as u32);
     }
