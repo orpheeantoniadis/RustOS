@@ -21,6 +21,7 @@ pub const USER_MODE: u32 = 0x4;
 
 static mut INITIAL_MMAP: [u8;MMAP_SIZE] = [0;MMAP_SIZE];
 pub static mut INITIAL_PD: PageDirectory = PageDirectory::null();
+pub static mut USER_PD: *mut PageDirectory = 0 as *mut PageDirectory;
 
 #[derive(Clone, Copy)]
 #[repr(C, align(4096))]
@@ -57,6 +58,16 @@ pub fn paging_init() {
         INITIAL_PD.tables = get_kernel_page_directory() as *mut PageTable;
         INITIAL_PD.mmap = &mut INITIAL_MMAP as *mut [u8;MMAP_SIZE];
         INITIAL_PD.mmap_set_area(KERNEL_BASE, KHEAP_ADDR);
+    }
+}
+
+pub fn switch_directory(pd_ptr: *mut PageDirectory) {
+    unsafe {
+        if pd_ptr as u32 != &INITIAL_PD as *const _ as u32 {
+            USER_PD = pd_ptr;
+            (*USER_PD).update();
+        }
+        load_directory(phys!((*pd_ptr).tables as u32));
     }
 }
 
@@ -104,6 +115,21 @@ impl PageDirectory {
         }
     }
     
+    pub fn free_frame(&mut self, addr: u32) {
+        unsafe {
+            if addr < get_kernel_end() {
+                println!("free_frame: corrupted address");
+                return;
+            }
+            let frame_idx = addr / FRAME_SIZE as u32;
+            let table_idx = frame_idx as usize / TABLE_FSIZE;
+            let entry_idx = frame_idx as usize % TABLE_FSIZE;
+            self.mmap_reset_frame(frame_idx);
+            let table_ptr = virt!(self[table_idx] &! 0xfff) as *mut PageTable;
+            (*table_ptr)[entry_idx] = 0;
+        }    
+    }
+    
     pub fn new_directory(&mut self) -> PageDirectory {
         PageDirectory {
             tables: (kmalloc(FRAME_SIZE) + (FRAME_SIZE - size_of::<Header>()) as u32) as *mut PageTable,
@@ -114,6 +140,14 @@ impl PageDirectory {
     pub fn free(&mut self) {
         kfree(self.tables as u32 - (FRAME_SIZE - size_of::<Header>()) as u32);
         kfree(self.mmap as u32);
+    }
+    
+    pub fn update(&mut self) {
+        for i in KERNEL_PAGE_NUMBER as usize..TABLE_FSIZE {
+            if self[i] == 0 {
+                self[i] = unsafe { INITIAL_PD[i] };
+            }
+        }
     }
     
     pub fn new_table(&mut self, addr: u32) -> u32 {
@@ -150,13 +184,32 @@ impl PageDirectory {
         return frame * FRAME_SIZE as u32;
     }
 
-    fn mmap_get_free_frame(&mut self) -> u32 {
+    pub fn mmap_get_free_frame(&mut self) -> u32 {
         for i in 0..MEMORY_FSIZE {
             if self.mmap_frame_state(i as u32) == 0 {
                 return i as u32;
             }
         }
         return 0;
+    }
+    
+    pub fn mmap_get_free_area(&mut self, size: usize) -> u32 {
+        let mut cnt = 0;
+        let mut start_frame = 0;
+        for i in 0..MEMORY_FSIZE {
+            if self.mmap_frame_state(i as u32) == 0 {
+                if cnt == 0 {
+                    start_frame = i as u32;
+                }
+                cnt += 1;
+            } else {
+                cnt = 0;
+            }
+            if cnt == size / FRAME_SIZE {
+                break;
+            }
+        }
+        return start_frame;
     }
 
     fn mmap_set_frame(&mut self, frame_id: u32) {

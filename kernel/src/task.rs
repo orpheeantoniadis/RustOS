@@ -81,18 +81,19 @@ pub fn exec(filename: &str) -> i8 {
                     return -1;
                 }
                 // Create new directory using initial directory 
-                let cr3 = get_cr3();
-                if cr3 != phys!(INITIAL_PD.tables as u32) {
-                    load_directory(phys!(INITIAL_PD.tables as u32));
-                }
+                let pd_backup = if get_cr3() != phys!(INITIAL_PD.tables as u32) {
+                    switch_directory(&mut INITIAL_PD);
+                    USER_PD
+                } else {
+                    &mut INITIAL_PD as *mut PageDirectory
+                };
                 TASKS[idx as usize].pd = INITIAL_PD.new_directory();
-                *TASKS[idx as usize].pd.tables = (*INITIAL_PD.tables).clone();
-                load_directory(phys!(TASKS[idx as usize].pd.tables as u32));
+                switch_directory(&mut TASKS[idx as usize].pd);
                 
                 // Alloc frames starting at address 0
                 // Additional frames are allocated for the stack
-                let code_addr = kmalloc(stat.size);
-                let stack_addr = kmalloc(STACK_SIZE);
+                let code_addr = umalloc(stat.size);
+                let stack_addr = umalloc(STACK_SIZE) + STACK_SIZE as u32;
                 file_read(fd, code_addr as *mut u8, stat.size);
                 
                 // Setup task with page directory previously allocated
@@ -102,12 +103,10 @@ pub fn exec(filename: &str) -> i8 {
                 TASKS[idx as usize].tss.ebp = stack_addr;
                 TASKS[idx as usize].tss.cr3 = phys!(TASKS[idx as usize].pd.tables as u32);
                 
-                // task_switch(TASKS[idx as usize].tss_selector as u16);
-                // re-load original cr3 and free memory
+                task_switch(TASKS[idx as usize].tss_selector as u16);
+                // re-load original directory and free memory
                 TASKS[idx as usize].is_free = true;
-                load_directory(cr3);
-                kfree(stack_addr);
-                kfree(code_addr);
+                switch_directory(pd_backup);
                 TASKS[idx as usize].pd.free();
                 return 0;
             } else {

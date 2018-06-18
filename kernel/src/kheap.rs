@@ -45,9 +45,9 @@ pub fn kheap_init(ram_size: u32) {
 }
 
 pub fn kmalloc(size: usize) -> u32 {
-    let aligned_size = align!(size + size_of::<Header>()) - size_of::<Header>();
+    let aligned_size = align!(size) + align!(size_of::<Header>()) - size_of::<Header>();
     let mut addr = empty_block(aligned_size);
-    if alloc_table(addr, aligned_size) {
+    if kmalloc_table_check(addr, aligned_size) {
         addr = empty_block(aligned_size);
     }
     let mut block = Header::from_ptr(addr as *mut u8);
@@ -57,7 +57,9 @@ pub fn kmalloc(size: usize) -> u32 {
         } else {
             block.new_block(addr, aligned_size);
         }
-        return addr + size_of::<Header>() as u32;
+        addr += size_of::<Header>() as u32;
+        unsafe { memset(addr as *mut u8, 0, aligned_size); }
+        return addr;
     }
     return 0;
 }
@@ -114,6 +116,30 @@ pub fn kfree(addr: u32) {
     }
 }
 
+pub fn umalloc(size: usize) -> u32 {
+    unsafe {
+        let aligned_size = align!(size);
+        
+        let pd_backup = if get_cr3() != phys!(INITIAL_PD.tables as u32) {
+            switch_directory(&mut INITIAL_PD);
+            USER_PD
+        } else {
+            &mut INITIAL_PD as *mut PageDirectory
+        };
+        umalloc_table_check(aligned_size);
+        let mut phys_addr = phys!(kmalloc(size) + (FRAME_SIZE - size_of::<Header>()) as u32);
+        switch_directory(pd_backup);
+        
+        let mut virt_addr = 0;
+        let mut tmp = 0;
+        (*USER_PD).alloc_frame(&mut virt_addr, &mut phys_addr, USER_MODE);
+        for i in 1..(aligned_size / FRAME_SIZE) {
+            (*USER_PD).alloc_frame(&mut tmp, &mut (phys_addr + (i * FRAME_SIZE) as u32), USER_MODE);
+        }
+        return virt_addr;
+    }
+}
+
 fn empty_block(size: usize) -> u32 {
     let mut addr = unsafe { KHEAP_ADDR };
     let mut block = Header::from_ptr(addr as *mut u8);
@@ -127,7 +153,7 @@ fn empty_block(size: usize) -> u32 {
     return addr;
 }
 
-fn alloc_table(addr: u32, size: usize) -> bool {
+fn kmalloc_table_check(addr: u32, size: usize) -> bool {
     unsafe {
         let mut alloc = false;
         let mut start_idx = addr as usize / TABLE_SIZE;
@@ -154,6 +180,25 @@ fn alloc_table(addr: u32, size: usize) -> bool {
             alloc = true;
         }
         return alloc;
+    }
+}
+
+fn umalloc_table_check(size: usize) {
+    unsafe {
+        let frame_idx = (*USER_PD).mmap_get_free_area(size);
+        let mut start_idx = frame_idx as usize / TABLE_FSIZE;
+        if frame_idx as usize % TABLE_FSIZE == 0 {
+            let table_addr = kmalloc(FRAME_SIZE) + (FRAME_SIZE - size_of::<Header>()) as u32;
+            (*USER_PD)[start_idx] = phys!(table_addr) | 0x3 | USER_MODE;
+            start_idx += 1;
+        }
+        if frame_idx as usize + size / FRAME_SIZE >= TABLE_FSIZE {
+            let end_idx = (frame_idx as usize + size / FRAME_SIZE) / TABLE_FSIZE;
+            for i in start_idx..end_idx {
+                let table_addr = kmalloc(FRAME_SIZE) + (FRAME_SIZE - size_of::<Header>()) as u32;
+                (*USER_PD)[i] = phys!(table_addr) | 0x3 | USER_MODE;
+            }
+        }
     }
 }
 
