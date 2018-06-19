@@ -53,9 +53,9 @@ pub fn kmalloc(size: usize) -> u32 {
     let mut block = Header::from_ptr(addr as *mut u8);
     if block.size >= aligned_size && block.free {
         if block.next == 0 {
-            block.new_tail(addr, aligned_size);
+            block.insert_tail(addr, aligned_size);
         } else {
-            block.new_block(addr, aligned_size);
+            block.insert(addr, aligned_size);
         }
         addr += size_of::<Header>() as u32;
         unsafe { memset(addr as *mut u8, 0, aligned_size); }
@@ -69,12 +69,15 @@ pub fn kfree(addr: u32) {
         let mut header_addr = addr - size_of::<Header>() as u32;
         let mut header = Header::from_ptr(header_addr as *const u8);
         if !header.free {
+            let mut start_idx = header_addr as usize / FRAME_SIZE + 1;
+            let mut end_idx = (header_addr as usize + header.size) / FRAME_SIZE + 1;
             if header.previous != 0 {
                 let previous = Header::from_ptr(header.previous as *const u8);
                 if previous.free {
                     header_addr = header.previous;
                     header.previous = previous.previous;
                     header.size += previous.size + size_of::<Header>();
+                    start_idx -= 1;
                 }
             }
             if header.next != 0 {
@@ -82,6 +85,7 @@ pub fn kfree(addr: u32) {
                 if next.free {
                     header.next = next.next;
                     header.size += next.size + size_of::<Header>();
+                    end_idx += 1;
                 }
                 if header.next != 0 {
                     next = Header::from_ptr(header.next as *const u8);
@@ -93,6 +97,18 @@ pub fn kfree(addr: u32) {
             }
             header.free = true;
             memcpy(header_addr as *mut u8, header.as_ptr(), size_of::<Header>());
+            // free frames
+            for i in start_idx..end_idx {
+                INITIAL_PD.free_frame(i);
+            }
+            // free tables
+            for i in (start_idx / TABLE_FSIZE)..(end_idx / TABLE_FSIZE + 1) {
+                if INITIAL_PD.table_is_empty(i) {
+                    let table_addr = virt!(INITIAL_PD[i] &! 0xfff);
+                    kfree(table_addr - (FRAME_SIZE - size_of::<Header>()) as u32);
+                    INITIAL_PD[i] = 0;
+                }
+            }
         }
     }
 }
@@ -165,9 +181,9 @@ fn kmalloc_table_check(addr: u32, size: usize) -> bool {
                 let table_addr = INITIAL_PD.new_table(block_addr + FRAME_SIZE as u32);
                 INITIAL_PD[i] = phys!(table_addr) | 0x3;
                 if block.next == 0 {
-                    block.new_tail(block_addr, aligned_size);
+                    block.insert_tail(block_addr, aligned_size);
                 } else {
-                    block.new_block(block_addr, aligned_size);
+                    block.insert(block_addr, aligned_size);
                 }
             }
             alloc = true;
@@ -217,26 +233,29 @@ impl Header {
         }
     }
     
-    fn new_block(&mut self, addr: u32, size: usize) {
-        self.free = false;
-        if size == self.size {
-            unsafe {
-                memcpy(addr as *mut u8, self.as_ptr(), size_of::<Header>());
+    fn insert(&mut self, addr: u32, size: usize) {
+        unsafe {
+            let total_size = size + size_of::<Header>();
+            if (addr as usize % FRAME_SIZE) + total_size > FRAME_SIZE {
+                for i in 1..(total_size / FRAME_SIZE + 1) {
+                    let mut phys_addr = phys!(addr + (i * FRAME_SIZE) as u32);
+                    let mut tmp = 0;
+                    INITIAL_PD.alloc_frame(&mut tmp, &mut phys_addr, KERNEL_MODE);
+                }
             }
-        } else {
-            self.size = size;
-            // if the block is not the tail, need to save the next block
-            // before creating a new block at self.next
-            let tmp = self.next;
-            let mut tmp_header = Header::from_ptr(tmp as *const u8);
-            
-            self.next = addr + (size_of::<Header>() + size) as u32;
-            let next_block_size = (tmp - self.next) as usize - size_of::<Header>();
-            let mut next_header = Header::null(addr, next_block_size);
-            next_header.next = tmp;
-            tmp_header.previous = self.next;
-            
-            unsafe {
+            self.free = false;
+            if size == self.size {
+                memcpy(addr as *mut u8, self.as_ptr(), size_of::<Header>());
+            } else {
+                let tmp = self.next;
+                let mut tmp_header = Header::from_ptr(tmp as *const u8);
+                
+                self.size = size;
+                self.next = addr + total_size as u32;
+                let next_block_size = (tmp - self.next) as usize - size_of::<Header>();
+                let mut next_header = Header::null(addr, next_block_size);
+                next_header.next = tmp;
+                tmp_header.previous = self.next;
                 memcpy(addr as *mut u8, self.as_ptr(), size_of::<Header>());
                 memcpy(self.next as *mut u8, next_header.as_ptr(), size_of::<Header>());
                 memcpy(tmp as *mut u8, tmp_header.as_ptr(), size_of::<Header>());
@@ -244,14 +263,15 @@ impl Header {
         }
     }
     
-    fn new_tail(&mut self, addr: u32, size: usize) {
+    fn insert_tail(&mut self, addr: u32, size: usize) {
         unsafe {
+            let total_size = size + size_of::<Header>();
             self.size = size;
             self.free = false;
-            self.next = addr + (size_of::<Header>() + size) as u32;
+            self.next = addr + total_size as u32;
             // alloc new frames if need
-            if (addr as usize % FRAME_SIZE) + size_of::<Header>() + size > FRAME_SIZE {
-                for i in 1..((size_of::<Header>() + size) / FRAME_SIZE + 1) {
+            if (addr as usize % FRAME_SIZE) + total_size > FRAME_SIZE {
+                for i in 1..(total_size / FRAME_SIZE + 1) {
                     let mut phys_addr = phys!(addr + (i * FRAME_SIZE) as u32);
                     let mut tmp = 0;
                     INITIAL_PD.alloc_frame(&mut tmp, &mut phys_addr, KERNEL_MODE);

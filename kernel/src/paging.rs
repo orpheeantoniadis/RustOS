@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 #![macro_use]
 
-use core::mem::size_of;
+use core::mem::{size_of, transmute};
 use core::ops::{Index, IndexMut};
 use rlibc::memset;
 use vga::*;
@@ -118,16 +118,16 @@ impl PageDirectory {
         }
     }
     
-    pub fn free_frame(&mut self, addr: u32) {
+    pub fn free_frame(&mut self, idx: usize) {
         unsafe {
+            let addr = (idx * FRAME_SIZE) as u32;
             if addr < get_kernel_end() {
                 println!("free_frame: corrupted address");
                 return;
             }
-            let frame_idx = addr / FRAME_SIZE as u32;
-            let table_idx = frame_idx as usize / TABLE_FSIZE;
-            let entry_idx = frame_idx as usize % TABLE_FSIZE;
-            self.mmap_reset_frame(frame_idx);
+            let table_idx = idx / TABLE_FSIZE;
+            let entry_idx = idx % TABLE_FSIZE;
+            self.mmap_reset_frame(idx as u32);
             let table_ptr = virt!(self[table_idx] &! 0xfff) as *mut PageTable;
             (*table_ptr)[entry_idx] = 0;
         }    
@@ -185,6 +185,30 @@ impl PageDirectory {
             }
             return virt_addr;
         }
+    }
+    
+    pub fn table_is_empty(&mut self, idx: usize) -> bool {
+        let table_addr = self[idx] &! 0xfff;
+        if table_addr == 0 {
+            return false;
+        }
+        let table_idx = virt!(table_addr) / FRAME_SIZE as u32;
+        self.mmap_reset_frame(table_idx);
+        
+        // let mmap = unsafe { *self.mmap };
+        // let compact_mmap = unsafe { transmute::<[u8;MMAP_SIZE], [u32;MMAP_SIZE/4]>(mmap) };
+        let size = TABLE_FSIZE / 8;
+        let mmap_idx = size * idx;
+        let mut is_empty = true;
+        
+        for i in mmap_idx..(mmap_idx+size) {
+            if unsafe { (*self.mmap)[i] } != 0 {
+                is_empty = false;
+                break;
+            }
+        }
+        self.mmap_set_frame(table_idx);
+        return is_empty;
     }
 
     pub fn mmap_alloc_frame(&mut self, addr: u32) -> u32 {
