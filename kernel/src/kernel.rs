@@ -83,12 +83,14 @@ pub extern fn kmain(_multiboot_magic: u32, multiboot_info: *mut MultibootInfo) {
 #[no_mangle]
 pub extern fn panic_fmt(details: ::core::fmt::Arguments, file: &'static str, line: u32, column: u32) -> ! {
     println!("panicked at {}, {}:{}:{}", details, file, line, column);
+    cli();
     halt();
     loop {}
 }
 
 #[no_mangle]
 pub extern "C" fn __floatundisf() {
+    cli();
     halt();
     loop {}
 }

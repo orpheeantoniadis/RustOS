@@ -50,9 +50,5 @@ pub fn sti() {
 // Halt the processor.
 // External interrupts wake up the CPU, hence the cli instruction.
 pub fn halt() {
-    unsafe {
-        loop {
-            asm!("cli\nhlt");
-        }
-    }
+    unsafe { asm!("hlt"); }
 }

@@ -108,9 +108,12 @@ impl PageDirectory {
             let table_idx = frame_idx as usize / TABLE_FSIZE;
             let entry_idx = frame_idx as usize % TABLE_FSIZE;
             
-            let table_ptr = virt!(self[table_idx] &! 0xfff) as *mut PageTable;
-            (*table_ptr)[entry_idx] = *phys | 0x3 | mode;
-            memset(*virt as *mut u8, 0, FRAME_SIZE);
+            let table_addr = virt!(self[table_idx] &! 0xfff);
+            if *virt != table_addr {
+                let table_ptr = table_addr as *mut PageTable;
+                (*table_ptr)[entry_idx] = *phys | 0x3 | mode;
+                memset(*virt as *mut u8, 0, FRAME_SIZE);
+            }
             return 0;
         }
     }
@@ -176,6 +179,8 @@ impl PageDirectory {
                 (*table_ptr)[entry_idx] = phys_addr | 0x3;
                 self[table_idx] = phys_addr | 0x3;
             } else {
+                let table_ptr = virt!(self[table_idx] &! 0xfff) as *mut PageTable;
+                (*table_ptr)[entry_idx] = phys_addr | 0x3;
                 memset(virt_addr as *mut u8, 0, size_of::<PageTable>());
             }
             return virt_addr;

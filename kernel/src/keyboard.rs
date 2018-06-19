@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use x86::halt;
 use pio::*;
 use common::*;
 
@@ -50,6 +51,7 @@ pub fn getc() -> char {
     unsafe {
         let mut data = BUFFER.read();
         while data == -1 { 
+            halt();
             data = BUFFER.read();
         }
         return data as u8 as char;

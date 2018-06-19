@@ -69,7 +69,6 @@ pub fn kfree(addr: u32) {
         let mut header_addr = addr - size_of::<Header>() as u32;
         let mut header = Header::from_ptr(header_addr as *const u8);
         if !header.free {
-            let mut end = header.next;
             if header.previous != 0 {
                 let previous = Header::from_ptr(header.previous as *const u8);
                 if previous.free {
@@ -85,7 +84,6 @@ pub fn kfree(addr: u32) {
                     header.size += next.size + size_of::<Header>();
                 }
                 if header.next != 0 {
-                    end = header.next;
                     next = Header::from_ptr(header.next as *const u8);
                     if next.previous != header_addr {
                         next.previous = header_addr;
@@ -95,23 +93,6 @@ pub fn kfree(addr: u32) {
             }
             header.free = true;
             memcpy(header_addr as *mut u8, header.as_ptr(), size_of::<Header>());
-            // free unused page tables
-            let start = header_addr;
-            let mut start_idx = start as usize / TABLE_SIZE;
-            if start % TABLE_SIZE as u32 != 0 {
-                start_idx += 1;
-            }
-            let mut end_idx = end as usize / TABLE_SIZE;
-            if header.next == 0 {
-                end_idx += 1;
-            }
-            for i in start_idx..end_idx {
-                let table_addr = INITIAL_PD[i] &! 0xfff;
-                if table_addr != 0 {
-                    kfree(virt!(table_addr) - (FRAME_SIZE - size_of::<Header>()) as u32);
-                    INITIAL_PD[i] = 0;
-                }
-            }
         }
     }
 }
@@ -166,12 +147,13 @@ fn empty_block(size: usize) -> u32 {
 
 fn kmalloc_table_check(addr: u32, size: usize) -> bool {
     unsafe {
+        let total_size = size + size_of::<Header>();
         let mut alloc = false;
         let mut start_idx = addr as usize / TABLE_SIZE;
         if addr % TABLE_SIZE as u32 != 0 {
             start_idx += 1;
         }
-        let mut end_idx = (addr as usize + size) / TABLE_SIZE;
+        let mut end_idx = (addr as usize + total_size) / TABLE_SIZE;
         if Header::from_ptr(addr as *mut u8).next == 0 {
             end_idx += 1;
         }
@@ -180,13 +162,13 @@ fn kmalloc_table_check(addr: u32, size: usize) -> bool {
             let block_addr = empty_block(aligned_size);
             let mut block = Header::from_ptr(block_addr as *mut u8);
             if block.size >= aligned_size && block.free {
+                let table_addr = INITIAL_PD.new_table(block_addr + FRAME_SIZE as u32);
+                INITIAL_PD[i] = phys!(table_addr) | 0x3;
                 if block.next == 0 {
                     block.new_tail(block_addr, aligned_size);
                 } else {
                     block.new_block(block_addr, aligned_size);
                 }
-                let table_addr = INITIAL_PD.new_table(block_addr + FRAME_SIZE as u32);
-                INITIAL_PD[i] = phys!(table_addr) | 0x3;
             }
             alloc = true;
         }

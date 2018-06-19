@@ -45,23 +45,24 @@ pub extern fn main() {
     
     println!("\nMemory management demo :");
     unsafe {
-        // println!("Allocating 1M on the heap..", );
-        // let addr1 = malloc(0x100000);
-        // *(addr1 as *mut u8) = 42;
-        // println!("addr1 = 0x{:x}, [addr1] = 0x{:x}", addr1, *(addr1 as *mut u8));
-        // println!("Allocating 256 bytes on the heap..");
+        println!("Allocating 1M on the heap..", );
+        let addr1 = malloc(0x100000);
+        *(addr1 as *mut u8) = 42;
+        println!("addr1 = 0x{:x}, [addr1] = 0x{:x}", addr1, *(addr1 as *mut u8));
+        println!("Allocating 256 bytes on the heap..");
         let addr2 = malloc(0x100);
         *(addr2 as *mut u8) = 0x42;
         println!("addr2 = 0x{:x}, [addr2] = 0x{:x}", addr2, *(addr2 as *mut u8));
+        println!("Allocating 4K on the heap..");
+        let addr3 = malloc(0x1000);
+        *(addr3 as *mut u8) = 12;
+        println!("addr3 = 0x{:x}, [addr3] = 0x{:x}", addr3, *(addr3 as *mut u8));
         print_kmalloc_list();
-        
-        let addr2 = malloc(0x1000);
-        *(addr2 as *mut u8) = 42;
-        println!("addr2 = 0x{:x}, [addr2] = 0x{:x}", addr2, *(addr2 as *mut u8));
+        println!("Freeing all allocated memory..");
+        free(addr1);
+        free(addr2);
+        free(addr3);
         print_kmalloc_list();
-        // println!("Freeing all allocated memory..");
-        // free(addr1);
-        // free(addr2);
     }
     println!("Ok.");
 }
