@@ -65,38 +65,25 @@ pub fn kmalloc(size: usize) -> u32 {
 }
 
 pub fn kfree(addr: u32) {
-    unsafe {
-        let mut header_addr = addr - size_of::<Header>() as u32;
-        let mut header = Header::from_ptr(header_addr as *const u8);
-        if !header.free {
-            let mut start_idx = header_addr as usize / FRAME_SIZE + 1;
-            let mut end_idx = (header_addr as usize + header.size) / FRAME_SIZE + 1;
-            if header.previous != 0 {
-                let previous = Header::from_ptr(header.previous as *const u8);
-                if previous.free {
-                    header_addr = header.previous;
-                    header.previous = previous.previous;
-                    header.size += previous.size + size_of::<Header>();
-                    start_idx -= 1;
-                }
+    let header_addr = addr - size_of::<Header>() as u32;
+    let mut header = Header::from_ptr(header_addr as *const u8);
+    if !header.free {
+        let mut start_idx = header_addr as usize / FRAME_SIZE + 1;
+        let mut end_idx = (header_addr as usize + header.size) / FRAME_SIZE + 1;
+        if header.previous != 0 {
+            let previous = Header::from_ptr(header.previous as *const u8);
+            if previous.free {
+                start_idx -= 1;
             }
-            if header.next != 0 {
-                let mut next = Header::from_ptr(header.next as *const u8);
-                if next.free {
-                    header.next = next.next;
-                    header.size += next.size + size_of::<Header>();
-                    end_idx += 1;
-                }
-                if header.next != 0 {
-                    next = Header::from_ptr(header.next as *const u8);
-                    if next.previous != header_addr {
-                        next.previous = header_addr;
-                        memcpy(header.next as *mut u8, next.as_ptr(), size_of::<Header>());
-                    }
-                }
+        }
+        if header.next != 0 {
+            let next = Header::from_ptr(header.next as *const u8);
+            if next.free {
+                end_idx += 1;
             }
-            header.free = true;
-            memcpy(header_addr as *mut u8, header.as_ptr(), size_of::<Header>());
+        }
+        header.remove(header_addr);
+        unsafe {
             // free frames
             for i in start_idx..end_idx {
                 INITIAL_PD.free_frame(i);
@@ -104,8 +91,10 @@ pub fn kfree(addr: u32) {
             // free tables
             for i in (start_idx / TABLE_FSIZE)..(end_idx / TABLE_FSIZE + 1) {
                 if INITIAL_PD.table_is_empty(i) {
-                    let table_addr = virt!(INITIAL_PD[i] &! 0xfff);
-                    kfree(table_addr - (FRAME_SIZE - size_of::<Header>()) as u32);
+                    let mut table_addr = virt!(INITIAL_PD[i] &! 0xfff);
+                    table_addr -= FRAME_SIZE as u32;
+                    let mut table_header = Header::from_ptr(table_addr as *const u8);
+                    table_header.remove(table_addr);
                     INITIAL_PD[i] = 0;
                 }
             }
@@ -236,6 +225,7 @@ impl Header {
     fn insert(&mut self, addr: u32, size: usize) {
         unsafe {
             let total_size = size + size_of::<Header>();
+            INITIAL_PD.mmap_set_frame(addr / FRAME_SIZE as u32);
             if (addr as usize % FRAME_SIZE) + total_size > FRAME_SIZE {
                 for i in 1..(total_size / FRAME_SIZE + 1) {
                     let mut phys_addr = phys!(addr + (i * FRAME_SIZE) as u32);
@@ -269,6 +259,7 @@ impl Header {
             self.size = size;
             self.free = false;
             self.next = addr + total_size as u32;
+            INITIAL_PD.mmap_set_frame(addr / FRAME_SIZE as u32);
             // alloc new frames if need
             if (addr as usize % FRAME_SIZE) + total_size > FRAME_SIZE {
                 for i in 1..(total_size / FRAME_SIZE + 1) {
@@ -281,6 +272,39 @@ impl Header {
             let mut tail = Header::null(addr, tail_size);
             memcpy(addr as *mut u8, self.as_ptr(), size_of::<Header>());
             memcpy(self.next as *mut u8, tail.as_ptr(), size_of::<Header>());
+        }
+    }
+    
+    fn remove(&mut self, addr: u32) {
+        unsafe {
+            let mut header_addr = addr;
+            if !self.free {
+                if self.previous != 0 {
+                    let previous = Header::from_ptr(self.previous as *const u8);
+                    if previous.free {
+                        header_addr = self.previous;
+                        self.previous = previous.previous;
+                        self.size += previous.size + size_of::<Header>();
+                    }
+                }
+                if self.next != 0 {
+                    let mut next = Header::from_ptr(self.next as *const u8);
+                    if next.free {
+                        self.next = next.next;
+                        self.size += next.size + size_of::<Header>();
+                    }
+                    if self.next != 0 {
+                        next = Header::from_ptr(self.next as *const u8);
+                        if next.previous != header_addr {
+                            next.previous = header_addr;
+                            memcpy(self.next as *mut u8, next.as_ptr(), size_of::<Header>());
+                        }
+                    }
+                }
+                self.free = true;
+                memcpy(header_addr as *mut u8, self.as_ptr(), size_of::<Header>());
+                INITIAL_PD.mmap_reset_frame(header_addr / FRAME_SIZE as u32);
+            }
         }
     }
     

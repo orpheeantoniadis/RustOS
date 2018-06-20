@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 #![macro_use]
 
-use core::mem::{size_of, transmute};
+use core::mem::size_of;
 use core::ops::{Index, IndexMut};
 use rlibc::memset;
 use vga::*;
@@ -57,7 +57,7 @@ pub fn paging_init() {
     unsafe {
         INITIAL_PD.tables = get_kernel_page_directory() as *mut PageTable;
         INITIAL_PD.mmap = &mut INITIAL_MMAP as *mut [u8;MMAP_SIZE];
-        INITIAL_PD.mmap_set_area(KERNEL_BASE, KHEAP_ADDR);
+        INITIAL_PD.mmap_set_area(KERNEL_BASE, get_kernel_end());
     }
 }
 
@@ -249,13 +249,13 @@ impl PageDirectory {
         return start_frame;
     }
 
-    fn mmap_set_frame(&mut self, frame_id: u32) {
+    pub fn mmap_set_frame(&mut self, frame_id: u32) {
         let mmap_id = frame_id / 8;
         let bit_offset = frame_id % 8;
         unsafe { (*self.mmap)[mmap_id as usize] |= 1<<bit_offset; }
     }
 
-    fn mmap_set_area(&mut self, start: u32, end: u32) {
+    pub fn mmap_set_area(&mut self, start: u32, end: u32) {
         let start_frame = start / FRAME_SIZE as u32;
         let mut end_frame = end / FRAME_SIZE as u32;
         if end % 0x1000 != 0 {
@@ -266,13 +266,13 @@ impl PageDirectory {
         }
     }
 
-    fn mmap_reset_frame(&mut self, frame_id: u32) {
+    pub fn mmap_reset_frame(&mut self, frame_id: u32) {
         let mmap_id = frame_id / 8;
         let bit_offset = frame_id % 8;
         unsafe { (*self.mmap)[mmap_id as usize] &= !(1<<bit_offset); }
     }
 
-    fn mmap_frame_state(&mut self, frame_id: u32) -> u8 {
+    pub fn mmap_frame_state(&mut self, frame_id: u32) -> u8 {
         let mmap_id = frame_id / 8;
         let bit_offset = frame_id % 8;
         unsafe { ((*self.mmap)[mmap_id as usize] >> bit_offset) as u8 & 1 }

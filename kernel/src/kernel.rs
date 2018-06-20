@@ -70,8 +70,8 @@ pub extern fn kmain(_multiboot_magic: u32, multiboot_info: *mut MultibootInfo) {
     set_superblock();
     println!("Welcome to RustOS!");
     println!("Available Memory = {} kB", mboot.mem_upper);
-    // sleep(3000);
-    // exec("splash");
+    sleep(3000);
+    exec("splash");
     exec("shell");
     print_kmalloc_list();
     disable_cursor();

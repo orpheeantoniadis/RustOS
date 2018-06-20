@@ -104,6 +104,7 @@ pub fn exec(filename: &str) -> i8 {
                 TASKS[idx as usize].tss.cr3 = phys!(TASKS[idx as usize].pd.tables as u32);
                 
                 task_switch(TASKS[idx as usize].tss_selector as u16);
+                switch_directory(&mut INITIAL_PD);
                 // re-load original directory and free memory
                 TASKS[idx as usize].is_free = true;
                 ufree(code_addr);
