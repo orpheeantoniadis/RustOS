@@ -1,5 +1,9 @@
 #![allow(dead_code)]
 
+use x86::halt;
+use core::u32;
+use pio::outb;
+
 // PIT ports
 const PIT_CMD: u16 = 0x43;
 const PIT_CANAL_0: u16 = 0x40;
@@ -32,6 +36,7 @@ pub fn sleep(ms: u32) {
         if get_ticks() >= duration {
             break;
         }
+        halt();
     }
 }
 
@@ -41,7 +46,6 @@ struct Timer {
 }
 impl Timer {
     pub fn init(&mut self, freq_hz: u32) {
-        use core::u32;
         match freq_hz {
             0...MIN_FREQ => self.freq = MIN_FREQ,
             MAX_FREQ...u32::MAX => self.freq =  MAX_FREQ,
@@ -50,7 +54,6 @@ impl Timer {
         
         #[cfg(not(test))]
         unsafe {
-            use pio::outb;
             let div = MAX_FREQ / self.freq;
             // divisor selection and repetition mode
             outb(PIT_CMD, PIT_DIV_REPEAT);

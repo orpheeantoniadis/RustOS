@@ -7,9 +7,10 @@ use mem::*;
 
 #[no_mangle]
 pub extern fn main() {
+    clear();
     puts("Starting demo.\n");
     
-    println!("\nIO demo :");
+    println!("\nIO demo :\n");
     println!("Executing hello app..");
     exec("hello");
     println!("Waiting on keypressed..");
@@ -20,8 +21,10 @@ pub extern fn main() {
     println!("Waiting on getc..");
     let key = getc();
     println!("{} pressed.", key as u8 as char);
+    sleep(3000);
+    clear();
     
-    println!("\nFile system demo :");
+    println!("File system demo :\n");
     println!("Opening file splash.txt..");
     let fd = file_open("splash.txt");
     if fd != -1 {
@@ -42,8 +45,10 @@ pub extern fn main() {
         }
         bytes = [0;MAX_FILENAME_LENGTH];
     }
+    sleep(3000);
+    clear();
     
-    println!("\nMemory management demo :");
+    println!("Memory management demo :\n");
     unsafe {
         println!("Allocating 1M on the heap..", );
         let addr1 = malloc(0x100000);
@@ -53,15 +58,19 @@ pub extern fn main() {
         let addr2 = malloc(0x100);
         *(addr2 as *mut u8) = 0x42;
         println!("addr2 = 0x{:x}, [addr2] = 0x{:x}", addr2, *(addr2 as *mut u8));
-        println!("Allocating 4K on the heap..");
+        println!("Freeing addr1..");
+        free(addr1);
+        println!("Allocating 4KB on the heap..");
         let addr3 = malloc(0x1000);
         *(addr3 as *mut u8) = 12;
         println!("addr3 = 0x{:x}, [addr3] = 0x{:x}", addr3, *(addr3 as *mut u8));
+        println!("Alloc list state :");
         print_kmalloc_list();
-        println!("Freeing all allocated memory..");
-        free(addr1);
+        println!("Freeing addr2..");
         free(addr2);
+        println!("Freeing addr3..");
         free(addr3);
+        println!("Alloc list state :");
         print_kmalloc_list();
     }
     println!("Ok.");

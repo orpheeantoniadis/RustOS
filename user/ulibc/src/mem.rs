@@ -3,12 +3,6 @@ use core::mem::size_of;
 use rlibc::{memset,memcpy};
 use io::*;
 
-// #[global_allocator]
-// static mut ALLOCATOR: Allocator = Allocator {};
-
-// #[derive(Debug)]
-// pub struct Allocator {}
-
 const FRAME_SIZE: usize = 0x1000;
 const HEAP_END: u32 = 0xffffffff;
 
@@ -142,24 +136,27 @@ impl Header {
     }
     
     fn insert(&mut self, addr: u32, size: usize) {
-        self.free = false;
-        if size == self.size {
-            unsafe {
-                memcpy(addr as *mut u8, self.as_ptr(), size_of::<Header>());
-            }
-        } else {
+        unsafe {
             let total_size = size + size_of::<Header>();
-            let tmp = self.next;
-            let mut tmp_header = Header::from_ptr(tmp as *const u8);
-            
-            self.size = size;
-            self.next = addr + total_size as u32;
-            let next_block_size = (tmp - self.next) as usize - size_of::<Header>();
-            let mut next_header = Header::null(addr, next_block_size);
-            next_header.next = tmp;
-            tmp_header.previous = self.next;
-            
-            unsafe {
+            if (addr as usize % FRAME_SIZE) + total_size > FRAME_SIZE {
+                for _i in 1..(total_size / FRAME_SIZE + 1) {
+                    let entry_addr = syscall(Syscall::AllocFrame, 0, 0, 0, 0) as u32;
+                    memset(entry_addr as *mut u8, 0, FRAME_SIZE);
+                }
+            }
+            self.free = false;
+            if size == self.size {
+                memcpy(addr as *mut u8, self.as_ptr(), size_of::<Header>());
+            } else {
+                let tmp = self.next;
+                let mut tmp_header = Header::from_ptr(tmp as *const u8);
+                
+                self.size = size;
+                self.next = addr + total_size as u32;
+                let next_block_size = (tmp - self.next) as usize - size_of::<Header>();
+                let mut next_header = Header::null(addr, next_block_size);
+                next_header.next = tmp;
+                tmp_header.previous = self.next;
                 memcpy(addr as *mut u8, self.as_ptr(), size_of::<Header>());
                 memcpy(self.next as *mut u8, next_header.as_ptr(), size_of::<Header>());
                 memcpy(tmp as *mut u8, tmp_header.as_ptr(), size_of::<Header>());
@@ -197,19 +194,3 @@ impl Header {
         }
     }
 }
-
-// unsafe impl<'a> alloc::heap::Alloc for &'a Allocator {
-//     unsafe fn alloc(&mut self, layout:  alloc::heap::Layout) -> Result<*mut u8,  alloc::heap::AllocErr> {
-//         let addr = malloc(layout.size());
-// 
-//         if addr > 0 {
-//             Ok(addr as *mut u8)
-//         } else {
-//             Err(alloc::heap::AllocErr::Exhausted{ request: layout })
-//         }
-//     }
-// 
-//     unsafe fn dealloc(&mut self, ptr: *mut u8, layout: alloc::heap::Layout) {
-//         free(ptr as u32);
-//     }
-// }
