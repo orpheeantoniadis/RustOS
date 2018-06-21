@@ -516,11 +516,11 @@ chacun une taille de 16 bits.\cite{ref42,ref18}
 
 En mode protégé (32-bits), ces registres doivent pointer sur des descripteurs
 de segment de la \acrshort{gdt}. Au minimum les trois premiers registres décrits
-doivent être utilisé en mode protégé (CS, DS, et SS). Les opératons adressant le
+doivent être utilisé en mode protégé (CS, DS, et SS). Les opérations adressant le
 code (décodage des instructons en mémoire, sauts, etc...) référencent le descripteur
-de segment sur lequel pointe le registre CS. Les opératons adressant les données
+de segment sur lequel pointe le registre CS. Les opérations adressant les données
 (adressage de variables ou d'adresses mémoires) référencent le descripteur de segment
-sur lequel pointe le registre DS. Les opératons adressant la pile (\mintinline{text}{push}
+sur lequel pointe le registre DS. Les opérations adressant la pile (\mintinline{text}{push}
 et \mintinline{text}{pop}) référencent le descripteur de segment sur lequel pointe
 le registre SS. \\
 
@@ -560,10 +560,16 @@ pour la gestion des tâches.
 La pagination est une autres techinque de gestion de mémoire qui diffère de la
 segmentation. Alors que la segmentation permet d'allouer des morceaux de mémoire
 de taille variable, la pagination divise la mémoire en blocs de taille fixe appelés
-pages. De plus, la segmentation est obligatoire dans une architecture i386 alors que
-la pagination ne l'est pas\cite{ref16}. Pour rappel, le mecanisme de segmentation
-permet de convertir une adresse logique en adresse linéaire. Sur x86, lorsque la
-pagination est activée, l'adresse linéaire est divisée en trois parties. 
+pages (de 4Ko, 2Mo ou 4Mo). De plus, la segmentation est obligatoire dans une
+architecture i386 alors que la pagination ne l'est pas\cite{ref16}. Quand une tâche
+fait référence à une adresse logique en mémoire, cette adresse est convertie en
+adresse linéaire grace au mécanisme de segmentation et c'est le mécanisme de
+pagination qui permet de translater cette adresse linéaire en adresse physique
+(comme vu précedemment dans la partie sur la segmentation). Quand la
+pagination est activée, l'adresse linéaire est divisée en deux parties lorsque
+des pages de 4Mo sont utilisées et en trois parties lorsque des pages de 4Ko
+sont utilisées. Le \textit{kernel} développé utilise des pages de 4Ko, une adresse
+linéaire est donc sous la forme suivante :
 
 \begin{itemize}[label=\textbullet]
 	\item 10 bits pour le \textit{directory index}
@@ -573,60 +579,120 @@ pagination est activée, l'adresse linéaire est divisée en trois parties.
 
 On dit que cette pagination est une pagination à trois niveaux. En général, une
 pagination à trois niveaux est utilisée mais il peut exister des systèmes utilisant
-plus de niveaux. Le système d'exploitation doit créer un répertoire (\textit{Page Directory})
-et au moins une table de pages (\textit{Page Table}) pour chaque tâche. Quand une
-adresse linéaire est lue, le \textit{directory index} permet de lire la bonne
-entrée dans le \textit{Page Directory}. Cette entrée pointe sur la bonne page
-dans la table des pages et c'est le \textit{page index} qui permet de récupérer
-la bonne entrée dans cette page. Cette entrée pointe elle même sur la bonne page
-dans les \textit{Page Frames} et l'\textit{offset} va être utilisé pour trouver
-la donnée souhaitée. La figure \ref{paging3} résume bien ce mécanisme. A noter que le
-\textit{Page Directory} est pointé par le registre CR3. A chaque fois qu'un changement
-de tâche a lieu, le registre CR3 doit être mis à jour avec le \textit{Page Directory}
-de la nouvelle tâche.\cite{ref15}
+plus ou moins de niveaux. Le système d'exploitation doit créer un répertoire de pages
+(\textit{Page Directory}) et au moins une table de pages (\textit{Page Table}) pour
+chaque tâche. Les répertoires et les tables de pages ont la taille d'une page et sont
+composées d'entrées sur 32 bits (4 octets). Une entrée dans un répertoire permet
+d'adresser une table de pages et une entrée dans une table permet d'adresser une page.
+Dans notre cas, un répertoire permet donc d'adresser 1024 tables et une table
+1024 pages ce qui permet bien d'adresser au total 4Go ($1024 \times 1024 \times 4096$).
+Une entrée est sur 32 bits mais seulement les 20 bits de poids fort sont utilisés
+pour l'adressage car les adresses sont alignées avec 4096 ce qui laisse les 12 bits
+de poids faible pour la configuration.\cite{ref21}
 
 \begin{figure}[!h]
   \centering
-  \includegraphics[scale=0.75]{images/paging3.png}
+  \includegraphics[scale=0.6]{images/page_entry.png}
+  \caption{Structure d'une \textit{Page Entry}}
+  \label{page_entry}
+\end{figure}
+
+Quand une adresse linéaire est lue, le \textit{directory index} permet
+de lire la bonne entrée dans le \textit{Page Directory}. Il faut ensuite utiliser
+le \textit{page index} pour récupérer la bonne entrée dans la table des pages.
+De la même manière que l'entrée dans le répertoire de pages pointait sur une table
+des pages, l'entrée dans une table des pages pointe sur une \textit{Page Frame}.
+Cette page contient finalement la donnée pointée par l'adresse linéaire, il faut
+utiliser l'\textit{offset} pour trouver cette donnée dans la page. La figure \ref{paging3}
+résume bien ce mécanisme.\cite{ref66} A noter que le \textit{Page Directory} est
+pointé par le registre CR3. A chaque fois qu'un changement de tâche a lieu, le
+registre CR3 doit être mis à jour avec le \textit{Page Directory} de la nouvelle
+tâche.\cite{ref15}
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.85]{images/paging3.png}
   \caption{Exemple de pagination à 3 niveaux}
   \label{paging3}
 \end{figure}
 
 \subsubsection{Activer la Pagination}
-Pour initialiser la pagination sur architecture x86, il faut faire pointer le
-registre CR3 vers un \textit{Page Directory} initial. Il faut donc commencer
-par initialiser un \textit{Page Directory} "vierge" (qui ne pointe sur aucune 
-table de pages). Chaque entrée de ce répertoire de pages doit être initialisé
-à 0x2 (10 en binaire) car le bit 1 d'une entrée de page permet d'autoriser l'écriture
-et la lecture. Il faut ensuite faire pointer la première entrée vers une table
-de pages. La table de pages initiale se construit presque de la même manière
-que le répertoire de pages sauf qu'il faut rajouter un bit d'attribut. Ce bit
-est le bit 1 et indique que la page est utilisée. Toutes les pages dans la table
-de pages doivent être utilisés donc toutes les entrées seront initialisées à 0x3
-(11 en binaire).\cite{ref20} A noter qu'il faut mettre le bit 0 de la première entrée
-du répertoire de pages à 1 aussi ce qui donne en rust :
+Pour initialiser la pagination sur architecture x86, il faut d'abord construire
+un répertoire de pages valide contenant les entrées vers les pages du \textit{kernel}.
+Il est obligatoire de commencer par cela car si la pagination est activée et que
+le \textit{kernel} n'est pas \textit{mappé} dans le répertoire chargé, une exception
+sera levée (\textit{Page Fault}). Par soucis de simplicité pour la suite du développement
+de l'\acrshort{os}, le \textit{kernel} va être déplacé au dernier Go de la \acrshort{ram}.
+Grace à la pagination, ceci peut se faire assez simplement, il suffit de compléter
+le répertoire de pages ainsi que ses tables de pages correctement. Pour rappel,
+le \textit{kernel} commence à l'adresse 0x100000 (1Mo) mais il faut aussi rendre
+accessible le premier Mo de \acrshort{ram}. Il faut donc déplacer les adresses physiques
+allant de 0x0 à la fin du kernel (qui n'est pas fixe). Dans un premier temps, le
+\textit{linker} doit être modifié de cette manière :
 
-\begin{minted}[fontsize=\footnotesize,tabsize=4]{rust}
-    INITIAL_PAGE_DIRECTORY[0] = &INITIAL_PAGE_TABLE as *const _ as u32 | 0x3;
+\begin{minted}[fontsize=\footnotesize,linenos,frame=single,tabsize=4]{c}
+SECTIONS {
+    /* Low memory Kernel */
+    . = 0x00100000;
+    .boot ALIGN(4) :        { *(.multiboot) }
+    .low_text ALIGN (4K) :  { *(.low_text) }
+    .low_data ALIGN (4K) :  { *(.low_data) }
+    .low_bss ALIGN (4K) :   { *(.low_bss) }
+
+    /* Higher-half Kernel */
+    . += 0xC0000000;
+    .stack ALIGN(4) : AT(ADDR(.stack) - 0xC0000000)     { *(.stack) }
+    .text ALIGN(4K) : AT(ADDR(.text) - 0xC0000000)      { *(.text*) }
+    .rodata ALIGN(4K) : AT(ADDR(.rodata) - 0xC0000000)  { *(.rodata*) }
+    .data ALIGN(4K) : AT(ADDR(.data) - 0xC0000000)      { *(.data*) }
+    .bss ALIGN(4K) : AT(ADDR(.bss) - 0xC0000000)        { *(COMMON) *(.bss*) }
+}
 \end{minted}
 
-Il n'est pas possible d'accéder au registre CR3 depuis le code rust, une fonction
-assembleur qui a comme argument l'adresse vers le répertoire de pages initial doit
-être appelée. Cette fonction effectue les instructions suivantes :
+Ici, le \textit{kernel} est divisé en deux parties. La première est celle qui va
+être appelée au démarrage du système et qui va initialiser la pagination. Une fois
+la pagination active, le \textit{kernel} va continuer son exécution dans la deuxième
+partie qui est située dans le dernier Go de \acrshort{ram}. Nous sommes obligés de
+démarrer le \textit{kernel} au début de la mémoire physique car toutes les adresses
+sont virtuelles. En réalité, le \textit{kernel} dispose de beaucoup moins (variable
+selon la configuration de l'émulateur, ici QEMU). Il n'existe donc pas d'adresse
+physique située à 3Go dans la mémoire physique du \textit{kernel} et il est donc
+impossible de démarrer le système à cette adresse.
 
-\begin{minted}[fontsize=\footnotesize,tabsize=4]{text}
-    global enable_paging    ; Rend accessible la fonction depuis l'extérieur
-    section .text:          ; Début de la section .text (code)
-    enable_paging:
-        mov eax,[esp+4]     ; Met l'adresse du répertoire de pages dans le registre eax
-        mov cr3, eax        ; Fait pointer le registre cr3 sur le répertoire de pages
-        
-        mov ebx, cr0        ; Met le contenu du registre cr0 dans le registre ebx
-        or  ebx, 1 << 31    ; Met le bit 31 du registre ebx à 1
-        mov cr0, ebx        ; Met le contenu du registre ebx dans le registre cr0
-        
-        ret                 ; Retour de fonction
-\end{minted}
+% Pour initialiser la pagination sur architecture x86, il faut faire pointer le
+% registre CR3 vers un \textit{Page Directory} initial. Il faut donc commencer
+% par initialiser un \textit{Page Directory} "vierge" (qui ne pointe sur aucune 
+% table de pages). Chaque entrée de ce répertoire de pages doit être initialisé
+% à 0x2 (10 en binaire) car le bit 1 d'une entrée de page permet d'autoriser l'écriture
+% et la lecture. Il faut ensuite faire pointer la première entrée vers une table
+% de pages. La table de pages initiale se construit presque de la même manière
+% que le répertoire de pages sauf qu'il faut rajouter un bit d'attribut. Ce bit
+% est le bit 1 et indique que la page est utilisée. Toutes les pages dans la table
+% de pages doivent être utilisés donc toutes les entrées seront initialisées à 0x3
+% (11 en binaire).\cite{ref20} A noter qu'il faut mettre le bit 0 de la première entrée
+% du répertoire de pages à 1 aussi ce qui donne en rust :
+% 
+% \begin{minted}[fontsize=\footnotesize,tabsize=4]{rust}
+%     INITIAL_PAGE_DIRECTORY[0] = &INITIAL_PAGE_TABLE as *const _ as u32 | 0x3;
+% \end{minted}
+% 
+% Il n'est pas possible d'accéder au registre CR3 depuis le code rust, une fonction
+% assembleur qui a comme argument l'adresse vers le répertoire de pages initial doit
+% être appelée. Cette fonction effectue les instructions suivantes :
+% 
+% \begin{minted}[fontsize=\footnotesize,tabsize=4]{text}
+%     global enable_paging    ; Rend accessible la fonction depuis l'extérieur
+%     section .text:          ; Début de la section .text (code)
+%     enable_paging:
+%         mov eax,[esp+4]     ; Met l'adresse du répertoire de pages dans le registre eax
+%         mov cr3, eax        ; Fait pointer le registre cr3 sur le répertoire de pages
+% 
+%         mov ebx, cr0        ; Met le contenu du registre cr0 dans le registre ebx
+%         or  ebx, 1 << 31    ; Met le bit 31 du registre ebx à 1
+%         mov cr0, ebx        ; Met le contenu du registre ebx dans le registre cr0
+% 
+%         ret                 ; Retour de fonction
+% \end{minted}
 
 \newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
