@@ -638,7 +638,6 @@ SECTIONS {
     .low_text ALIGN (4K) :  { *(.low_text) }
     .low_data ALIGN (4K) :  { *(.low_data) }
     .low_bss ALIGN (4K) :   { *(.low_bss) }
-
     /* Higher-half Kernel */
     . += 0xC0000000;
     .stack ALIGN(4) : AT(ADDR(.stack) - 0xC0000000)     { *(.stack) }
@@ -657,42 +656,53 @@ démarrer le \textit{kernel} au début de la mémoire physique car toutes les ad
 sont virtuelles. En réalité, le \textit{kernel} dispose de beaucoup moins (variable
 selon la configuration de l'émulateur, ici QEMU). Il n'existe donc pas d'adresse
 physique située à 3Go dans la mémoire physique du \textit{kernel} et il est donc
-impossible de démarrer le système à cette adresse.
+impossible de démarrer le système à cette adresse. Regardons plus en détail de quelle
+manière la première partie du \textit{kernel} initialise la pagination. Comme dit
+précedemment, un répertoire de pages initial doit être construit. Etant donné que
+nous allons exécuter du code dans le premier Go et aussi dans le dernier, le \textit{kernel}
+doit être \textit{mappé} dans ces deux zones mémoire en même temps. La première
+partie va être adressée linéairement, ce qui veut dire que l'adresse physique
+0x0 correspondra à l'adresse virtuelle 0x0 et ainsi de suite jusqu'à la fin du
+\textit{kernel}. Cet adressage donne le répertoire de pages shématisé dans la figure
+\ref{low_kern_pd}.
 
-% Pour initialiser la pagination sur architecture x86, il faut faire pointer le
-% registre CR3 vers un \textit{Page Directory} initial. Il faut donc commencer
-% par initialiser un \textit{Page Directory} "vierge" (qui ne pointe sur aucune 
-% table de pages). Chaque entrée de ce répertoire de pages doit être initialisé
-% à 0x2 (10 en binaire) car le bit 1 d'une entrée de page permet d'autoriser l'écriture
-% et la lecture. Il faut ensuite faire pointer la première entrée vers une table
-% de pages. La table de pages initiale se construit presque de la même manière
-% que le répertoire de pages sauf qu'il faut rajouter un bit d'attribut. Ce bit
-% est le bit 1 et indique que la page est utilisée. Toutes les pages dans la table
-% de pages doivent être utilisés donc toutes les entrées seront initialisées à 0x3
-% (11 en binaire).\cite{ref20} A noter qu'il faut mettre le bit 0 de la première entrée
-% du répertoire de pages à 1 aussi ce qui donne en rust :
-% 
-% \begin{minted}[fontsize=\footnotesize,tabsize=4]{rust}
-%     INITIAL_PAGE_DIRECTORY[0] = &INITIAL_PAGE_TABLE as *const _ as u32 | 0x3;
-% \end{minted}
-% 
-% Il n'est pas possible d'accéder au registre CR3 depuis le code rust, une fonction
-% assembleur qui a comme argument l'adresse vers le répertoire de pages initial doit
-% être appelée. Cette fonction effectue les instructions suivantes :
-% 
-% \begin{minted}[fontsize=\footnotesize,tabsize=4]{text}
-%     global enable_paging    ; Rend accessible la fonction depuis l'extérieur
-%     section .text:          ; Début de la section .text (code)
-%     enable_paging:
-%         mov eax,[esp+4]     ; Met l'adresse du répertoire de pages dans le registre eax
-%         mov cr3, eax        ; Fait pointer le registre cr3 sur le répertoire de pages
-% 
-%         mov ebx, cr0        ; Met le contenu du registre cr0 dans le registre ebx
-%         or  ebx, 1 << 31    ; Met le bit 31 du registre ebx à 1
-%         mov cr0, ebx        ; Met le contenu du registre ebx dans le registre cr0
-% 
-%         ret                 ; Retour de fonction
-% \end{minted}
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.65]{images/low_kern_pd.png}
+  \caption{Répertoire de pages adressant le \textit{kernel} au début de la \acrshort{ram}}
+  \label{low_kern_pd}
+\end{figure}
+
+On peut voir ici que la première entrée du répertoire de pages pointe sur une
+table de pages adressant le début de la \acrshort{ram}. Chaque entrée est incrémentée
+de 4096 (0x1000 en héxadécimal) car une page fait 4096 octets. De plus, les deux
+premiers bits de poids faible de chaque page sont à 1 pour indiquer que la page est
+active et que l'on peut écrire et lire dedans (voir figure \ref{page_entry}). L'entrée
+dans le répertoire de page correspondant au dernier Go (soit 0xC0000000 en héxadécimal)
+doit pointer sur une table des pages identique. Pour trouver une entrée dans le
+répertoire de pages depuis une adresse il faut faire un décallage à droite de 22
+bits sur cette adresse (ce qui est équivalent à diviser par 4096, soit la taille
+d'une page, puis de nouveau diviser par 1024, soit le nombre de pages adressées par
+une table). Ici, 0xC0000000 $>>$ 22 = 0x300 (768 en décimal). Il faut donc faire
+pointer l'entrée 768 du répertoire de pages à une table des pages identique à
+celle pointée par l'entrée 0 ce qui donne finalement le répertoire suivant.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.65]{images/high_kern_pd.png}
+  \caption{Répertoire de pages adressant le \textit{kernel} à la fin de la \acrshort{ram}}
+  \label{high_kern_pd}
+\end{figure}
+
+Une fois le répertoire de pages initialisé de cette manière, il ne reste plus
+qu'à faire pointer le registre CR3 dessus et activer la pagination en mettant
+le bit 31 du registre CR0 à 1. Le code peut ensuite sauter à la partie haute de
+la \acrshort{ram} où nous avons déplacé le \textit{kernel}. A partir de là,
+tout le code qui sera exécuté sera dans le dernier Go de \acrshort{ram}, il n'y
+a donc plus besoin de faire pointer la première entrée de répertoire de pages
+sur le table des pages du \textit{kernel} ce qui peut être fait en écrivant 0
+dans cette entrée. Le code rust peut finalement être appelé avec la pagination
+active.
 
 \newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
