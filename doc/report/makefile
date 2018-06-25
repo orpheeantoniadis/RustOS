@@ -1,12 +1,13 @@
 CC = xelatex
 FLAGS = -shell-escape
 MAIN = report
+SRCS = $(wildcard *.tex)
 BIB = biblio
 KERNEL_SRC = ../../kernel/src
 
 all: $(MAIN).pdf mostlyclean
 
-$(MAIN).pdf: $(MAIN).tex $(BIB).bib $(KERNEL_SRC)
+$(MAIN).pdf: $(SRCS) $(BIB).bib $(KERNEL_SRC)
 	$(CC) $(FLAGS) $(MAIN).tex
 	makeglossaries $(MAIN)
 	bibtex $(MAIN)
