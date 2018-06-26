@@ -192,14 +192,51 @@ de l'exception.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{\acrshort{vga}}
-Dans l'\acrshort{os} développé, le mode texte \acrshort{vga} a été utilisé pour
-l'affichage. Toute carte graphique offre ce mode texte de 80 colonnes par 25 lignes.
-Les 16 couleurs disponibles sont les suivantes :\cite{ref19}
+Un \acrshort{pc} possède généralement une carte graphique permettant de gérer
+l'affichage. Une grande majorité des carte graphiques, même modernes sont compatibles
+avec le standard d'affichage \acrshort{vga}. Dans notre cas, nous utilisons un
+émulateur (QEMU) qui va émuler l'affichage \acrshort{vga}. Pour écrire sur l'écran
+il faut écrire dans la mémoire vidéo (\acrshort{vram}) qui commence à l'adresse
+0xA0000 et finit à l'adresse 0xBFFFF. Différents modes d'écriture existent pour
+l'affichage mais nous allons nous concentrer sur un seul en particulier. \\
+
+Le mode texte \acrshort{vga} a été utilisé pour l'affichage dans l'\acrshort{os}
+développé. En mode texte, l'écran est divisé en caractères plutôt qu'en pixels ce
+qui permet d'afficher simplement et rapidement quelque chose sur l'écran. La mémoire
+vidéo reservée au mode texte commence à l'adresse 0xB8000 et a une taille de
+$80 \times 25$ caractères. Un caractère est représenté par 2 octets (16 bits) ce
+qui fait une taille de 4000 octets ($80 \times 25 \times 2$). L'octet de poids
+faible d'un caractère représente la valeur ASCII de ce caractère et l'octet de poids
+fort représente l'attribut qui contient lui même la couleur du caractère et la
+couleur du fond (voir figure \ref{vga_char}) \cite{ref42}. La couleur en mode texte
+est donc codée sur 4 bits ce qui fait 16 couleurs différentes. Ces 16 couleurs sont
+décrites dans la figure \ref{colors} \cite{ref19}. \\
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.8]{images/vga_char.png}
+  \caption{Structure d'un caractère en mode texte \acrshort{vga}}
+  \label{vga_char}
+\end{figure}
+
 \begin{figure}[!h]
   \centering
   \includegraphics[scale=0.7]{images/colors.png}
-  \caption{Couleurs du mode texte \acrshort{vga}}
+  \caption{Couleurs disponibles en mode texte \acrshort{vga}}
+  \label{colors}
 \end{figure}
+
+Le mode texte \acrshort{vga} permet aussi d'afficher un curseur. Le curseur ne
+se déplace pas automatiquement quand un caractère est écrit à l'écran, c'est
+simplement une zone de l'écran mise en évidence par un clignotement et dont
+la taille, la position et la visibilité peuvent être modifiés \cite{ref23}. L'accès
+au curseur se fait en utilisant les registres du \acrshort{crtc} (\textit{Cathode Ray
+Tube Controller}). Les registres du \acrshort{crtc} peuvent être accédés avec la
+paire registre d'adresse et registre de données. Ces regsitres se trouvent respectivement
+aux ports 0x3D4 et 0x3D5. L'écriture dans un registre du \acrshort{crtc} se fait
+donc en deux temps. Tout d'abord, l'adresse du registre doit être specifiée
+en écrivant dans le port 0x3D4 puis la donnée doit être écrite dans le port 0x3D5
+\cite{ref42}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
