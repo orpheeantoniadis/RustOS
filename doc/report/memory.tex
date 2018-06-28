@@ -411,3 +411,59 @@ a donc plus besoin de faire pointer la première entrée du répertoire de pages
 sur le table des pages du \textit{kernel} ce qui peut être fait en écrivant 0
 dans cette entrée. Le code rust peut finalement être appelé avec la pagination
 active.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Allocation dynamique}
+Le dernier élément de gestion mémoire implémenté dans RustOS est l'allocation de
+mémoire dynamique. L'allocation dynamique consiste à réserver des blocs de mémoire
+pendant l'exécution du \textit{kernel} ou bien d'un programme utilisateur. Jusqu'à
+maintenant, toutes les structures utilisées était déclarées statiquement se retrouvant
+donc dans la zone mémoire du \textit{kernel}, plus précisément dans le segment
+bss (voir 5.2). Déclarer des variables statiquement est pratique mais fait
+augmenter la taille du \textit{kernel} et ce n'est pas une solution viable
+pour allouer de plus grandes régions mémoire comme par exemple du code utilisateur
+qui peut faire plusieurs kilooctets. Pour implémenter l'allocation de mémoire
+dynamique, il faut dans un premier temps définir quelle zone mémoire peut être
+utilisée dans ce but. Actuellement, la totalité du code et des données est contenu
+dans le \textit{kernel}. Des zone mémoire peuvent donc commencer à être allouées
+à la fin de ce dernier. Le \textit{linker} a été légèrement modifié afin d'obtenir
+l'adresse de la fin du \textit{kernel}. Ceci peut se faire en ajoutant une expression
+au \textit{linker} et en la rendant accessible depuis le code assembleur. \\
+
+Modification apportée au \textit{linker} :
+\begin{minted}[fontsize=\footnotesize,linenos,frame=single,tabsize=4]{c}
+. += 0xC0000000;
+...
+kernel_end = .;
+\end{minted}
+
+Code assembleur permettant de rendre accessible l'expression \mintinline{c}{kernel_end} :
+\begin{minted}[fontsize=\footnotesize,linenos,frame=single,tabsize=4]{text}
+extern kernel_end
+get_kernel_end:
+    mov eax, kernel_end
+    ret
+\end{minted}
+
+A partir de là, on peut définir la zone d'allocation mémoire aussi appelée tas
+(ou \textit{heap} en anglais). Dans notre \acrshort{os}, le tas commence à la
+fin du \textit{kernel} allignée avec la taille d'une page (4096 octets). Ce choix
+a été fait car le \textit{kernel} n'aura besoin d'allouer que des nouvelles
+pages. La fin du tas dépend de la fin de la mémoire physique qui dépend de la
+configuration de QEMU. Quand le \textit{kernel} aura besoin d'allouer une nouvelle
+page, il ira chercher le prochain bloc libre dans le tas situé donc entre la fin
+du \textit{kernel} et la fin de la mémoire physique. La recherche de bloc libre
+se complexifie rapidement si des blocs sont libérés. De nombreuses méthodes sont
+possibles pour la recherche de bloc libre et la gestion des blocs libérés. Le
+\textit{kernel} développé utilisé une liste doublement chaînée pour gérer la
+mémoire dynamique. Chaque bloc mémoire alloué est précédé d'un entête contenant
+l'adresse du bloc précédent, l'adresse du bloc suivant, sa taille en octets et
+un booléen indiquant si le bloc est libre ou non.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.65]{images/heap_header.png}
+  \caption{Entête d'un bloc de mémoire dans le tas}
+  \label{heap_header}
+\end{figure}
