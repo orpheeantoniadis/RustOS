@@ -254,12 +254,12 @@ notre \acrshort{os}, il faut bien penser à mettre l'adresse virtuelle du
 \textit{frame buffer} (0xB8000 étant l'adresse physique). \\
 
 \begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single]{rust}
-    static mut SCREEN: Screen = Screen {
-        buffer: 0xC00B8000 as *mut _,
-        attribute: ColorAttribute::new(Color::Black, Color::White),
-        cursor_x: 0,
-        cursor_y: 0
-    };
+static mut SCREEN: Screen = Screen {
+    buffer: 0xC00B8000 as *mut _,
+    attribute: ColorAttribute::new(Color::Black, Color::White),
+    cursor_x: 0,
+    cursor_y: 0
+};
 \end{minted}
 
 La structure \mintinline{rust}{Screen} est déclarée statiquement dans le \textit{kernel}
@@ -285,15 +285,15 @@ un nombre d'arguments variable, nous pouvons donc implémenter cette macro ainsi
 que la macro \mintinline{rust}{println} comme suit :
 
 \begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single]{rust}
-    macro_rules! print {
-        ($($arg:tt)*) => (vga_write_fmt(format_args!($($arg)*)));
-    }
-    
-    macro_rules! println {
-        () => (print!("\n"));
-        ($fmt:expr) => (print!(concat!($fmt, "\n")));
-        ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
-    }
+macro_rules! print {
+    ($($arg:tt)*) => (vga_write_fmt(format_args!($($arg)*)));
+}
+
+macro_rules! println {
+    () => (print!("\n"));
+    ($fmt:expr) => (print!(concat!($fmt, "\n")));
+    ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
+}
 \end{minted}
 
 A noter que la fonction \mintinline{rust}{vga_write_fmt} est simplement une fonction
@@ -323,10 +323,10 @@ permet de configurer le canal 0. Ci-dessous, le code permettant de programmer
 le \textit{timer} à une fréquence \mintinline{rust}{freq}.
 
 \begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single]{rust}
-    let div = 1193180 / freq;
-    outb(0x43, 0x36);
-    outb(0x40, (div & 0xFF) as u8);
-    outb(0x40, (div >> 0x8) as u8);
+let div = 1193180 / freq;
+outb(0x43, 0x36);
+outb(0x40, (div & 0xFF) as u8);
+outb(0x40, (div >> 0x8) as u8);
 \end{minted}
 
 Ecrire 0x36 dans le registre de commande du \acrshort{pit} indique la sélection
@@ -338,7 +338,7 @@ la fréquence du timer sur 32 bits et l'état actuel de son compteur sur 32 bits
 Ce compteur est incrémenté à chaque fois qu'une interruption à lieu sur l'\acrshort{irq}0.
 
 \begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single]{rust}
-    static mut TIMER: Timer = Timer { freq: 0, ticks: 0 };
+static mut TIMER: Timer = Timer { freq: 0, ticks: 0 };
 \end{minted}
 
 Comme pour la structure statique permettant d'interfacer l'affichage texte \acrshort{vga},
@@ -350,15 +350,15 @@ Cette fonction prend une durée en millisecondes et rentre dans une boucle (atte
 active).
 
 \begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single]{rust}
-    pub fn sleep(ms: u32) {
-        let duration = get_ticks() + (ms * get_freq() / 1000);
-        loop {
-            if get_ticks() >= duration {
-                break;
-            }
-            halt();
+pub fn sleep(ms: u32) {
+    let duration = get_ticks() + (ms * get_freq() / 1000);
+    loop {
+        if get_ticks() >= duration {
+            break;
         }
+        halt();
     }
+}
 \end{minted}
 
 Ici, \mintinline{rust}{get_ticks} et \mintinline{rust}{get_freq} sont des fonctions

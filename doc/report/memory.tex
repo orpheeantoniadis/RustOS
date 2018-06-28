@@ -3,21 +3,25 @@
 
 \subsection{Introduction}
 Le système d'exploitation développé est exécuté sur une architecture \acrshort{IA-32}
-aussi appelée i386. Ceci veut dire que la mémoire est adressée sur 32 bits.
-$2^{32}=4Go$, donc la mémoire physique (\acrshort{ram}) a une taille totale de
-4Go dans notre système d'exploitation. Lorsqu'une tache est exécutée, elle est chargée
-en mémoire et est définie par la paire base et limite. La base est son adresse physique
-dans la \acrshort{ram} et la limite est sa taille. La figure \ref{ex_base_limit}
-donne un exemple d'adressage de plusieurs processus.\cite{ref42}
+(Intel 32-bits) aussi appelée i386. La mémoire est donc adressée sur 32 bits.
+$2^{32}=4Go$, on peut en déduire que la mémoire physique (\acrshort{ram}) a une
+taille totale de 4Go dans notre système d'exploitation. En réalité, la taille de
+la \acrshort{ram} dépend du \textit{hardware}. Dans notre cas le matériel est émulé
+par QEMU. La taille de la mémoire physique de notre \acrshort{os} dépend de
+la configuration de l'émulateur. Ces 4Go sont donc virtuels. Lorsqu'une tache est
+exécutée, elle est chargée en mémoire et est définie par la paire base et limite.
+La base est son adresse physique dans la \acrshort{ram} et la limite est sa taille.
+La figure \ref{ex_base_limit} donne un exemple d'adressage de plusieurs processus
+\cite{ref42}.
 
 \begin{figure}[!h]
   \centering
-  \includegraphics[scale=0.5]{images/ex_base_limit.png}
+  \includegraphics[scale=0.6]{images/ex_base_limit.png}
   \caption{Exemple d'adressage mémoire}
   \label{ex_base_limit}
 \end{figure}
 
-Une tache possède son propre espace d'adressage dit virtuel. Pour le processus 1
+Une tache possède son propre espace d'adressage dit virtuel. Pour le processus 2
 de la figure \ref{ex_base_limit}, l'adresse $0$ est en fait à l'adresse physique
 $300040$. Il y a donc besoin de translater l'adresse virtuelle en adresse physique.
 C'est là qu'entre en jeu le \acrshort{mmu} (Memory Mangement Unit). Le \acrshort{mmu}
@@ -25,7 +29,7 @@ est un dispositif matériel permettant de faire cette translation d'adresses. A 
 référencement mémoire, il va convertir l'adresse virtuelle en adresse physique et
 regarder si elle ne dépasse pas la limite du processus. Le \acrshort{mmu} permet donc
 aussi de protéger la mémoire car il va empêcher toute référence à une zone extérieure
-au processus (voir figure \ref{mmu}).\cite{ref42}
+au processus (voir figure \ref{mmu}) \cite{ref42}.
 
 \begin{figure}[!h]
   \centering
@@ -34,104 +38,15 @@ au processus (voir figure \ref{mmu}).\cite{ref42}
   \label{mmu}
 \end{figure}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection{\acrshort{gdt}}
-Dans une architecture \acrshort{IA-32}, la translation d'adresses se fait à l'aide
-de descripteurs définissant des segments de mémoire. Ces descripteurs sont contenus
-dans une table de descripteurs. Cette table est la \acrshort{gdt} (Global Descriptor
-Table) \cite{ref14}. Chaque descripteur est défini par sa base (son adresse physique),
-sa limite (sa taille) et son niveau de privilèges (allant de 0 à 3, le niveau 0 
-ayant le plus de privilèges et le niveau 3 le moins). Ci dessous, la figure \ref{gdt}
-montre un exemple d'une \acrshort{gdt}.\cite{ref42}
-
-\begin{figure}[!h]
-  \centering
-  \includegraphics[scale=0.7]{images/gdt.png}
-  \caption{Exemple d'une \acrshort{gdt}}
-  \label{gdt}
-\end{figure}
-
-La \acrshort{gdt} est contenue en mémoire. Chaque entrée (ou descripteur) de
-la table de descripteurs sont sur 64 bits et sont définis par la structure de
-la figure \ref{gdt_entry}.\cite{ref14}
-
-\begin{figure}[!h]
-  \centering
-  \includegraphics[scale=0.75]{images/gdt_entry.png}
-  \caption{Structure d'une entrée dans la \acrshort{gdt}}
-  \label{gdt_entry}
-\end{figure}
-
-\begin{itemize}[label=\textbullet]
-	\item La base est sur 32 bits et est divisée en 3 parties dans une entrée.
-    Les bits 16 à 31, 32 à 39 et 56 à 63 contiennent la base
-	\item La limite est sur 20 bits et est divisée en 2 parties dans une entrée.
-    Les bits 0 à 15 et 48 à 51 contiennent la limite
-	\item L'\textit{Access byte} contient des bits de contrôle pour l'accès aux données
-    du segment (privilèges, écriture ou lecture, etc...). Il est décrit plus en détail
-    dans la figure \ref{gdt_bits}
-    \item Les \textit{Flags} sont aussi des bits de contrôle et sont décrits plus
-    en détail dans la la figure \ref{gdt_bits}\cite{ref14}
-\end{itemize}
-
-\begin{figure}[!h]
-  \centering
-  \includegraphics[scale=0.75]{images/gdt_bits.png}
-  \caption{\textit{Access byte et Flags}}
-  \label{gdt_bits}
-\end{figure}
-
-\begin{itemize}[label=\textbullet]
-	\item Pr : \textit{Present} bit, doit être à 1 si le segment est valide
-	\item Privl : Niveau de privilèges sur deux bits
-	\item Ex : \textit{Executable bit}, est à 1 si le segment peut être exécuté
-    (par exemple dans un segment de code, ce bit est à 1 alors que dans un segment
-    de données, ce bit est à 0)
-    \item DC : \textit{Direction bit}
-    \item RW : Bit de lecture/ écriture
-    \item Ac : \textit{Accessed bit}, ce bit est mis à 1 lorsque le \acrshort{cpu}
-    accède à ce segment
-    \item Gr : Bit de granularité, à 0 la limite est en octets, à 1 la limite est en blocs
-    de 4Ko
-    \item Sz : \textit{Size bit}, à 0 le segment est sur 16 bits, à 1 le segment
-    est sur 32 bits
-\end{itemize}
-
-Par exemple, pour obtenir un segment sur toute la mémoire disponible, il faut mettre
-le bit de granularité à 1 (pour avoir une limite en blocs de 4Ko) et mettre la
-limite à 0xFFFFF. Une fois la \acrshort{gdt} construite, il faut utiliser l'instruction
-\mintinline{text}{lgdt} pour la charger. L'adresse du descripteur de la \acrshort{gdt}
-doit être donnée en argument à cette instruction. Le descripteur de \acrshort{gdt}
-est défini par la structure 48-bits décrite dans la figure \ref{gdt_descriptor}.\cite{ref14}
-
-\begin{figure}[!h]
-  \centering
-  \includegraphics[scale=0.5]{images/gdt_descriptor.png}
-  \caption{Descripteur de \acrshort{gdt}}
-  \label{gdt_descriptor}
-\end{figure}
-
-\begin{itemize}[label=\textbullet]
-	\item \textit{Size} est la limite sur 16 bits (c'est à dire la taille de la
-    \acrshort{gdt} - 1)
-	\item \textit{Offset} est l'adresse physique de la \acrshort{gdt} sur 32 bits
-\end{itemize}
-
-\newpage
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection{Segmentation}
-La segmentation est une technique permettant de découper la mémoire en segments
-de mémoire logique. Une adresse logique est convertie par le \acrshort{mmu} en
-adresse linéaire en utilisant une \acrshort{gdt} ou une \acrshort{ldt}.
-Si la pagination (dont on parlera plus tard) est activée, l'adresse linéaire
-est convertie en adresse physique. Toute cette mécanique est décrite dans la figure
-\ref{addr_translation}. La segmentation permet de faire la convertion d'adresse
-logique en adresse linéaire et est obligatoire en mode protégé (32-bits).\cite{ref17}
+Pour convertir une adresse virtuelle en adresse physique, le \acrshort{mmu} passe
+par plusieurs étapes. Quand le \textit{kernel} veut lire une donnée dans la mémoire,
+l'adresse de cette donnée est appelée adresse logique. Le \acrshort{mmu} va commencer
+par convertir cette adresse en adresse linéaire. Une deuxième conversion est ensuite
+effectuée afin d'obtenir une adresse physique. Le \acrshort{mmu} peut alors renvoyer
+la bonne donnée au \textit{kernel}. Toutes ces étapes ne sont pas automatiques,
+le \acrshort{mmu} utilise différentes techniques ayant besoin de certaines structures
+implémentées par le \textit{kernel}. Ces techniques sont la segmentation et la
+pagination.
 
 \begin{figure}[!h]
   \centering
@@ -140,12 +55,63 @@ logique en adresse linéaire et est obligatoire en mode protégé (32-bits).\cit
   \label{addr_translation}
 \end{figure}
 
+La segmentation est une technique permettant de découper la mémoire en segments
+de mémoire logique. Une adresse logique est convertie par le \acrshort{mmu} en
+adresse linéaire en utilisant une table de descripteurs globale (\acrshort{gdt})
+ou locale (\acrshort{ldt}). Si la pagination est activée, l'adresse linéaire est
+convertie en adresse physique. Toute cette mécanique est décrite dans la figure
+\ref{addr_translation}. A noter que la pagination n'est pas obligatoire et un
+\acrshort{os} pourrait s'en passer contrairement à la segmentation qui est
+indispensable en mode protégé (32-bits) \cite{ref17}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Segmentation}
+\subsubsection{Principe général}
+Comme expliqué précedemment, la segmentation est un mécanisme divisant l'espace
+d'adressage du processeur en espaces d'adressage plus petits appelés des
+segments. Un segment peut être utilisé pour contenir le code, les données ou la
+pile d'un processus étant exécuté par le processeur. Un segment peut aussi être
+utilisé pour contenir des structures de données tel qu'une \acrshort{ldt} ou
+un \acrshort{tss} (structure contenant des informations à propos d'une tâche).
+Les segments d'un système d'exploitation sont contenus dans l'espace d'adressage
+linéaire. Pour lire l'octet d'un segment se trouvant dans l'espace d'adressage
+linéaire, le \acrshort{mmu} utilise une adresse logique. L'adresse logique est
+composée d'un sélecteur de segment et d'un \textit{offset}. Le sélecteur permet
+de trouver le bon segment dans la mémoire linéaire et l'\textit{offset} permet
+de trouver l'octet dans ce segment. Dans le cas où la segmentation est utilisée
+seule (sans pagination), la mémoire linéaire est \textit{mappée} directement dans
+la mémoire physique \cite{ref66}. \\
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.45]{images/logic_addr_conv.png}
+  \caption{Conversion d'une adresse logique en adresse linéaire}
+  \label{logic_addr_conv}
+\end{figure}
+
+La figure \ref{logic_addr_conv} résume bien la conversion d'adresse logique en
+en adresse linéaire. On peut remarquer de plus que le sélecteur de segment passe
+par une table de descripteurs (\acrshort{gdt} ou \acrshort{ldt}) afin de trouver
+le bon segment dans la mémoire linéaire. En effet, Un sélecteur a une taille de
+16 bits et contient l'index d'un descripteur dans une table, un bit indiquant si
+le descripteur est dans la \acrshort{gdt} ou dans une \acrshort{ldt} et enfin son
+niveau de privilège allant de 0 à 3 (figure \ref{seg_sel}) \cite{ref42}.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.6]{images/seg_sel.png}
+  \caption{Structure d'un sélecteur de segment}
+  \label{seg_sel}
+\end{figure}
+
 La gestion de la segmentation par le \acrshort{cpu} se fait à l'aide de registres
 spéciaux nommés registres de segment. Ces registres sont au nombre de 6 et ont
-chacun une taille de 16 bits.\cite{ref42,ref18}
+chacun une taille de 16 bits (même taille qu'un sélecteur de segment) \cite{ref42,ref18}.
 
 \begin{center}
-	\scalebox{1}{
+	\scalebox{.8}{
 		\begin{tabular}{| C{5cm} | C{5cm} | }
 			\hline
 			Registre & Segment \\ \hline
@@ -161,53 +127,147 @@ chacun une taille de 16 bits.\cite{ref42,ref18}
 
 En mode protégé (32-bits), ces registres doivent pointer sur des descripteurs
 de segment de la \acrshort{gdt}. Au minimum les trois premiers registres décrits
-doivent être utilisé en mode protégé (CS, DS, et SS). Les opérations adressant le
-code (décodage des instructons en mémoire, sauts, etc...) référencent le descripteur
+doivent être utilisé en mode protégé (CS, DS, et SS). Les opérations adressant
+le code (décodage des instructons en mémoire, sauts, etc...) référencent le descripteur
 de segment sur lequel pointe le registre CS. Les opérations adressant les données
 (adressage de variables ou d'adresses mémoires) référencent le descripteur de segment
 sur lequel pointe le registre DS. Les opérations adressant la pile (\mintinline{text}{push}
 et \mintinline{text}{pop}) référencent le descripteur de segment sur lequel pointe
-le registre SS. \\
+le registre SS. Ces registres pointent sur des descripteurs de segments par l'intermédiaire
+de sélecteurs de segment. \\
 
-Nous avons vu qu'un descripteur de segment fait 64 bits et un registre de segment
-fait 16 bits. Ceci est possible car le registre de segment ne va pas contenir
-l'integralité d'une entrée dans la \acrshort{gdt} mais un sélecteur de cette entrée.
-Un sélecteur a une taille de 16 bits (comme les registres de segment) et contient
-l'index du descripteur dans la \acrshort{gdt}, un bit indiquant si l'entrée est
-dans la \acrshort{gdt} ou dans la \acrshort{ldt} ainsi que son niveau de privilège
-(figure \ref{seg_sel}).\cite{ref42}
+\subsubsection{\acrshort{gdt} et \acrshort{ldt}}
+Nous avons pu voir que pour translater une adresse logique, des sélecteurs de
+segment sont utilisés. Ces sélecteurs pointent sur des entrées dans des tables
+de descripteurs. La \acrshort{gdt} et la \acrshort{ldt} sont deux types de table 
+de descripteurs différents. La \acrshort{gdt} est unique il ne peut y en avoir
+qu'une seule dans le système. Elle contient toutes les données utilisables en mode
+superviseur (\textit{ring} 0 ou niveau de privilège 0). Une \acrshort{ldt} est
+contenue dans la \acrshort{gdt}. Elle peut être utilisée pour contenir le code
+et les données d'une tâche utilisateur par exemple. Dans le cas où plusieurs tâches
+sont exécutées en même temps, une \acrshort{ldt} peut être créée par tâche ce qui
+permet en plus d'isoler le code de chaque processus. Une table de descipteurs
+est composée, comme son nom l'indique, de descripteurs. Chaque descripteur décrit
+une zone mémoire qui est défini par sa base (son adresse physique), sa limite (sa taille)
+et un niveau de privilèges (allant de 0 à 3, le niveau 0 ayant le plus de privilèges
+et le niveau 3 le moins). Ci dessous, la figure \ref{gdt} montre un exemple d'une
+\acrshort{gdt} \cite{ref42}. Etant donné que les descripteurs de la \acrshort{gdt}
+ont la même structure que les descripteurs de la \acrshort{ldt} nous allons nous
+concentrer sur la \acrshort{gdt}. De plus, aucune \acrshort{ldt} n'est utilisé dans
+la version actuelle de l'\acrshort{os}. \\
 
 \begin{figure}[!h]
   \centering
-  \includegraphics[scale=0.75]{images/seg_sel.png}
-  \caption{Structure d'un sélecteur de segment}
-  \label{seg_sel}
+  \includegraphics[scale=0.75]{images/gdt.png}
+  \caption{Exemple d'une \acrshort{gdt}}
+  \label{gdt}
 \end{figure}
 
-Pour récupérer l'index dans la \acrshort{gdt} d'un segment à partir de son descripteur,
-il faut donc faire un décallage de 3 bits. Prennons un segment si situant à l'index
-2 de la \acrshort{gdt}. Si on veut initialiser le segment de code (registre CS)
-avec ce segment, il faut mettre la valeur 16 dans le registre CS ($2 << 3 = 16$). \\
+La \acrshort{gdt} est contenue en mémoire. Cette dernière doit être initialisée
+par le \textit{kernel} avant d'être chargée et utilisée par le \acrshort{mmu}.
+Pour initialiser la \acrshort{gdt} il faut construire ses entrées. Chaque entrée
+(ou descripteur) de la table de descripteurs est sur 64 bit et décrit une zone
+mémoire. L'adresse de cette zone mémoire est sur 32 bits et sa taille est sur 20
+bits. Les bits restant sont des bits de contrôle pour l'accès aux données par
+exemple (niveau de privilèfes, droit d'écriture/lecture, ...). Voir la figure
+\ref{gdt_entry} pour plus de détails \cite{ref42,ref14}. \\
 
-Dans un premier temps, l'\acrshort{os} développé a eu un adressage segmenté de type
-\textit{FLAT}, c'est-à-dire que toute la mémoire était accédée de manière linéaire.
-Ceci se fait en initialisant trois descripteurs dans la \acrshort{gdt}. Un descripteur
-nul à l'index 0 (obligatoire dans touts les modèles de segmentation), un segment
-de code couvrant toute la mémoire et un segment de données couvrant aussi toute la mémoire.
-Les segments de code et de données adressent donc les mêmes zones de mémoire.
-On verra par la suite que d'autres entrées ont été aujoutées à la \acrshort{gdt}
-pour la gestion des tâches.
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.75]{images/gdt_entry.png}
+  \caption{Structure d'une entrée dans la \acrshort{gdt}}
+  \label{gdt_entry}
+\end{figure}
 
+L'\acrshort{os} développé a un adressage segmenté de type \textit{flat}, c'est-à-dire
+que toute la mémoire est accédée de manière linéaire. Ce modèle de segmentation
+est le plus simple car il permet d'ignorer le mécanisme de segmentation car
+l'intégralité de la zone mémoire devient disponible. Dans un modèle de type \textit{flat},
+les segments de code et de données se chevauchent sur l'intégralité de la mémoire
+disponible. Ceci se fait en initialisant trois descripteurs dans la \acrshort{gdt}.
+Un descripteur nul à l'index 0 (obligatoire dans touts les modèles de segmentation),
+un segment de code couvrant toute la mémoire et un segment de données couvrant
+aussi toute la mémoire. Les segments de code et de données adressent ainsi les mêmes
+zones mémoire. On verra par la suite que d'autres entrées ont été aujoutées à la
+\acrshort{gdt} pour la gestion des tâches. \\
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.6]{images/flat.png}
+  \caption{Modèle de segmentation de type \textit{flat}}
+  \label{flat}
+\end{figure}
+
+Pour obtenir un  segment sur toute la mémoire disponible, il faut mettre le bit
+de granularité à 1 pour avoir une limite en blocs de 4Ko. Ensuite, la limite doit
+être mise à la valeur 0xFFFFF ce qui donne une limite réele de 0x100000 $\times$
+0x1000 soit 4Go. Le niveau de privilège doit être laissé à 0 (\textit{ring} 0)
+si on veut créer un segment pour le \textit{kernel} ou bien être mis à 3 (\textit{ring}
+3) si on veut créer un segment pour le mode utilisateur. Ci-dessous un exemple de
+code permettant de construire un segment de code et un segment de données. \\
+
+\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single]{rust}
+fn new(base: u32, limit: u32, type: u8, s: u8, d: u8, g: u8, dpl: u8) -> GdtEntry;
+
+pub fn make_code_segment(base: u32, limit: u32, dpl: u8) -> GdtEntry {
+    GdtEntry::new(base, limit, 0xB, 0x1, 0x1, 0x1, dpl)
+}
+
+pub fn make_data_segment(base: u32, limit: u32, dpl: u8) -> GdtEntry {
+    GdtEntry::new(base, limit, 0x3, 0x1, 0x1, 0x1, dpl)
+}
+\end{minted}
+
+Ici, \mintinline{rust}{new} est le prototype d'une méthode pour une structure 64
+bits représentant une entrée dans la \acrshort{gdt}. le bit \mintinline{rust}{s}
+est mis à 1 car on construit des segments de code et de données \cite{ref66}.
+Le bit \mintinline{rust}{d} est mis à 1 car on veut un segment de 32 bits. Le bit
+\mintinline{rust}{g} est mis à 1 pour avoir une granularité de 4Ko. L'octet 0xB
+correspond au type $CODE\_EXEC\_READ$ et 0x3 correspond au type $DATA\_READ\_WRITE$
+\cite{ref42}. Une fois la \acrshort{gdt} construite, il faut dans un premier temps
+utiliser l'instruction \mintinline{text}{lgdt} pour la charger dans le registre
+GDTR. Ce registre est utilisé par le processeur pour faire le lien entre le \acrshort{mmu}
+et la \acrshort{gdt} créée \cite{ref66}. L'adresse du descripteur de la \acrshort{gdt}
+doit donc être donnée en argument à l'instruction \mintinline{text}{lgdt}. Le
+descripteur de \acrshort{gdt} est défini par la structure 48-bits décrite dans
+la figure \ref{gdt_descriptor} \cite{ref14}.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.5]{images/gdt_descriptor.png}
+  \caption{Descripteur de \acrshort{gdt}}
+  \label{gdt_descriptor}
+\end{figure}
+
+Dans un descripteur de \acrshort{gdt} \textit{Size} est la limite sur 16 bits
+(c'est à dire la taille de la \acrshort{gdt} - 1) et \textit{Offset} est l'adresse
+physique de la \acrshort{gdt} sur 32 bits. Dans le cas de notre \acrshort{os},
+la \acrshort{gdt} est déclarée statiquement dans le \textit{kernel}. L'adresse
+de cette variable statique est utilisée pour construire un descripteur qui sera
+chargé dans le registre GTDR. Après avoir chargé la \acrshort{gdt} avec l'instruction
+\mintinline{text}{lgdt}, il faut faire pointer les registres de segment sur les
+segments de la table de descripteurs à l'aide de sélecteurs. Pour rappel, un sélecteur
+est sur 16 bits et contient l'index d'un segment dans la \acrshort{gdt} précedemment
+chargée. Pour récupérer l'index d'un segment dans la \acrshort{gdt} à partir de
+l'index de son descripteur, il faut faire un décallage à gauche de 3 bits
+(voir figure \ref{seg_sel}). Prennons un descripteur se situant à l'index 2 de
+la \acrshort{gdt}. Si on veut initialiser le segment de code (registre CS) avec
+ce descripteur, il faut mettre la valeur 16 dans le registre CS ($2 << 3 = 16$).
+Dans le cas où on veut définir ce segment avec un autre niveau de privilèges
+ou bien pour une \acrshort{ldt}, il suffit de mettre les bons bits à 1 après avoir
+fait le décallage.
+
+\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Pagination}
 \subsubsection{Principe général}
-La pagination est une autres techinque de gestion de mémoire qui diffère de la
+La pagination est une autres technique de gestion de mémoire qui diffère de la
 segmentation. Alors que la segmentation permet d'allouer des morceaux de mémoire
 de taille variable, la pagination divise la mémoire en blocs de taille fixe appelés
 pages (de 4Ko, 2Mo ou 4Mo). De plus, la segmentation est obligatoire dans une
-architecture i386 alors que la pagination ne l'est pas\cite{ref16}. Quand une tâche
+architecture i386 alors que la pagination ne l'est pas \cite{ref16}. Quand une tâche
 fait référence à une adresse logique en mémoire, cette adresse est convertie en
 adresse linéaire grace au mécanisme de segmentation et c'est le mécanisme de
 pagination qui permet de translater cette adresse linéaire en adresse physique
@@ -234,7 +294,7 @@ Dans notre cas, un répertoire permet donc d'adresser 1024 tables et une table
 1024 pages ce qui permet bien d'adresser au total 4Go ($1024 \times 1024 \times 4096$).
 Une entrée est sur 32 bits mais seulement les 20 bits de poids fort sont utilisés
 pour l'adressage car les adresses sont alignées avec 4096 ce qui laisse les 12 bits
-de poids faible pour la configuration.\cite{ref21}
+de poids faible pour la configuration \cite{ref21}.
 
 \begin{figure}[!h]
   \centering
@@ -250,10 +310,10 @@ De la même manière que l'entrée dans le répertoire de pages pointait sur une
 des pages, l'entrée dans une table des pages pointe sur une \textit{Page Frame}.
 Cette page contient finalement la donnée pointée par l'adresse linéaire, il faut
 utiliser l'\textit{offset} pour trouver cette donnée dans la page. La figure \ref{paging3}
-résume bien ce mécanisme.\cite{ref66} A noter que le \textit{Page Directory} est
+résume bien ce mécanisme \cite{ref66}. A noter que le \textit{Page Directory} est
 pointé par le registre CR3. A chaque fois qu'un changement de tâche a lieu, le
 registre CR3 doit être mis à jour avec le \textit{Page Directory} de la nouvelle
-tâche.\cite{ref15}
+tâche \cite{ref15}.
 
 \begin{figure}[!h]
   \centering
