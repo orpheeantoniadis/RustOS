@@ -458,12 +458,92 @@ se complexifie rapidement si des blocs sont libérés. De nombreuses méthodes s
 possibles pour la recherche de bloc libre et la gestion des blocs libérés. Le
 \textit{kernel} développé utilisé une liste doublement chaînée pour gérer la
 mémoire dynamique. Chaque bloc mémoire alloué est précédé d'un entête contenant
-l'adresse du bloc précédent, l'adresse du bloc suivant, sa taille en octets et
-un booléen indiquant si le bloc est libre ou non.
+l'adresse du bloc précédent sur 32 bits, l'adresse du bloc suivant sur 32 bits,
+sa taille en octets sur 32 bits et un booléen indiquant si le bloc est libre ou
+non sur 8 bits. De plus, l'entête est aligné sur 16 octets.
 
 \begin{figure}[!h]
   \centering
-  \includegraphics[scale=0.65]{images/heap_header.png}
+  \includegraphics[scale=0.7]{images/heap_header.png}
   \caption{Entête d'un bloc de mémoire dans le tas}
   \label{heap_header}
 \end{figure}
+
+Le tas ainsi construit, avec chaque entête lié à ses voisins par des pointeurs,
+permet de rechercher aisément un bloc libre. Un nouvel entête est créé quand le
+dernier bloc de la liste chaînée est alloué. Un algorithme a aussi été implémenter
+pour la gestion de mémoire libérée. Si un bloc est libéré au milieu de blocs
+alloués ce blocs est simplement marqué comme libre (en utilisant le booléen \textit{free}
+de l'entête). Si deux blocs libres sont contiguës, ils sont fusionnés pour n'en
+former qu'un seul. Dans le \textit{kernel}, la fonction pour l'allocation est
+\mintinline{rust}{kmalloc} et la fonction pour la libération est \mintinline{rust}{kfree}.
+La fonction \mintinline{rust}{kmalloc} va allouer de nouvelles pages et tables
+de pages automatiquement s'il y a besoin (comme le montre la figure \ref{kmalloc}).
+De la même manière, la fonction \mintinline{rust}{kfree} va libérer les pages et
+les tables de pages automatiquement. Ces deux fonctions permettent donc beaucoup
+d'abstraction au niveau de la pagination mais aussi de l'allocation car l'utilisation
+des entêtes est complètement transparent. La fonction \mintinline{rust}{kmalloc}
+va simplement renvoyer une adresse sur 32 bits et \mintinline{rust}{kfree} prend
+comme argument cette adresse pour libérer la mémoire.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.6]{images/kmalloc.png}
+  \caption{Algorithme utilisé pour l'allocation dynamique dans le \textit{kernel}}
+  \label{kmalloc}
+\end{figure}
+
+Voyons maintenant un exemple d'allocation et de libération mémoire utilisant les
+deux algorithmes décrits ci-dessus. Dans cet exemple, nous allons allouer plusieurs
+blocs mémoire puis les libérer afin de voir plus en détail le comportement
+de ces fonctions. Nous allons supposé que la fin du \textit{kernel} se situe
+à l'adresse 0x3FC000 et que la fin de la \acrshort{ram} se situe à l'adresse
+0x1000000. A l'initialisation du \textit{kernel}, un premier entête est créé au
+début de la zone d'allocation dynamique. Ce premier entête est donc situé à
+l'adresse 0x3FC000 et a pour taille 0x1000000 $-$ 0x3FC000 $=$ 0xC04000. C'est cette
+information qui permet de trouver la premier entrée de la liste et par la suite
+de la parcourir.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.7]{images/alloc0.png}
+  \caption{Etat initial de la chaîne d'entêtes}
+  \label{alloc0}
+\end{figure}
+
+Si le \textit{kernel} a besoin d'allouer une nouvelle page maintenant, la fonction
+\ref{kmalloc} va être appelée qui va parcourir les blocs libre. Dans ce cas précis,
+l'intégralité du tas est disponible donc la fonction va simplement créer un nouveau
+bloc. Dans la figure \ref{alloc1}, les blocs libre sont en vert et les blocs alloués
+sont en rouge. A noter que que les blocs aloués sont alignés avec la taille d'une
+page (4096Ko ou 0x1000 en hexadécimal). Etant donné qu'il faut compté l'entête
+de 16 octets, il faudra toujours allouer une page de plus.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.6]{images/alloc1.png}
+  \caption{Allocation d'une page}
+  \label{alloc1}
+\end{figure}
+
+Si le \textit{kernel} a de nouveau besoin d'une page, on va se retrouver dans la
+situation où il n'y a plus assez de place dans la table des pages. Pour rappel,
+une table des pages a une taille de 4Mo (0x400000 en hexadécimal). Comme expliqué
+avec la figure \ref{kmalloc}, la fonction d'allocation va se charge toute seule
+de créer une nouvelle table des pages et de l'ajouter au répertoire de pages.
+La page demandée par le \textit{kernel} sera ensuite allouée. On obtient donc
+la liste de la figure \ref{alloc2}, avec deux blocs alloués au lieu d'un seul.
+Le bloc à l'adresse 0x3FE000 contient alors la table des pages sur laquelle pointe
+la deuxième entrée du répertoire des pages. La page demandée par le \textit{kernel}
+sera finalement à l'adresse 0x400000.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=0.6]{images/alloc2.png}
+  \caption{Allocation d'une page et d'une table des pages}
+  \label{alloc2}
+\end{figure}
+
+Libérer la page à l'adresse 0x400000 aura pour conséquence directe de libérer aussi
+la table des pages à nouvellement créée. La fonction \mintinline{rust}{kfree} libère
+automatiquement les tables des pages vides.
