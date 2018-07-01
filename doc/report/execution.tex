@@ -8,11 +8,11 @@ un fichier C en fonction des directives de préprocesseur. Ce fichier C est ensu
 compilé en code assembleur qui est lui même compilé en code objet. Le \textit{linker}
 permet ensuite de lier les différents fichiers objets et générer un exécutable.
 Nous avons déjà eu un aperçu des différentes étapes de la compilation d'un \acrshort{os}
-de type \textit{bare metal} dans la partie 3.2. A la différence de la compilation
-d'un code C, nous avons d'un côté du code assembleur et de l'autre du code Rust.
-Nasm et cargo permettent tous deux de générer des fichiers objets. Il n'y a donc
-que la dernière étape à effectuer ce que \acrshort{gcc} permet de faire avec
-la commande suivante.
+de type \textit{bare metal} dans la partie \ref{technologies}. A la différence de
+la compilation d'un code C, nous avons d'un côté du code assembleur et de l'autre
+du code Rust. Nasm et cargo permettent tous deux de générer des fichiers objets.
+Il n'y a donc que la dernière étape à effectuer ce que \acrshort{gcc} permet de
+faire avec la commande suivante.
 \begin{minted}[tabsize=4]{shell}
 gcc $(OBJS) -T $(LINKER) -static -m32 -ffreestanding -nostdlib -o $@ $(RUST)
 \end{minted}
@@ -25,6 +25,7 @@ objets générés par Rust.\cite{ref42}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{\textit{Linking}}
+\label{linking}
 Nous avons vu dans la partie précédente que \acrshort{gcc} a besoin d'un fichier
 pour faire l'édition des liens. Si ce fichier n'est pas donné, il en utilise un par
 défaut. Le \textit{linker} permet de structurer le code par sections. Prenons
@@ -125,7 +126,7 @@ de charger tout \acrshort{os} compatible \cite{ref42,ref12}.
 
 \subsubsection{Image \acrshort{iso}}
 Nous avons déjà pu voir que le \textit{boot} du \textit{kernel} se faisait à partie
-d'une image \acrshort{iso} dans la partie 3.2.4. Pour qu'une image \acrshort{iso}
+d'une image \acrshort{iso} dans la partie \ref{qemu}. Pour qu'une image \acrshort{iso}
 soit \textit{bootable}, il est nécessaire que \acrshort{grub} soit installé dans
 les huit premiers KB du disque. Prenons l'arborescence suivante :
 

@@ -15,6 +15,7 @@ différent sur Mac \acrshort{os}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Technologies}
+\label{technologies}
 \subsubsection{Nasm}
 Bien que le système d'exploitation développé devait être sur Rust, certaines parties
 ont du être faites en assembleur car étant trop bas niveau pour le Rust. Ces éléments
@@ -45,6 +46,7 @@ autre utilitaire basé sur cargo existe et permet d'installer par défaut la lib
 se nomme xargo et est utilisé pour compiler le code Rust en fichiers objets \\
 
 \subsubsection{QEMU}
+\label{qemu}
 Le compilateur \acrshort{gcc} a été utilisé pour \textit{linker} les fichiers
 objet générés par nasm et xargo. \acrshort{gcc} génère un fichier au format \acrshort{elf}.
 Pour utiliser ce fichier comme un système d'exploitation \textit{bootable}, il faut

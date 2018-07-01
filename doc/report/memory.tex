@@ -4,15 +4,16 @@
 \subsection{Introduction}
 Le système d'exploitation développé est exécuté sur une architecture \acrshort{IA-32}
 (Intel 32-bits) aussi appelée i386. La mémoire est donc adressée sur 32 bits.
-$2^{32}=4Go$, on peut en déduire que la mémoire physique (\acrshort{ram}) a une
-taille totale de 4Go dans notre système d'exploitation. En réalité, la taille de
-la \acrshort{ram} dépend du \textit{hardware}. Dans notre cas le matériel est émulé
-par QEMU. La taille de la mémoire physique de notre \acrshort{os} dépend de
-la configuration de l'émulateur. Ces 4Go sont donc virtuels. Lorsqu'une tache est
-exécutée, elle est chargée en mémoire et est définie par la paire base et limite.
-La base est son adresse physique dans la \acrshort{ram} et la limite est sa taille.
-La figure \ref{ex_base_limit} donne un exemple d'adressage de plusieurs processus
-\cite{ref42}.
+$2^{32}=4Go$, on peut en déduire que la taille totale de la mémoire adressable est
+de 4Go dans notre système d'exploitation. Avoir un espace adressable de 4Go ne veut
+pas forcément dire que la mémoire physique (\acrshort{ram}) est de 4Go aussi. En
+réalité, la taille de la \acrshort{ram} dépend du \textit{hardware}. Dans notre
+cas le matériel est émulé par QEMU. La taille de la mémoire physique de notre \acrshort{os}
+dépend de la configuration de l'émulateur. Ces 4Go sont donc virtuels. Lorsqu'une
+tache est exécutée, elle est chargée en mémoire et est définie par la paire base
+et limite. La base est son adresse physique dans la \acrshort{ram} et la limite
+est sa taille. La figure \ref{ex_base_limit} donne un exemple d'adressage de plusieurs
+processus \cite{ref42}.
 
 \begin{figure}[!h]
   \centering
@@ -107,7 +108,7 @@ niveau de privilège allant de 0 à 3 (figure \ref{seg_sel}) \cite{ref42}.
 \end{figure}
 
 La gestion de la segmentation par le \acrshort{cpu} se fait à l'aide de registres
-spéciaux nommés registres de segment. Ces registres sont au nombre de 6 et ont
+spéciaux nommés registres de segment. Ces registres sont au nombre de six et ont
 chacun une taille de 16 bits (même taille qu'un sélecteur de segment) \cite{ref42,ref18}.
 
 \begin{center}
@@ -324,7 +325,7 @@ tâche \cite{ref15}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsubsection{Activer la Pagination}
+\subsubsection{Activation de la pagination}
 Pour initialiser la pagination sur architecture x86, il faut d'abord construire
 un répertoire de pages valide contenant les entrées vers les pages du \textit{kernel}.
 Il est obligatoire de commencer par cela car si la pagination est activée et que
@@ -420,7 +421,7 @@ mémoire dynamique. L'allocation dynamique consiste à réserver des blocs de m�
 pendant l'exécution du \textit{kernel} ou bien d'un programme utilisateur. Jusqu'à
 maintenant, toutes les structures utilisées était déclarées statiquement se retrouvant
 donc dans la zone mémoire du \textit{kernel}, plus précisément dans le segment
-bss (voir 5.2). Déclarer des variables statiquement est pratique mais fait
+bss (voir \ref{linking}). Déclarer des variables statiquement est pratique mais fait
 augmenter la taille du \textit{kernel} et ce n'est pas une solution viable
 pour allouer de plus grandes régions mémoire comme par exemple du code utilisateur
 qui peut faire plusieurs kilooctets. Pour implémenter l'allocation de mémoire
@@ -545,5 +546,7 @@ sera finalement à l'adresse 0x400000.
 \end{figure}
 
 Libérer la page à l'adresse 0x400000 aura pour conséquence directe de libérer aussi
-la table des pages à nouvellement créée. La fonction \mintinline{rust}{kfree} libère
-automatiquement les tables des pages vides.
+la table des pages nouvellement créée (la fonction \mintinline{rust}{kfree} libère
+automatiquement les tables des pages vides). On se retrouverait alors avec le même
+schéma que dans la figure \ref{alloc1} car les blocs aux adresses 0x3FE000 et
+0x400000 seraient fusionnés au reste de la mémoire libre.
