@@ -33,3 +33,5 @@ RustOS is a kernel written in Rust for IA-32 architecture
 * [__floatundisf issue](https://users.rust-lang.org/t/kernel-modules-made-from-rust/9191/2)
 * [Writing an OS in Rust](https://os.phil-opp.com)
 * [Writing an OS in Rust (Second Edition)](https://os.phil-opp.com/second-edition)
+* [Little OS Book](https://littleosbook.github.io)
+* [VGA Modes](http://xkr47.outerspace.dyndns.org/progs/mode%2013h%20without%20using%20bios.htm)

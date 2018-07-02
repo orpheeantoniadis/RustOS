@@ -167,7 +167,7 @@ modifications apportées au système de fichiers). \\
 
 \begin{figure}[!h]
   \centering
-  \includegraphics[scale=0.8]{images/microfs_menu.png}
+  \includegraphics[scale=0.6]{images/microfs_menu.png}
   \caption{Menu du gestionnaire du système de fichiers}
   \label{microfs_menu}
 \end{figure}
@@ -192,6 +192,18 @@ pub fn read_sector(sector: u32, dst: *mut u16);
 pub fn write_sector(sector: u32, src: *mut u16);
 \end{minted}
 
-Le système de fichiers actuel ne permet que de la lecture, pas l'écriture.
-Seule la première fonction a donc été utilisée par les \textit{drivers} de
-notre système de fichiers.
+Le système de fichiers actuel ne permet que la lecture, pas l'écriture.
+Seule la première fonction est donc utilisée par le \textit{kernel}. Ce dernier
+peut maintenant lire les secteurs du système de fichiers ce qui rend possible
+la réalisaton d'une \acrshort{api} de gestion des fichiers contenus dans le disque dur.
+Cette \acrshort{api} s'inspire de la sémantique \acrshort{posix} pour l'accès aux
+fichiers (\mintinline{text}{open}, \mintinline{text}{read}, \mintinline{text}{close},
+etc). Le \textit{kernel} maintient une table de descripteurs de fichiers ouverts.
+Un descripteur de fichier est composé des métadonnées du fichier (structure
+\mintinline{rust}{Stat}) ainsi que la position dans le flux d'octets du fichier.
+Quand un fichier est ouvert avec la fonction \mintinline{text}{file_open}, un descripteur
+de fichier sur huit bits est renvoyé. Ce descripteur est en fait un indice dans
+la table des descripteurs. Les fonctions \mintinline{text}{file_read},
+\mintinline{text}{file_close} et \mintinline{text}{file_seek} manipulent
+ce descripteur de fichier. Des fonctions et structures pour itérer les fichiers
+du système de fichiers ont aussi été implémentées dans cette \acrshort{api}.
