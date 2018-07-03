@@ -138,6 +138,7 @@ le registre SS. Ces registres pointent sur des descripteurs de segments par l'in
 de sélecteurs de segment. \\
 
 \subsubsection{\acrshort{gdt} et \acrshort{ldt}}
+\label{gdt_ldt}
 Nous avons pu voir que pour translater une adresse logique, des sélecteurs de
 segment sont utilisés. Ces sélecteurs pointent sur des entrées dans des tables
 de descripteurs. La \acrshort{gdt} et la \acrshort{ldt} sont deux types de table 
@@ -326,6 +327,7 @@ tâche \cite{ref15}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsubsection{Activation de la pagination}
+\label{activate_paging}
 Pour initialiser la pagination sur architecture x86, il faut d'abord construire
 un répertoire de pages valide contenant les entrées vers les pages du \textit{kernel}.
 Il est obligatoire de commencer par cela car si la pagination est activée et que
@@ -415,7 +417,7 @@ active.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Allocation dynamique}
+\subsection{Allocation dynamique en mode \textit{kernel}}
 Le dernier élément de gestion mémoire implémenté dans RustOS est l'allocation de
 mémoire dynamique. L'allocation dynamique consiste à réserver des blocs de mémoire
 pendant l'exécution du \textit{kernel} ou bien d'un programme utilisateur. Jusqu'à
