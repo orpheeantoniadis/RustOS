@@ -204,3 +204,44 @@ et le reste par le \textit{kernel}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Allocation dynamique en mode utilisateur}
+Le concept d'allocation dynamique a été expliqué dans le chapitre \ref{alloc_kernel}.
+Les fonction décrites dans ce chapitre permettent seulement d'allour de la mémoire
+en mode \textit{kernel}. Les tâches utilisateur pourraient très bien se passer
+d'allocation dynamique et utiliser des structures statiques à la place. C'est
+d'ailleurs de cette manière qu'avaient été implémenté les tâches dans une version
+précédente de l'\acrshort{os}. Le problème qu'il y a avec l'utilisation de structures
+statique est que la même quantité de mémoire va être utilisée pour une application
+faisant 200 octets et une application faisant 200000 octets. De plus, toute la
+mémoire dédiée aux tâches doit alors être réservée dès la compilation du \textit{kernel}
+ce qui augmente très rapidement sa taille. Un autre avantage à allouer la mémoire
+dynamiquement en \textit{ring} 3 est que des fonctions d'allocation dynamique 
+peuvent alors être implémentées au niveau utilisateur (comme \mintinline{c}{malloc}
+et \mintinline{c}{free}). \\
+
+Dans le chapitre \ref{alloc_kernel}, nous avons vu les structures et mécanismes
+mis en place pour allouer de la mémoire dynamiquement en mode \textit{kernel}.
+Des fonctions supplémentaires ont été implémentées pour gérer la mémoire dynamique en
+mode \textit{user}. Ces fonctions sont \mintinline{rust}{umalloc} et
+\mintinline{rust}{ufree}. La fonction \mintinline{rust}{umalloc} alloue d'abord
+de la mémoire en \textit{ring} 0 puis \textit{map} ces blocs mémoire
+dans le répertoire de pages de la tâche utilisateur en commençant à l'adresse 0x0.
+Le code du programme utilisateur est donc situé physiquement dans le \textit{heap}
+du \textit{kernel} mais est placé virtuellement au début de l'espace d'adressage
+de la tâche. Ce mécanisme est bien expliqué par la figure \ref{alloc_user}.
+Dans cet exemple, on peut voir que le code du programme utilisateur se situe
+dans le tas du \textit{kernel} mais qu'il est \textit{mappé} à l'adresse 0x0
+dans l'espace d'adressage de la tâche. A noter que le \textit{kernel} et son tas
+sont encore présents dans la mémoire en mode \textit{user} pour rendre possible
+les appels systèmes (comme expliqué dans la partie précédente).
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=.7]{images/alloc_user.png}
+  \caption{Vues de la mémoire après allocation d'un code utilisateur}
+  \label{alloc_user}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Librairie système et applications}
