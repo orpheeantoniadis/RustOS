@@ -36,7 +36,7 @@ use idt::idt_init;
 use timer::*;
 use fs::*;
 use task::*;
-use common::Color;
+use common::*;
 
 // exports
 pub use idt::exception_handler;
@@ -51,7 +51,7 @@ mod test;
 #[no_mangle]
 pub extern fn kmain(_multiboot_magic: u32, multiboot_info: *mut MultibootInfo) {
     let mboot = unsafe { (*multiboot_info) };
-    vga_init(Color::Black, Color::White);
+    vga_init(BG_COLOR, FG_COLOR);
     println!("Screen initialized.");
     paging_init();
     println!("Paging initialized.");

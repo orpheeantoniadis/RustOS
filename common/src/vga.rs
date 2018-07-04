@@ -1,5 +1,7 @@
-pub const BUFFER_HEIGHT: usize =    25;
-pub const BUFFER_WIDTH: usize =     80;
+pub const BUFFER_HEIGHT : usize = 25;
+pub const BUFFER_WIDTH  : usize = 80;
+pub const FG_COLOR      : Color = Color::Black;
+pub const BG_COLOR      : Color = Color::White;
 
 #[repr(u8)]
 #[derive(Copy, Clone)]
@@ -89,7 +91,7 @@ impl Character {
     pub const fn null() -> Character {
         Character {
             ascii: 0,
-            attribute: ColorAttribute::new(Color::Black, Color::White)
+            attribute: ColorAttribute::new(BG_COLOR, FG_COLOR)
         }
     }
     

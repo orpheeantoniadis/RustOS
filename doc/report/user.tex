@@ -204,14 +204,15 @@ et le reste par le \textit{kernel}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Allocation dynamique en mode utilisateur}
+\label{alloc_user}
 Le concept d'allocation dynamique a été expliqué dans le chapitre \ref{alloc_kernel}.
 Les fonction décrites dans ce chapitre permettent seulement d'allour de la mémoire
 en mode \textit{kernel}. Les tâches utilisateur pourraient très bien se passer
 d'allocation dynamique et utiliser des structures statiques à la place. C'est
-d'ailleurs de cette manière qu'avaient été implémenté les tâches dans une version
+d'ailleurs de cette manière qu'avaient été implémentées les tâches dans une version
 précédente de l'\acrshort{os}. Le problème qu'il y a avec l'utilisation de structures
-statique est que la même quantité de mémoire va être utilisée pour une application
-faisant 200 octets et une application faisant 200000 octets. De plus, toute la
+statiques est que la même quantité de mémoire va être utilisée pour une application
+faisant 200 octets et une application faisant 200'000 octets. De plus, toute la
 mémoire dédiée aux tâches doit alors être réservée dès la compilation du \textit{kernel}
 ce qui augmente très rapidement sa taille. Un autre avantage à allouer la mémoire
 dynamiquement en \textit{ring} 3 est que des fonctions d'allocation dynamique 
@@ -227,21 +228,177 @@ de la mémoire en \textit{ring} 0 puis \textit{map} ces blocs mémoire
 dans le répertoire de pages de la tâche utilisateur en commençant à l'adresse 0x0.
 Le code du programme utilisateur est donc situé physiquement dans le \textit{heap}
 du \textit{kernel} mais est placé virtuellement au début de l'espace d'adressage
-de la tâche. Ce mécanisme est bien expliqué par la figure \ref{alloc_user}.
+de la tâche. Ce mécanisme est bien expliqué par la figure \ref{mem_view_user}.
 Dans cet exemple, on peut voir que le code du programme utilisateur se situe
 dans le tas du \textit{kernel} mais qu'il est \textit{mappé} à l'adresse 0x0
 dans l'espace d'adressage de la tâche. A noter que le \textit{kernel} et son tas
-sont encore présents dans la mémoire en mode \textit{user} pour rendre possible
+sont encore présents dans la mémoire en mode \textit{user} pour rendre possibles
 les appels systèmes (comme expliqué dans la partie précédente).
 
 \begin{figure}[!h]
   \centering
   \includegraphics[scale=.7]{images/alloc_user.png}
   \caption{Vues de la mémoire après allocation d'un code utilisateur}
-  \label{alloc_user}
+  \label{mem_view_user}
 \end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Librairie système et applications}
+\subsubsection{Compilation d'une application utilisateur}
+Le \textit{kernel} pouvant charger et exécuter des programmes, les appels systèmes
+étant mis en place et l'allocation dynamique fonctionnelle en mode \textit{user},
+des programmes utilisateurs peuvent maintenant être écrits. Ces applications
+sont compilées séparément du \textit{kernel} avec un \textit{linker} qui leur
+est propre. D'ailleurs, une application peut être codée dans le langage voulu
+tant que le \textit{linker} fourni est utilisé. Un programme utilisateur est
+compilé en format binaire. Sous ce format, le code du programme commence directement
+à l'adresse 0x0. Il n'y a pas d'entête comme avec le format \acrshort{elf}.
+Ci-dessous, les lignes importantes du \textit{linker} pour compiler en format
+binaire. Ce \textit{linker} appelle une fonction assembleur très simple qui
+appelle la fonction \mintinline{rust}{main} du programme \cite{ref42}. \\
+
+\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single]{text}
+OUTPUT_FORMAT("binary")
+SECTIONS {
+    . = 0x0;
+    ...
+}
+\end{minted}
+
+Le langage rust a été utilisé pour développer une librairie système et quelques
+applications. La compilation de rust est légèrement différente que pour le
+\textit{kernel} car d'une part nous sommes dans un format binaire, et ensuite
+il faut se défaire de tous les mécanismes de protection de rust qui prennent
+une place considérable dans l'exécutable. Pour compiler un programme rust
+en fichier objet destiné à un format binaire, le \textit{flag}
+\mintinline{text}{-C relocation-model=static} doit être passé au compilateur.
+Par défaut, le compilateur cherche la \mintinline{text}{GLOBAL_OFFSET_TABLE}
+qui n'existe pas lorsque le format de l'exécutable est un format binaire.
+Ce \textit{flag} va dire au compilateur d'ignorer ce mécanisme \cite{ref25}.
+De cette façon, un programme utilisateur peut être compilé mais sa taille sera
+excessivement grande (dans l'ordre des 100'000 octets). Ceci est du à plusieurs
+raisons. Tout d'abord, rust est compilé par défaut sans aucune option d'optimisation.
+Le \textit{flag} \mintinline{text}{-C opt-level=3} fixe un niveau d'optimisation
+de 3 (plus haut niveau d'optimisation). Un peu plus d'optimisation peut être
+fait en disant à xargo de compiler en mode \textit{release} et non \textit{debug}
+avec l'option \mintinline{text}{--release}. Le niveau d'optimisation a un impact
+sur le code écrit mais ce sont les librairies qui prennent le plus de place dans
+un exécutable. Pour rappel, nous compilons sans librairie standard mais la librairie
+\mintinline{text}{core} est tout de même utilisée. Quand on compile un code rust,
+l'intégralité de cette librairie est compilée aussi, même si certaines parties
+sont inutiles. Pour résoudre ce problème il faut cette fois-ci modifier le fichier
+\mintinline{text}{cargo.toml} et lui rajouter les lignes suivantes \cite{ref26}.
+
+\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single]{text}
+[profile.release]
+lto = true
+panic = 'abort'
+\end{minted}
+
+A noter que les \textit{flags} passés au compilateur de rust (avec l'option
+\mintinline{text}{-C}), sont appliqués au compilateur rustc et non à xargo. Pour
+dire à xargo (ou cargo) de rajouter des options lors de la compilation, il faut
+mettre ces options dans la variable d'environnement \mintinline{text}{RUSTFLAGS}.
+Comme pour le \textit{kernel}, \acrshort{gcc} est utilisé pour \textit{linker}
+les fichier objets en un exécutable.
+
+\subsubsection{Librairie système}
+Pour faciliter le développement d'applications pour l'\acrshort{os}, une librairie
+système a été développée. Cetter dernière agit comme une mini librairie C offrant
+les fonctionnalités de base à un programme utilisateur. Cette librairie offre
+un niveau d'abstraction plus élevé cachant l'utilisation d'appels systèmes
+à l'utilisateur. Ainsi, aucune application n'a besoin de faire appel des appels
+systèmes. C'est la librairie système qui s'en charge. La librairie dévelopée
+offre les fonctionnalités suivantes.
+
+\begin{center}
+	\scalebox{1}{
+		\begin{tabular}{| l | l |}
+			\hline
+			Fonction & Description \\ \hline
+			\mintinline{rust}{print}/\mintinline{rust}{println} & Macros permettant
+            d'afficher une chaîne de caractères formatée \\ \hline
+			\mintinline{rust}{clear} & Efface l'écran \\ \hline
+			\mintinline{rust}{puts} & Affiche une chaîne de caractères \\ \hline
+			\mintinline{rust}{putc} & Affiche un caractère \\ \hline
+			\mintinline{rust}{exec} & Exécute un programme utilisateur contenu
+            dans le disque dur \\ \hline
+            \mintinline{rust}{keypressed} & Indique si une touche tu clavier a
+            été appuyée \\ \hline
+            \mintinline{rust}{getc} & Fonction bloquante. Retourne la touche
+            appuyée par l'utilisateur \\ \hline
+            \mintinline{rust}{file_stat} & Retourne les métadonnées d'un fichier \\ \hline
+            \mintinline{rust}{file_open} & Ouvre un fichier donné en paramètre
+            et retourne son descripteur \\ \hline
+            \mintinline{rust}{file_close} & Ferme un fichier à partir de son
+            descripteur \\ \hline
+            \mintinline{rust}{file_read} & Lit les octets d'un fichier depuis son
+            descripteur \\ \hline
+            \mintinline{rust}{file_seek} & Avance le curseur d'un fichier depuis
+            son descripteur \\ \hline
+            \mintinline{rust}{file_iterator} & Retourne un itérateur des fichiers
+            du disque dur \\ \hline
+            \mintinline{rust}{file_next} & Itère sur le prochain fichier du disque \\ \hline
+            \mintinline{rust}{get_ticks} & Retourne l'état actuel du \textit{timer} \\ \hline
+            \mintinline{rust}{sleep} & Arrête l'exécution pendant un temps donné \\ \hline
+            \mintinline{rust}{set_cursor} & Fixe la position du curseur sur l'écran \\ \hline
+            \mintinline{rust}{get_cursor} & Retourne la position du curseur sur
+            l'écran \\ \hline
+            \mintinline{rust}{cursor_disable} & Active ou désactive le curseur \\ \hline
+            \mintinline{rust}{copy_scr} & Copie un \textit{frame buffer} sur
+            l'écran \\ \hline
+            \mintinline{rust}{malloc} & Alloue de la mémoire \\ \hline
+            \mintinline{rust}{free} & Libère de la mémoire \\ \hline
+		\end{tabular}
+	}
+\end{center}
+
+La fonction \mintinline{rust}{malloc} utilise un appel système allouant une nouvelle
+page dans le répertoire de pages de la tâche. Cet appel système appelle lui même
+la fonction \mintinline{rust}{umalloc} décrite dans la partie \ref{alloc_user}.
+la fonction \mintinline{rust}{malloc} gère la mémoire de la même manière que le
+\textit{kernel}. Un tas est utilisé au niveau utilisateur. Quand un utilisateur
+alloue de la mémoire, \mintinline{rust}{malloc} va regarder s'il y a assez de
+place dans la dernière page allouée. Si c'est le cas, aucun appel système n'est
+appelé, une partie de la dernière page va être reservée. Dans le cas contraire,
+l'appel système pour allouer une page est appelé autant de fois que nécessaire.
+Cette gestion utilise des entêtes qui fonctionnent exactement comme ceux du
+\textit{heap} du \textit{kernel} décrits en \ref{alloc_kernel}. La seule différence
+est que l'espace alloué n'est pas aligné sur 4096 octets (la taille d'une page)
+car l'utilisateur aura tendance à allouer des espace plus petits et cela produirait
+une trop grande perte de mémoire. De plus, si l'espace alloué était alligné sur
+la taille d'une page, un appel système aurait lieu à chaque allocation ce qui n'est
+pas souhaitable.
+
+\subsubsection{Applications développées}
+\paragraph{Shell} \mbox{} \\
+Actuellement, les applications utilisateurs ne peuvent être appélées que depuis
+le \textit{kernel}. Ceci n'est pas très pratique d'un point de vue utilisateur.
+Afin d'avoir un système d'exploitation un peu plus intéractif, un shell très
+simple a été développé. Ce shell permet de lire les fichiers du disque dur et
+d'exécuter d'autres applications utilisateur. Le shell implémenté propose
+les fonctionallités suivantes.
+
+\begin{itemize}[label=\textbullet]
+	\item \mintinline{text}{ls}         : liste les fichiers du disque dur
+	\item \mintinline{text}{cat <file>} : affiche le contenu d'un fichier
+	\item \mintinline{text}{clear}      : efface l'écran
+	\item \mintinline{text}{<prog>}     : exécute un programme
+    \item \mintinline{text}{sleep <ms>} : attend pendant un temps donné 
+    \item \mintinline{text}{exit}       : sort du shell
+    \item \mintinline{text}{help}       : affiche la liste des commandes disponibles
+\end{itemize}
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[scale=.6]{images/shell.png}
+  \caption{Shell développé}
+  \label{mem_view_user}
+\end{figure}
+
+\paragraph{Démo} \mbox{} \\
+En plus du shell, une démo a été développée afin de valider toutes les fonctionnalités
+de l'\acrshort{os}. Cette démo appelle toute les fonctions de la librairie système
+et teste l'allocation mémoire dynamique.

@@ -9,7 +9,7 @@ const TAB_SIZE: usize = 4;
 
 static mut SCREEN: Screen = Screen {
     buffer: 0xC00B8000 as *mut _,
-    attribute: ColorAttribute::new(Color::Black, Color::White),
+    attribute: ColorAttribute::new(BG_COLOR, FG_COLOR),
     cursor_x: 0,
     cursor_y: 0
 };
