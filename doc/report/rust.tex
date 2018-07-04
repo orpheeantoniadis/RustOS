@@ -7,16 +7,17 @@ Rust est un langage de programmation système développé par Mozilla et conçu 
 être sécurisé. Le but de Rust est de remplacer les autres langages système comme
 le C ou le C++. Les trois caractéristiques mises en valeur par l'équipe de Rust
 sont la rapidité, la sécurité (prévient des erreurs de segmentation) et la concurrence
-(garantit la sécurité entre \textit{threads}) \cite{ref28}. La première version
+(garantit la sécurité entre \textit{threads}) \cite{ref27}. La première version
 de Rust est sortie en janvier 2012 \cite{ref28}. Ce langage est donc très récent
 et emprunte beaucoup de concepts de programmation d'autres langages. Une première
 partie de ce projet a été un travail de recherche afin d'apprendre ce langage.
 Beaucoup de documentation est disponible sur le site de Rust dont le livre
-de Rust, \textit{The Rust Programming Language}, sorti en deux éditions différentes.
+de Rust, \textit{The Rust Programming Language}, sorti en deux éditions différentes
+(\href{https://doc.rust-lang.org/book/first-edition}{\textit{First Edition}} et
+\href{https://doc.rust-lang.org/book/second-edition}{\textit{Second Edition}}).
 Ce livre est disponible en ligne et est une très bonne introduction au langage.
-Il donne beaucoup d'exemples et permet rapidement de comprendre comment fonctionne
-Rust. Dans ce chapitre, nous allons voir les différents paradigmes de programmation
-utilisés par Rust.
+Il donne beaucoup d'exemples et permet rapidement de comprendre le fonctionnement de
+Rust.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -68,8 +69,8 @@ distinguer des fonctions par la manière dont elles sont appelées. L'appel d'un
 macro se fait avec son nom suivi d'un '!'. Ce programme affiche donc "Hello world!"
 sur la sortie standard. Pour générer un exécutable à partir de ce code, le compilateur
 de Rust, rustc peut être utilisé avec la commande \mintinline{shell}{rustc hello.rs}
-Cette méthode marche bien lorsqu'on ne veut compiler qu'un seul fichier comme dans
-cet exemple. Cela devient vite compliqué lorsqu'il faut gérer des dépendences
+\cite{ref2}. Cette méthode marche bien lorsqu'on ne veut compiler qu'un seul fichier
+comme dans cet exemple. Cela devient vite compliqué lorsqu'il faut gérer des dépendences
 entre plusieurs fichiers et utiiser des librairies externes. Heureusement,
 une solution existe pour résoudre ce problème. Rust fournie un gestionnaire
 de paquets nommé Cargo.
@@ -78,9 +79,9 @@ de paquets nommé Cargo.
 
 \subsubsection{Cargo}
 Le gestionnaire de paquets de Rust, Cargo, peut non seulement gérer les dépendences
-d'un projet mais s'occupe aussi de sa compilation. Cargo est installé en même temps que
-Rust, il n'y a donc pas de manipulations supplémentaires à faire pour
-l'utiliser. Cargo fonctionne à l'aide d'un fichier de configuration du projet
+d'un projet mais s'occupe aussi de sa compilation \cite{ref3}. Cargo est installé
+en même temps que Rust, il n'y a donc pas de manipulations supplémentaires à faire
+pour l'utiliser. Cargo fonctionne à l'aide d'un fichier de configuration du projet
 au format \acrshort{toml}. Ce fichier doit être appelé \mintinline{text}{Cargo.toml}.
 Le contenu du fichier \mintinline{text}{Cargo.toml} ressemble généralement
 au code dans le \textit{listing} \ref{lst:rust:cargotoml}.
@@ -112,9 +113,10 @@ dans le répertoire \mintinline{text}{src}. Si on reprend l'exemple du \textit{l
 Des dépendences externes (appelées \textit{crates}) peuvent être utilisées dans
 le projet en les ajoutant dans le fichier \acrshort{toml}, sous la section \textit{dependencies}.
 Une \textit{crate} peut être en local sur la machine hôte ou être disponible en ligne
-sur Crates.io. Ce site sert de registre pour toutes les librairies Rust développées
-par la communauté. Cargo télécharge automatiquement les dépendences depuis Crates.io.
-Pour compiler un projet, rustc n'a plus a être utilisé. Cargo fait appelle au compilateur
+sur \href{https://crates.io}{Crate.io}. Ce site sert de registre pour toutes les
+librairies Rust développées par la communauté. Cargo télécharge automatiquement
+les dépendences depuis \href{https://crates.io}{Crate.io}. Pour compiler un projet,
+rustc n'a plus a être utilisé. Cargo fait appelle au compilateur
 de rust lui même. Pour demander à cargo de compiler le projet il faut exécuter
 la commande \mintinline{shell}{cargo build}. Si le projet est un exécutable,
 il est lancé avec la commande \mintinline{shell}{cargo run}. Notre système
@@ -132,11 +134,77 @@ automatiquement contrairement à Cargo.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Bases du langage}
+\subsubsection{Commentaires}
+Les commentaires en Rust ont la même syntaxe que les commentaires en C. Le \textit{listing}
+\ref{lst:rust:comments} montre les différents types de commentaire.
+
+\begin{code}
+\begin{rustcode}
+// Commentaire sur une seule ligne
+
+/* Commentaire sur
+   plusieurs lignes */
+\end{rustcode}
+\caption{Commentaires en Rust}
+\label{lst:rust:comments}
+\end{code} \bigbreak
+
 \subsubsection{Variables et mutabilité}
+Les variables en Rust sont toutes constantes par défaut. Le code du \textit{listing}
+\ref{lst:rust:var1} ne pourra pas compiler.
+
+\begin{code}
+\begin{rustcode}
+let x = 0;
+x += 1; // Erreur !
+\end{rustcode}
+\caption{Exemple de variable immutable}
+\label{lst:rust:var1}
+\end{code} \bigbreak
+
+Pour rendre une variable mutable, le mot-clé \mintinline{rust}{mut} doit être utilisé.
+Le code du \textit{listing} \ref{lst:rust:var2} corrige celui du \textit{listing}
+\ref{lst:rust:var1}.
+
+\begin{code}
+\begin{rustcode}
+let mut x = 0;
+x += 1; // Plus d'erreur, la variable x est mutable
+\end{rustcode}
+\caption{Exemple de variable mutable}
+\label{lst:rust:var2}
+\end{code} \bigbreak
+
+Une variable peut aussi être réécrite. On appelle ça le \textit{shadowing}.
+
+\begin{code}
+\begin{rustcode}
+let x = 0;
+let x = "zero";
+\end{rustcode}
+\caption{Exemple de \textit{shadowing}}
+\label{lst:rust:var2}
+\end{code} \bigbreak
+
+Le mot-clé \mintinline{rust}{let} sans \mintinline{rust}{mut} peut faire penser
+aux constantes en C. Rust permet aussi de déclarer des constantes avec le mot-clé
+\mintinline{rust}{const}. Lors d'une déclaration de constante en Rust, le type
+de la variable doit être donné ainsi que sa valeur qui doit être constante (valeur
+fixée à la compilation et non au \textit{runtime}). Une constante est déclarée
+globalement. Pour déclarer une variable gloablement il faut utiliser le mot-clé
+\mintinline{rust}{static}. Comme pour les constantes, quand une variable est déclarée
+statiquement, son type et sa valeur doivent être déterminés à la compilation.
+
+\begin{code}
+\begin{rustcode}
+const KHEAP_SIZE        : usize = 0x1000000;
+static mut KHEAP_ADDR   : u32   = 0;
+\end{rustcode}
+\caption{Déclaration d'une constante et d'une variable statique}
+\label{lst:rust:var2}
+\end{code} \bigbreak
 
 \subsubsection{Fonctions et macros}
-
-\subsubsection{Commentaires}
 
 \subsubsection{Structures de contrôle}
 
