@@ -1,0 +1,159 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Introduction}
+\subsubsection{Présentation du langage}
+Rust est un langage de programmation système développé par Mozilla et conçu pour
+être sécurisé. Le but de Rust est de remplacer les autres langages système comme
+le C ou le C++. Les trois caractéristiques mises en valeur par l'équipe de Rust
+sont la rapidité, la sécurité (prévient des erreurs de segmentation) et la concurrence
+(garantit la sécurité entre \textit{threads}) \cite{ref28}. La première version
+de Rust est sortie en janvier 2012 \cite{ref28}. Ce langage est donc très récent
+et emprunte beaucoup de concepts de programmation d'autres langages. Une première
+partie de ce projet a été un travail de recherche afin d'apprendre ce langage.
+Beaucoup de documentation est disponible sur le site de Rust dont le livre
+de Rust, \textit{The Rust Programming Language}, sorti en deux éditions différentes.
+Ce livre est disponible en ligne et est une très bonne introduction au langage.
+Il donne beaucoup d'exemples et permet rapidement de comprendre comment fonctionne
+Rust. Dans ce chapitre, nous allons voir les différents paradigmes de programmation
+utilisés par Rust.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Installation de Rust}
+Rust est distribué sous trois versions différentes. La version \textit{stable},
+la version \textit{beta} et la version \textit{nightly}. La version \textit{nightly}
+possède plus de fonctionnalités mais sa stabilité n'est pas garantie. Cette version
+a été utilisée pendant le développement du projet. Rustup est un gestionnaire de
+version du langage Rust. Pour installer Rust ainsi que cet utilitaire, il faut
+exécuter la commande suivante.
+
+\begin{shellcode}
+$ curl https://sh.rustup.rs -sSf | sh
+\end{shellcode}
+
+Le gestionnaire de version rustup peut maintenant être utilisé pour changer la
+version de Rust. Notre système d'exploitation utilise la version \textit{nightly}
+de Rust, la commande suivante doit donc être exécutée.
+
+\begin{shellcode}
+$ rustup override add nightly
+\end{shellcode}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Compilation d'un programme en Rust}
+Le compilateur de Rust est rustc. Il est installé automatiquement lors de
+l'installation de Rust. Prenons le programme ci-dessous qui est contenu
+dans le fichier \mintinline{text}{hello.rs}.
+
+\begin{code}
+\begin{rustcode}
+fn main() {
+    let hello = "Hello world!";
+    println!("{}", hello);
+}
+\end{rustcode}
+\caption{Premier programme en Rust}
+\label{lst:rust:hello}
+\end{code} \bigbreak
+
+Le mot-clé \mintinline{rust}{let} indique qu'une variable est déclarée. On remarque
+qu'aucun type n'est donné dans la déclaration. L'inférence de types est un des
+nombreux concepts utilisés par Rust. L'équivalent en C serait
+\mintinline{c}{char hello[] = "Hello world!";}. Le programme affiche ensuite cette
+variable sur la sortie standard en utilisant la macro \mintinline{rust}{println}.
+Les macros seront vues plus en détail dans la suite de ce document. On peut les
+distinguer des fonctions par la manière dont elles sont appelées. L'appel d'une
+macro se fait avec son nom suivi d'un '!'. Ce programme affiche donc "Hello world!"
+sur la sortie standard. Pour générer un exécutable à partir de ce code, le compilateur
+de Rust, rustc peut être utilisé avec la commande \mintinline{shell}{rustc hello.rs}
+Cette méthode marche bien lorsqu'on ne veut compiler qu'un seul fichier comme dans
+cet exemple. Cela devient vite compliqué lorsqu'il faut gérer des dépendences
+entre plusieurs fichiers et utiiser des librairies externes. Heureusement,
+une solution existe pour résoudre ce problème. Rust fournie un gestionnaire
+de paquets nommé Cargo.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Cargo}
+Le gestionnaire de paquets de Rust, Cargo, peut non seulement gérer les dépendences
+d'un projet mais s'occupe aussi de sa compilation. Cargo est installé en même temps que
+Rust, il n'y a donc pas de manipulations supplémentaires à faire pour
+l'utiliser. Cargo fonctionne à l'aide d'un fichier de configuration du projet
+au format \acrshort{toml}. Ce fichier doit être appelé \mintinline{text}{Cargo.toml}.
+Le contenu du fichier \mintinline{text}{Cargo.toml} ressemble généralement
+au code dans le \textit{listing} \ref{lst:rust:cargotoml}.
+
+\begin{code}
+\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single,linenos]{text}
+[package]
+name = "hello"
+version = "0.1.0"
+authors = ["Your Name <you@example.com>"]
+
+[dependencies]
+\end{minted}
+\caption{Contenu du fichier \mintinline{text}{Cargo.toml}}
+\label{lst:rust:cargotoml}
+\end{code} \bigbreak
+
+Cargo compile et gère automatiquement les dépendences de tous les fichiers contenus
+dans le répertoire \mintinline{text}{src}. Si on reprend l'exemple du \textit{listing}
+\ref{lst:rust:hello}, un projet utilisant Cargo aurait l'arborescence suivante. \\
+
+\dirtree{%
+.1 hello.
+.2 Cargo.toml.
+.2 src.
+.3 main.rs.
+} \bigbreak
+
+Des dépendences externes (appelées \textit{crates}) peuvent être utilisées dans
+le projet en les ajoutant dans le fichier \acrshort{toml}, sous la section \textit{dependencies}.
+Une \textit{crate} peut être en local sur la machine hôte ou être disponible en ligne
+sur Crates.io. Ce site sert de registre pour toutes les librairies Rust développées
+par la communauté. Cargo télécharge automatiquement les dépendences depuis Crates.io.
+Pour compiler un projet, rustc n'a plus a être utilisé. Cargo fait appelle au compilateur
+de rust lui même. Pour demander à cargo de compiler le projet il faut exécuter
+la commande \mintinline{shell}{cargo build}. Si le projet est un exécutable,
+il est lancé avec la commande \mintinline{shell}{cargo run}. Notre système
+d'exploitation utilise un gestionnaire de paquets basé sur Cargo. Celui-ci
+se nomme Xargo. Il peut être installé directement depuis Cargo en utilisant
+la commande \mintinline{shell}{cargo install xargo}. Xargo est fait pour compiler
+un projet Rust dans un environnement \textit{bare metal}. Dans ce type d'environnement
+il n'y a aucune librairie système étant donné que nous créons nous même le système.
+Le code doit donc être compilé sans dépendences à la librairie standard. Rust a tout
+de même besoin d'une base pour être compilé. Cette base est fournie par la librairie
+\mintinline{rust}{core}. Xargo lie la librairie \mintinline{rust}{core} au projet
+automatiquement contrairement à Cargo.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Bases du langage}
+\subsubsection{Variables et mutabilité}
+
+\subsubsection{Fonctions et macros}
+
+\subsubsection{Commentaires}
+
+\subsubsection{Structures de contrôle}
+
+\subsubsection{Structures de données}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Spécificités du langage}
+\subsubsection{\textit{Ownership}}
+
+\subsubsection{Collections}
+
+\subsubsection{Traits}
+
+\subsubsection{Gestion des erreurs}
+
+\subsubsection{Tests unitaires}
+
+\subsubsection{\textit{Unsafe} Rust}

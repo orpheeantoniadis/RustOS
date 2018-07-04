@@ -4,6 +4,9 @@
 \usepackage{enumitem}
 \usepackage{authblk}
 \usepackage{minted}
+\newminted{rust}{fontsize=\footnotesize,tabsize=4,frame=single,linenos}
+\newminted{shell}{tabsize=4}
+\usepackage{dirtree}
 \usepackage{amsmath}
 \usepackage{hyperref}
 \usepackage{tabularx}
@@ -102,11 +105,11 @@ Lors de la rédaction de ce document, les conventions typographiques ci-dessous 
     utilisation de paramètre, variable, ou commande utilisable par l’utilisateur, 
     est écrite avec la police d’écriture \mintinline{rust}{Courier New}.
 	\item Tout extrait de fichier ou de code est écrit selon le format suivant:
-    \begin{minted}[linenos,frame=single,tabsize=4]{rust}
-    fn main() {
-        println!("Hello, world!");
-    }
-    \end{minted}
+\begin{minted}[linenos,frame=single,tabsize=4]{rust}
+fn main() {
+    println!("Hello, world!");
+}
+\end{minted}
 \end{itemize}
 \newpage
 
@@ -140,6 +143,7 @@ Lors de la rédaction de ce document, les conventions typographiques ci-dessous 
 \newacronym{fat}{FAT}{\textit{File Allocation Table}}
 \newacronym{api}{API}{\textit{Application Programming Interface}}
 \newacronym{posix}{POSIX}{\textit{Portable Operating System Interface}}
+\newacronym{toml}{TOML}{\textit{Tom’s Obvious, Minimal Language}}
 \printglossary[type=\acronymtype,title={Acronymes}]
 \newpage
 
@@ -167,6 +171,7 @@ Lors de la rédaction de ce document, les conventions typographiques ci-dessous 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Langage Rust}
+\input{rust.tex}
 
 \newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
