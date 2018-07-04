@@ -20,6 +20,8 @@
     linkcolor=black,
     urlcolor=blue
 }
+\usepackage{caption}
+\newenvironment{code}{\captionsetup{type=listing,skip=-10pt}}{}
 \usepackage{etoolbox}
 \patchcmd{\thebibliography}{\section*{\refname}}{}{}{}
 \usepackage[left=2.5cm,top=2.5cm,right=2.5cm,bottom=2.5cm]{geometry}
@@ -56,6 +58,7 @@
 \newpage
 
 \section*{Résumé}
+\addcontentsline{toc}{section}{Résumé}
 Le but de ce projet est d’étudier le langage Rust, en particulier son utilisation
 pour l’implémentation d’un système d’exploitation de type \textit{bare metal}. Le
 langage Rust se révèle particulièrement intéressant en tant que digne successeur de C :
@@ -68,14 +71,29 @@ cours logiciel « Programmation système avancée » mais écrit en Rust plut
 \newpage
 \setcounter{tocdepth}{2}
 \tableofcontents
+\addcontentsline{toc}{section}{Table des matières}
+
 \newpage
 \listoffigures
+\addcontentsline{toc}{section}{Table des figures}
+
+\newpage
+\renewcommand{\listtablename}{Table des tables}
+\listoftables
+\addcontentsline{toc}{section}{Table des tables}
+
+\newpage
+\renewcommand\listoflistingscaption{Table des listings de code}
+\listoflistings
+\addcontentsline{toc}{section}{Table des listings de code}
 \newpage
 
 \section*{Remerciements}
+\addcontentsline{toc}{section}{Remerciements}
 \newpage
 
 \section*{Conventions typographiques}
+\addcontentsline{toc}{section}{Conventions typographiques}
 Lors de la rédaction de ce document, les conventions typographiques ci-dessous ont
 été adoptées.
 \begin{itemize}[label=\textbullet]
@@ -92,6 +110,7 @@ Lors de la rédaction de ce document, les conventions typographiques ci-dessous 
 \end{itemize}
 \newpage
 
+\addcontentsline{toc}{section}{Acronymes}
 \newacronym{os}{OS}{\textit{Operating System}}
 \newacronym{elf}{ELF}{\textit{Executable and Linkable Format}}
 \newacronym{gcc}{GCC}{\textit{GNU Compiler Collection}}

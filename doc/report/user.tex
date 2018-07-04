@@ -96,7 +96,8 @@ par le \textit{task register}. Il est donc nécessaire de créer un \acrshort{ts
 initial avant d'exécuter la première tâche car l'état du processeur doit être
 sauvegardé \cite{ref42}. Ci-dessous, la structure \acrshort{tss} en rust.
 
-\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single]{rust}
+\begin{code}
+\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single,linenos]{rust}
 pub struct Tss {
     previous_task_link : u16, reserved0    : u16,
     esp0               : u32,
@@ -119,6 +120,9 @@ pub struct Tss {
     iomap_base_addr    : u16
 }
 \end{minted}
+\caption{Champs de la structure \acrshort{tss}}
+\label{lst:tasks:tss}
+\end{code} \bigbreak
 
 Dans le \acrshort{tss} initial, seuls les champs \mintinline{rust}{esp0},
 \mintinline{rust}{ss0} et \mintinline{rust}{cr3} sont utilisés. Les champs
@@ -140,15 +144,13 @@ pour le niveau de privilèges 3. L'adresse du début du programme utilisateur d�
 de la manière dont le répertoire de pages de la tâche a été initialisé. Dans notre
 cas, le programme utilisateur commence toujours à l'adresse 0x0. Un programme
 utilisateur contenu par exemple dans le disque dur peut ainsi être exécuté en
-\textit{ring} 3. Ce programme ne pourrait par contre pas faire grand chose car
-il n'aurait le droit d'accéder ni aux périphériques, ni à la mémoire. Les appels
-systèmes permettent de résoudre ce problème.
+\textit{ring} 3.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Appels systèmes}
-Les appels systèmes sont des fonctions exposés aux applications utilisateur par
+Les appels systèmes sont des fonctions exposées aux applications utilisateur par
 le \textit{kernel}. Lors d'un appel système, un changement de privilèges a lieu
 car du code du \textit{kernel} est appelé. Il est important d'avoir des appels
 systèmes dans un \textit{kernel} appelant des applications utilisateurs car
@@ -165,11 +167,15 @@ Dans le cas de notre \textit{kernel}, l'interruption utilisée est la première 
 après les interruptions matérielles. C'est l'interruption 48. Sa configuration se
 fait avec le code rust ci-dessous.
 
-\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single]{rust}
+\begin{code}
+\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single,linenos]{rust}
 IDT[48] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16,
                         _syscall_handler as *const () as u32,
                         TYPE_TRAP_GATE, DPL_USER);
 \end{minted}
+\caption{Entrée dans l'\acrshort{idt} pour les appels systèmes}
+\label{lst:tasks:syscalls:idtentry}
+\end{code} \medbreak
 
 La structure des entrées de l'\acrshort{idt} est décrite dans la figure \ref{idt_entry}.
 Dans ce code, le constructeur d'une entrée prend comme argument le sélecteur de
@@ -188,7 +194,7 @@ registres du processeur (\mintinline{text}{eax}, \mintinline{text}{ebx}, \mintin
 
 \begin{figure}[!h]
   \centering
-  \includegraphics[scale=.75]{images/syscall.png}
+  \includegraphics[scale=.7]{images/syscall.png}
   \caption{Fonctionnement des appels systèmes}
   \label{syscall}
 \end{figure}
@@ -259,13 +265,17 @@ Ci-dessous, les lignes importantes du \textit{linker} pour compiler en format
 binaire. Ce \textit{linker} appelle une fonction assembleur très simple qui
 appelle la fonction \mintinline{rust}{main} du programme \cite{ref42}. \\
 
-\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single]{text}
+\begin{code}
+\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single,linenos]{text}
 OUTPUT_FORMAT("binary")
 SECTIONS {
     . = 0x0;
     ...
 }
 \end{minted}
+\caption{\textit{Linker} pour un exécutable en format binaire}
+\label{lst:tasks:app:linker}
+\end{code} \bigbreak
 
 Le langage rust a été utilisé pour développer une librairie système et quelques
 applications. La compilation de rust est légèrement différente que pour le
@@ -291,11 +301,15 @@ l'intégralité de cette librairie est compilée aussi, même si certaines parti
 sont inutiles. Pour résoudre ce problème il faut cette fois-ci modifier le fichier
 \mintinline{text}{cargo.toml} et lui rajouter les lignes suivantes \cite{ref26}.
 
-\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single]{text}
+\begin{code}
+\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single,linenos]{text}
 [profile.release]
 lto = true
 panic = 'abort'
 \end{minted}
+\caption{Options ajoutées au fichier \mintinline{text}{cargo.toml}}
+\label{lst:tasks:app:cargotoml}
+\end{code} \bigbreak
 
 A noter que les \textit{flags} passés au compilateur de rust (avec l'option
 \mintinline{text}{-C}), sont appliqués au compilateur rustc et non à xargo. Pour
@@ -353,6 +367,8 @@ offre les fonctionnalités suivantes.
             \mintinline{rust}{free} & Libère de la mémoire \\ \hline
 		\end{tabular}
 	}
+    \captionof{table}{Fonctions proposées par la librairie système}
+    \label{tab:tasks:ulibc}
 \end{center}
 
 La fonction \mintinline{rust}{malloc} utilise un appel système allouant une nouvelle

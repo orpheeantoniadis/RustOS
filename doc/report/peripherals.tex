@@ -30,15 +30,15 @@ et l'écriture se font toujours avec les registres \mintinline{text}{ax/al} \cit
     ]
     Ecrire 4 dans le port 0x2A :
     \begin{minted}[fontsize=\footnotesize,tabsize=4]{text}
-        mov dx, 0x2A
-        mov al, 4
-        out dx, al
+    mov dx, 0x2A
+    mov al, 4
+    out dx, al
     \end{minted}
     \columnbreak
     Lire un octet depuis le port 0x2A :
     \begin{minted}[fontsize=\footnotesize,tabsize=4]{text}
-        mov dx, 0x2A
-        in  byte al, dx
+    mov dx, 0x2A
+    in  byte al, dx
     \end{minted}
 \end{multicols}
 
@@ -253,16 +253,20 @@ comportant un \textit{raw pointer} vers le \textit{frame buffer} (qui est un
 tableau de $80 \times 25$ caractères) ainsi que les informations sur la couleur
 et la position du curseur. Si la pagination est active comme c'est le cas dans
 notre \acrshort{os}, il faut bien penser à mettre l'adresse virtuelle du
-\textit{frame buffer} (0xB8000 étant l'adresse physique). \\
+\textit{frame buffer} (0xB8000 étant l'adresse physique).
 
-\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single]{rust}
+\begin{code}
+\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single,linenos]{rust}
 static mut SCREEN: Screen = Screen {
     buffer: 0xC00B8000 as *mut _,
-    attribute: ColorAttribute::new(Color::Black, Color::White),
+    attribute: ColorAttribute::new(Color::White, Color::Black),
     cursor_x: 0,
     cursor_y: 0
 };
 \end{minted}
+\caption{Structure \mintinline{rust}{Screen}}
+\label{lst:vga:struct}
+\end{code} \bigbreak
 
 La structure \mintinline{rust}{Screen} est déclarée statiquement dans le \textit{kernel}
 ce qui rend tout appel à une méthode \mintinline{rust}{unsafe} pour rust. En plus
@@ -286,7 +290,8 @@ ou les macros à arguments variable. La macro \mintinline{rust}{print} possède
 un nombre d'arguments variable, nous pouvons donc implémenter cette macro ainsi
 que la macro \mintinline{rust}{println} comme suit :
 
-\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single]{rust}
+\begin{code}
+\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single,linenos]{rust}
 macro_rules! print {
     ($($arg:tt)*) => (vga_write_fmt(format_args!($($arg)*)));
 }
@@ -297,10 +302,13 @@ macro_rules! println {
     ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
 }
 \end{minted}
+\caption{Implémentation des macros \mintinline{rust}{print} et \mintinline{rust}{println}}
+\label{lst:vga:print}
+\end{code} \bigbreak
 
 A noter que la fonction \mintinline{rust}{vga_write_fmt} est simplement une fonction
-interfaçant la méthode \mintinline{rust}{write_fmt} appliquée a la structure
-statique représentant l'écran et la macro \mintinline{rust}{format_args} convertie
+interfaçant la méthode \mintinline{rust}{write_fmt} appliquée à la structure
+\mintinline{rust}{Screen} et la macro \mintinline{rust}{format_args} convertie
 les arguments de la macro \mintinline{rust}{print} en structure \mintinline{rust}{Arguments}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -324,34 +332,34 @@ Le port 0x43 contient le registre de commande du \acrshort{pit} et le port 0x40
 permet de configurer le canal 0. Ci-dessous, le code permettant de programmer
 le \textit{timer} à une fréquence \mintinline{rust}{freq}.
 
-\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single]{rust}
+\begin{code}
+\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single,linenos]{rust}
 let div = 1193180 / freq;
 outb(0x43, 0x36);
 outb(0x40, (div & 0xFF) as u8);
 outb(0x40, (div >> 0x8) as u8);
 \end{minted}
+\caption{Programmation du \textit{timer} en assembleur}
+\label{lst:timer:init}
+\end{code} \bigbreak
 
 Ecrire 0x36 dans le registre de commande du \acrshort{pit} indique la sélection
 du diviseur et le mode répétition  (réinitialisation du compteur une fois celui-ci
 arrivé à 0) \cite{ref42}. L'octet de poids faible du diviseur est ensuite écrit
 dans le port du canal 0 suivi par l'octet de poids fort. Dans le \textit{kernel}
 développé, le \textit{timer} est représenté par une structure statique contenant
-la fréquence du timer sur 32 bits et l'état actuel de son compteur sur 32 bits aussi.
+la fréquence du timer sur 32 bits et l'état actuel de son compteur sur 32 bits.
 Ce compteur est incrémenté à chaque fois qu'une interruption à lieu sur l'\acrshort{irq}0.
-
-\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single]{rust}
-static mut TIMER: Timer = Timer { freq: 0, ticks: 0 };
-\end{minted}
-
 Comme pour la structure statique permettant d'interfacer l'affichage texte \acrshort{vga},
-toute modification de la variable \mintinline{rust}{TIMER} sera \mintinline{rust}{unsafe}
+toute modification de celle du \textit{timer} sera \mintinline{rust}{unsafe}
 au niveau du compilateur rust. Des fonctions ont donc été implémentées pour lire
 ou écrire le \textit{timer}. Actuellement, le \acrshort{pit} est utilisé seulement
 pour arrêter le \textit{kernel} pendant un temps donné avec la fonction \mintinline{rust}{sleep}.
 Cette fonction prend une durée en millisecondes et rentre dans une boucle (attente
 active).
 
-\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single]{rust}
+\begin{code}
+\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single,linenos]{rust}
 pub fn sleep(ms: u32) {
     let duration = get_ticks() + (ms * get_freq() / 1000);
     loop {
@@ -362,10 +370,13 @@ pub fn sleep(ms: u32) {
     }
 }
 \end{minted}
+\caption{Implémentation de la fonction \mintinline{rust}{sleep}}
+\label{lst:timer:sleep}
+\end{code} \bigbreak
 
 Ici, \mintinline{rust}{get_ticks} et \mintinline{rust}{get_freq} sont des fonctions
 qui renvoient les attributs \mintinline{rust}{ticks} et \mintinline{rust}{freq}
-de la structure statique \mintinline{rust}{TIMER}. La fonction \mintinline{rust}{halt}
+de la structure statique précédemment décrite. La fonction \mintinline{rust}{halt}
 appelle l'instruction assembleur \mintinline{text}{HLT} qui arrête le processeur
 jusqu'à ce qu'une interruption matérielle soit déclenchée. Elle est appelée après
 chaque comparaison pour éviter d'utiliser $100\%$ du \acrshort{cpu} lors de l'attente
@@ -407,7 +418,8 @@ d'erreur. Une donnée est prête à être lue si le bit 0 (bit de poids faible) 
 registre d'état est à 1. Ci-dessous, un exemple de routine d'interruption stockant
 la valeur ascii du \textit{scan code} dans un \textit{buffer}.\\
 
-\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single]{rust}
+\begin{code}
+\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single,linenos]{rust}
 pub fn keyboard_handler() {
     let state = inb(0x64) & 1;
     if state == 1 {
@@ -418,6 +430,9 @@ pub fn keyboard_handler() {
     }
 }
 \end{minted}
+\caption{Routine d'interruption du clavier}
+\label{lst:keyboard:handler}
+\end{code} \bigbreak
 
 Au niveau de l'implémentation logicielle, un \textit{buffer} circulaire a été
 utilisé pour la gestion du clavier. Un \textit{buffer} circulaire est un \textit{buffer}

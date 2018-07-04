@@ -87,7 +87,7 @@ la mémoire physique \cite{ref66}. \\
 
 \begin{figure}[!h]
   \centering
-  \includegraphics[scale=0.45]{images/logic_addr_conv.png}
+  \includegraphics[scale=0.43]{images/logic_addr_conv.png}
   \caption{Conversion d'une adresse logique en adresse linéaire}
   \label{logic_addr_conv}
 \end{figure}
@@ -120,10 +120,11 @@ chacun une taille de 16 bits (même taille qu'un sélecteur de segment) \cite{re
 			DS & \textit{Data Segment} \\ \hline
 			SS & \textit{Stack Segment} \\ \hline
 			ES & \textit{Extra Segment} \\ \hline
-			FS & \multirow{2}{*}{\textit{General Purpose Segments}} \\
-            GS & \\ \hline
+			FS / GS & \textit{General Purpose Segments} \\ \hline
 		\end{tabular}
 	}
+    \captionof{table}{Registres de segment}
+    \label{table_seg_reg}
 \end{center}
 
 En mode protégé (32-bits), ces registres doivent pointer sur des descripteurs
@@ -208,7 +209,8 @@ si on veut créer un segment pour le \textit{kernel} ou bien être mis à 3 (\te
 3) si on veut créer un segment pour le mode utilisateur. Ci-dessous un exemple de
 code permettant de construire un segment de code et un segment de données. \\
 
-\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single]{rust}
+\begin{code}
+\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single,linenos]{rust}
 fn new(base: u32, limit: u32, type: u8, s: u8, d: u8, g: u8, dpl: u8) -> GdtEntry;
 
 pub fn make_code_segment(base: u32, limit: u32, dpl: u8) -> GdtEntry {
@@ -219,6 +221,9 @@ pub fn make_data_segment(base: u32, limit: u32, dpl: u8) -> GdtEntry {
     GdtEntry::new(base, limit, 0x3, 0x1, 0x1, 0x1, dpl)
 }
 \end{minted}
+\caption{Constructeurs d'une entrée dans la \acrshort{gdt}}
+\label{lst:mem:gdt:constructors}
+\end{code} \bigbreak
 
 Ici, \mintinline{rust}{new} est le prototype d'une méthode pour une structure 64
 bits représentant une entrée dans la \acrshort{gdt}. le bit \mintinline{rust}{s}
@@ -341,6 +346,7 @@ accessible le premier Mo de \acrshort{ram}. Il faut donc déplacer les adresses 
 allant de 0x0 à la fin du kernel (qui n'est pas fixe). Dans un premier temps, le
 \textit{linker} doit être modifié de cette manière :
 
+\begin{code}
 \begin{minted}[fontsize=\footnotesize,linenos,frame=single,tabsize=4]{c}
 SECTIONS {
     /* Low memory Kernel */
@@ -358,6 +364,9 @@ SECTIONS {
     .bss ALIGN(4K) : AT(ADDR(.bss) - 0xC0000000)        { *(COMMON) *(.bss*) }
 }
 \end{minted}
+\caption{\textit{Linker script} du \textit{higher-half kernel}}
+\label{lst:mem:paging:linker}
+\end{code} \bigbreak
 
 Ici, le \textit{kernel} est divisé en deux parties. La première est celle qui va
 être appelée au démarrage du système et qui va initialiser la pagination. Une fois
@@ -435,20 +444,26 @@ dans le \textit{kernel}. Des zone mémoire peuvent donc commencer à être allou
 l'adresse de la fin du \textit{kernel}. Ceci peut se faire en ajoutant une expression
 au \textit{linker} et en la rendant accessible depuis le code assembleur. \\
 
-Modification apportée au \textit{linker} :
+\begin{code}
 \begin{minted}[fontsize=\footnotesize,linenos,frame=single,tabsize=4]{c}
 . += 0xC0000000;
 ...
 kernel_end = .;
 \end{minted}
+\caption{Modification apportée au \textit{linker}}
+\label{lst:mem:alloc:linker}
+\end{code} \bigbreak
 
-Code assembleur permettant de rendre accessible l'expression \mintinline{c}{kernel_end} :
+\begin{code}
 \begin{minted}[fontsize=\footnotesize,linenos,frame=single,tabsize=4]{text}
 extern kernel_end
 get_kernel_end:
     mov eax, kernel_end
     ret
 \end{minted}
+\caption{Code assembleur rendant accessible l'expression \mintinline{c}{kernel_end}}
+\label{lst:mem:alloc:kernel_end}
+\end{code} \bigbreak
 
 A partir de là, on peut définir la zone d'allocation mémoire aussi appelée tas
 (ou \textit{heap} en anglais). Dans notre \acrshort{os}, le tas commence à la

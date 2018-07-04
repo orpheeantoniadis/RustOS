@@ -29,39 +29,38 @@ objets générés par Rust.\cite{ref42}
 Nous avons vu dans la partie précédente que \acrshort{gcc} a besoin d'un fichier
 pour faire l'édition des liens. Si ce fichier n'est pas donné, il en utilise un par
 défaut. Le \textit{linker} permet de structurer le code par sections. Prenons
-pour exemple le \textit{script} utilisé pour ce projet.
+pour exemple le \textit{script} utilisé pour ce projet. \\
 
+\begin{code}
 \begin{minted}[fontsize=\footnotesize,linenos,frame=single,tabsize=4]{c}
 ENTRY(entrypoint)
+
 SECTIONS {
-  . = 1M;
-  .boot ALIGN(4):
-  {
-    *(.multiboot)
-  }
-  .stack ALIGN(4):
-  {
-    *(.stack)
-  }
-  .text ALIGN(4K) :
-  {
-    *(.text*)
-  }
-  .rodata ALIGN(4K) :
-  {
-    *(.rodata*)
-  }
-  .data ALIGN(4K) :
-  {
-    *(.data*)
-  }
-  .bss ALIGN(4K) :
-  {
-    *(COMMON)
-    *(.bss*)
-  }
+    . = 1M;
+    .boot ALIGN(4): {
+        *(.multiboot)
+    }
+    .stack ALIGN(4): {
+        *(.stack)
+    }
+    .text ALIGN(4K) : {
+        *(.text*)
+    }
+    .rodata ALIGN(4K) : {
+        *(.rodata*)
+    }
+    .data ALIGN(4K) : {
+        *(.data*)
+    }
+    .bss ALIGN(4K) : {
+        *(COMMON)
+        *(.bss*)
+    }
 }
 \end{minted}
+\caption{\textit{Linker script} du \textit{kernel}}
+\label{lst:exec:linking:script}
+\end{code} \bigbreak
 
 L'appel à \mintinline{c}{ENTRY} permet de spécifier l'entrée du \textit{kernel}.
 Pour un simple programme en C l'entrée serait le \textit{main}. Ici, ce sera

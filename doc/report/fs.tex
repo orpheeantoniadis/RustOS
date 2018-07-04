@@ -18,8 +18,8 @@ un système de fichiers. Une option de QEMU permet de mettre un système de fich
 dans le disque dur émulé à partir d'un fichier image. Ci-dessous la modification
 apportée à l'exécution du \textit{kernel}.
 
-\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single]{text}
-$(QEMU) -cdrom $(ISO) -hda $(FS)
+\begin{minted}[fontsize=\footnotesize,tabsize=4]{text}
+$ qemu-system-i386 -cdrom kernel.iso -hda fs.img
 \end{minted}
 
 L'option  \mintinline{text}{-cdrom} spécifie l'image \acrshort{iso} contenant
@@ -84,6 +84,8 @@ actuellement seulement 23 octets sont utilisés. Ci-dessous, les détails sur le
             510 & 2 & \mintinline{rust}{signature} & Signature (0x55aa) \\ \hline
 		\end{tabular}
 	}
+    \captionof{table}{Structure du \textit{superblock}}
+    \label{tab:fs:struct:superblock}
 \end{center}
 
 La table d'allocation de fichiers vient directement après le \textit{superblock}.
@@ -110,6 +112,8 @@ plus de détails sur la structure d'une entrée).
 			4 & \mintinline{rust}{size} & Taille du fichier \\ \hline
 		\end{tabular}
 	}
+    \captionof{table}{Structure d'une entrée dans l'espace de métadonnées}
+    \label{tab:fs:struct:entry}
 \end{center}
 
 Les blocs de données sont situés juste après le bloc de métadonnées. A noter de
@@ -187,10 +191,14 @@ sont fait par l'intermédiaire de ces registres. Un code d'exemple peut être tr
 sur le site OSDev \cite{ref24}. Deux fonctions ont été implémentées pour communiquer
 avec le controlleur de disque dont les prototypes sont ci-dessous.
 
-\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single]{rust}
+\begin{code}
+\begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single,linenos]{rust}
 pub fn read_sector(sector: u32, dst: *mut u16);
 pub fn write_sector(sector: u32, src: *mut u16);
 \end{minted}
+\caption{Prototypes des fonctions d'écriture/lecture dans le disque dur}
+\label{lst:fs:impl:rw}
+\end{code} \bigbreak
 
 Le système de fichiers actuel ne permet que la lecture, pas l'écriture.
 Seule la première fonction est donc utilisée par le \textit{kernel}. Ce dernier
