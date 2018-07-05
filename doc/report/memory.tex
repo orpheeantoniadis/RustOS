@@ -93,7 +93,7 @@ la mémoire physique \cite{ref66}. \\
 \end{figure}
 
 La figure \ref{logic_addr_conv} résume bien la conversion d'adresse logique en
-en adresse linéaire. On peut remarquer de plus que le sélecteur de segment passe
+adresse linéaire. On peut remarquer de plus que le sélecteur de segment passe
 par une table de descripteurs (\acrshort{gdt} ou \acrshort{ldt}) afin de trouver
 le bon segment dans la mémoire linéaire. En effet, Un sélecteur a une taille de
 16 bits et contient l'index d'un descripteur dans une table, un bit indiquant si
@@ -138,6 +138,8 @@ et \mintinline{text}{pop}) référencent le descripteur de segment sur lequel 
 le registre SS. Ces registres pointent sur des descripteurs de segments par l'intermédiaire
 de sélecteurs de segment. \\
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \subsubsection{\acrshort{gdt} et \acrshort{ldt}}
 \label{gdt_ldt}
 Nous avons pu voir que pour translater une adresse logique, des sélecteurs de
@@ -151,7 +153,7 @@ et les données d'une tâche utilisateur par exemple. Dans le cas où plusieurs 
 sont exécutées en même temps, une \acrshort{ldt} peut être créée par tâche ce qui
 permet en plus d'isoler le code de chaque processus. Une table de descipteurs
 est composée, comme son nom l'indique, de descripteurs. Chaque descripteur décrit
-une zone mémoire qui est défini par sa base (son adresse physique), sa limite (sa taille)
+une zone mémoire qui est définie par sa base (son adresse physique), sa limite (sa taille)
 et un niveau de privilèges (allant de 0 à 3, le niveau 0 ayant le plus de privilèges
 et le niveau 3 le moins). Ci dessous, la figure \ref{gdt} montre un exemple d'une
 \acrshort{gdt} \cite{ref42}. Etant donné que les descripteurs de la \acrshort{gdt}
@@ -173,7 +175,7 @@ Pour initialiser la \acrshort{gdt} il faut construire ses entrées. Chaque entr�
 mémoire. L'adresse de cette zone mémoire est sur 32 bits et sa taille est sur 20
 bits. Les bits restant sont des bits de contrôle pour l'accès aux données par
 exemple (niveau de privilèfes, droit d'écriture/lecture, ...). Voir la figure
-\ref{gdt_entry} pour plus de détails \cite{ref42,ref14}. \\
+\ref{gdt_entry} pour plus de détails \cite{ref42,ref14}. \newpage
 
 \begin{figure}[!h]
   \centering
@@ -207,7 +209,7 @@ de granularité à 1 pour avoir une limite en blocs de 4Ko. Ensuite, la limite d
 0x1000 soit 4Go. Le niveau de privilège doit être laissé à 0 (\textit{ring} 0)
 si on veut créer un segment pour le \textit{kernel} ou bien être mis à 3 (\textit{ring}
 3) si on veut créer un segment pour le mode utilisateur. Ci-dessous un exemple de
-code permettant de construire un segment de code et un segment de données. \\
+code permettant de construire un segment de code et un segment de données. \newpage
 
 \begin{code}
 \begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single,linenos]{rust}
@@ -424,6 +426,7 @@ sur le table des pages du \textit{kernel} ce qui peut être fait en écrivant 0
 dans cette entrée. Le code rust peut finalement être appelé avec la pagination
 active.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Allocation dynamique en mode \textit{kernel}}
