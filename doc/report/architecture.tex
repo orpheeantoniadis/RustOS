@@ -1,62 +1,70 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\subsection{Architecture de l'\acrshort{os}}
+Notre système d'exploitation a été conçu pour être utilisé sur un ordinateur
+disposant d'un proceseur Intel de la famille x86. L'architecture x86 regroupe
+plusieurs modes de fonctionnement. Les plus notables sont le \textit{real mode}
+(16 bits), le \textit{protected mode} (32 bits) et le \textit{long mode} (64 bits).
+Le mode réel n'est aujourd'hui plus utilisé mais tous les processeurs de la
+famille x86, même modernes, démarrent dans ce mode avant de changer de mode.
+Le système d'exploitation développé utilise le mode protégé. Cette architecture
+se nomme \acrshort{IA-32} (Intel Architecture 32 bits). Le jeu d'instructions
+x86 est donc utilisé. \\
+
+Le mode protégé offre deux mécanismes de gestion mémoire.
+Ces mécanismes sont la segmentation et la pagination. Ils sont tous deux gérés
+par l'\acrshort{os}. La gestion de la mémoire est traitée dans le chapitre \ref{memory}.
+Un processeur Intel 32 bits peut aussi communiquer avec de nombreux périphériques.
+Ceci se fait grâce à divers mécanismes comme les ports d'entrée/sortie ou
+les interruptions matérielles. Un de ces périphériques est le disque dur de
+l'ordinateur. Le disque dur doit avoir un système de fichiers pour être correctement
+utilisable par l'\acrshort{os}. Par exemple, le système de fichiers utilisé
+par Linux est ext2. Les périphériques et le système de fichiers sont décrits
+dans les chapitres \ref{peripherals} et \ref{fs}. Enfin, le mode protégé fournit
+un mécanisme de protection par niveau de privilèges. Ce mécanisme permet d'exécuter
+du code destiné à l'utilisateur et de garantir la sûreté du système. Le chapitre
+\ref{user} donne plus d'informations sur le mode utilisateur. Tous ces éléments
+sont gérés par le noyau (\textit{kernel} en anglais) du système d'exploitation.
+
+\begin{figure}[!h]
+    \centering
+    \includegraphics[scale=0.75]{images/kernel.png}
+    \caption{Architecture du système d'exploitation}
+    \label{os_arch}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \subsection{Environnement de développement}
 La machine utilisée pour le développement du projet est un MacBook Pro avec un
 processeur Intel à 3 GHz. Il a quand même fallut utiliser une machine virtuelle
 (VMware) utilisant Linux (Ubuntu 16.04.4 LTS) pour la compilation. Ce choix a été
 fait car il existe beaucoup plus de documentation sur l'implémentation de systèmes
-d'exploitation sur Linux que sur Mac. Bien que Mac \acrshort{os} soit un système UNIX, les
-exécutables générés sur cet environnement n'ont pas le même format que ceux générés
-sur Linux qui sont au format \acrshort{elf}. Ceci rend le développement d'\acrshort{os} légèrement
-différent sur Mac \acrshort{os}.
+d'exploitation sur Linux que sur Mac. Bien que Mac \acrshort{os} soit un système
+UNIX, les exécutables générés sur cet environnement n'ont pas le même format que
+ceux générés sur Linux qui sont au format \acrshort{elf}. Ceci rend le développement
+d'\acrshort{os} légèrement différent sur Mac \acrshort{os}. Linux est donc utilisé
+pour la compilation et l'exécution du système d'exploitation. \\
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Le code doit être compilé pour être exécutable sous une architecture \acrshort{IA-32}.
+La compilation du code Rust est expliquée dans le chapitre \ref{rust_compil}. Certaines
+parties du code du \textit{kernel} ont été écrites en assembleur car étant trop bas niveau
+pour Rust. Nasm a été  utilisé pour compiler le code assembleur x86 en \acrshort{elf}
+32 bits. Nasm produit des fichiers objets pouvant être liés à d'autres fichiers
+objets (comme ceux générés par Rust) afin de créer un exécutable. Tout le mécanisme
+de génération d'un \textit{kernel} exécutable est décrit en détail dans le chapitre
+\ref{execution}. Pour ce projet, une machine virtuelle est utilisée pour démarrer
+sur notre système d'exploitation. Cette machine virtuelle est QEMU. Elle peut
+émuler plusieurs architectures dont l'architecture i386 qui nous intéresse ici.
+QEMU peut démarrer un système d'exploitation depuis un fichier \acrshort{iso}
+ou bien directement depuis un exécutable au format \acrshort{elf}. Dans notre
+cas, un fichier \acrshort{iso} contenant le \textit{kernel} est généré.
 
-\subsection{Technologies}
-\label{technologies}
-\subsubsection{Nasm}
-Bien que le système d'exploitation développé devait être sur Rust, certaines parties
-ont du être faites en assembleur car étant trop bas niveau pour le Rust. Ces éléments
-seront décrits plus loin dans ce document. Nasm a été  utilisé pour compiler le
-code assembleur x86 en \acrshort{elf} 32-bits. Nasm produit des fichiers objets pouvant être
-liés à d'autres fichiers objets afin de créer un exécutable. \\
-
-\subsubsection{Rustup}
-Rust sera décrit plus en détails dans un prochain chapitre. Ce qu'il faut savoir
-est que Rust est distribué sous trois versions différentes. La version \textit{stable},
-la version \textit{beta} et la version \textit{nightly}. La version \textit{nightly}
-possède plus de fonctionnalités mais sa stabilité n'est pas garantie. Cette version
-a été utilisée pendant le développement du projet et l'utilitaire Rustup a été utilisé
-pour son installation. Cet utilitaire permet de simplifier l'installation de Rust
-quand on souhaite une version différente de la dernière version stable de Rust. \\
-
-\subsubsection{Cargo et Xargo}
-Lors du développement d'un système d'exploitation type \textit{bare metal}, on souhaite
-s'affranchir de toute dépendance à une librairie externe. Tout doit être refait depuis
-le début. Le code est donc compilé sans la bibliothèque standard (std). Rust a tout
-de même besoin d'une base pour être compilé. Cette base est fournie par la librairie
-\mintinline{rust}{core}. Cette librairie est minimale et permet de ne définir que
-les primitives de Rust. Pour gérer les dépendences d'un projet Rust, il est conseillé
-d'utiliser le gestionnaire de paquets cargo. Le problème est que cargo ne permet
-pas de lier la librairie \mintinline{rust}{core} à un projet. Heureusement, un 
-autre utilitaire basé sur cargo existe et permet d'installer par défaut la librairie
-\mintinline{rust}{core} pour des projets sans bibliothèque standard. Cet utilitaire
-se nomme xargo et est utilisé pour compiler le code Rust en fichiers objets \\
-
-\subsubsection{QEMU}
-\label{qemu}
-Le compilateur \acrshort{gcc} a été utilisé pour \textit{linker} les fichiers
-objet générés par nasm et xargo. \acrshort{gcc} génère un fichier au format \acrshort{elf}.
-Pour utiliser ce fichier comme un système d'exploitation \textit{bootable}, il faut
-en faire une image \acrshort{iso} \textit{bootable}. Pour se faire, l'utilitaire
-\mintinline{rust}{genisoimage} est utilisé, couplé au \textit{bootloader} \acrshort{grub}.
-L'image \acrshort{iso} est finalement exécutée par la machine virtuelle QEMU.
-QEMU est une machine virtuelle pouvant émuler une architecture. Pour ce projet,
-l'architecture i386 a été choisie afin d'émuler un processeur Intel 32-bits.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection{Architecture}
+\begin{figure}[!h]
+    \centering
+    \includegraphics[scale=0.75]{images/global_arch.png}
+    \caption{Architecture globale du projet}
+    \label{os_arch}
+\end{figure}

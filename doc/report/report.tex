@@ -3,6 +3,7 @@
 \usepackage{fontspec}
 \usepackage{enumitem}
 \usepackage{authblk}
+\usepackage{pdfpages}
 \usepackage{minted}
 \newminted{rust}{fontsize=\footnotesize,tabsize=4,frame=single,linenos}
 \newminted{shell}{tabsize=4}
@@ -47,6 +48,13 @@
 \begin{document}
 \maketitle
 
+\vspace*{\stretch{1}}
+\begin{figure}[!h]
+    \centering
+    \includegraphics[scale=0.6]{images/rustos.png}
+\end{figure}
+\vspace*{\stretch{1}}
+
 \begin{figure}[!b]
 	\centering
 	\begin{minipage}{.5\textwidth}
@@ -60,16 +68,8 @@
 \end{figure}
 \newpage
 
-\section*{Résumé}
-\addcontentsline{toc}{section}{Résumé}
-Le but de ce projet est d’étudier le langage Rust, en particulier son utilisation
-pour l’implémentation d’un système d’exploitation de type \textit{bare metal}. Le
-langage Rust se révèle particulièrement intéressant en tant que digne successeur de C :
-beaucoup plus robuste que ce dernier et potentiellement tout aussi rapide. La première
-partie du projet sera de comprendre les paradigmes de programmation utilisés par
-Rust ainsi que ses caractéristiques principales. Dans un deuxième temps, il s’agira
-d’implémenter un système d’exploitation très simple, similaire à celui réalisé au
-cours logiciel « Programmation système avancée » mais écrit en Rust plutôt qu’en C.
+\includepdf[pages=1]{../ITI_MAT_jour_enonce_diplome_Antoniadis_Gluck_2018.pdf}
+\addcontentsline{toc}{section}{Descriptif}
 
 \newpage
 \setcounter{tocdepth}{2}
@@ -105,11 +105,16 @@ Lors de la rédaction de ce document, les conventions typographiques ci-dessous 
     utilisation de paramètre, variable, ou commande utilisable par l’utilisateur, 
     est écrite avec la police d’écriture \mintinline{rust}{Courier New}.
 	\item Tout extrait de fichier ou de code est écrit selon le format suivant:
-\begin{minted}[linenos,frame=single,tabsize=4]{rust}
+\begin{rustcode}
 fn main() {
     println!("Hello, world!");
 }
-\end{minted}
+\end{rustcode}
+    \item Toute commande importante dans le cadre du projet est écrite selon le
+    format suivant:
+\begin{shellcode}
+$ echo Hello world!
+\end{shellcode}
 \end{itemize}
 \newpage
 
@@ -128,7 +133,7 @@ fn main() {
 \newacronym{vga}{VGA}{\textit{Video Graphics Array}}
 \newacronym{pio}{PIO}{\textit{Port Input/Output}}
 \newacronym{cpu}{CPU}{\textit{Central Processing Unit}}
-\newacronym{IA-32}{IA-32}{\textit{Intel Architecture, 32-bit}}
+\newacronym{IA-32}{IA-32}{\textit{Intel Architecture 32 bits}}
 \newacronym{ram}{RAM}{\textit{Random Access Memory}}
 \newacronym{mmu}{MMU}{\textit{Memory Management Unit}}
 \newacronym{ldt}{LDT}{\textit{Local Descriptor Table}}
