@@ -9,8 +9,8 @@ plusieurs modes de fonctionnement. Les plus notables sont le \textit{real mode}
 Le mode réel n'est aujourd'hui plus utilisé mais tous les processeurs de la
 famille x86, même modernes, démarrent dans ce mode avant de changer de mode.
 Le système d'exploitation développé utilise le mode protégé. Cette architecture
-se nomme \acrshort{IA-32} (Intel Architecture 32 bits). Le jeu d'instructions
-x86 est donc utilisé. \\
+se nomme \acrshort{IA-32} (Intel Architecture 32 bits, parfois appelée i386)
+\cite{ref42}. \\
 
 Le mode protégé offre deux mécanismes de gestion mémoire.
 Ces mécanismes sont la segmentation et la pagination. Ils sont tous deux gérés
@@ -25,7 +25,7 @@ dans les chapitres \ref{peripherals} et \ref{fs}. Enfin, le mode protégé fourn
 un mécanisme de protection par niveau de privilèges. Ce mécanisme permet d'exécuter
 du code destiné à l'utilisateur et de garantir la sûreté du système. Le chapitre
 \ref{user} donne plus d'informations sur le mode utilisateur. Tous ces éléments
-sont gérés par le noyau (\textit{kernel} en anglais) du système d'exploitation.
+sont gérés par le noyau (\textit{kernel} en anglais) du système d'exploitation \cite{ref42}.
 
 \begin{figure}[!h]
     \centering
@@ -38,6 +38,7 @@ sont gérés par le noyau (\textit{kernel} en anglais) du système d'exploitatio
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Environnement de développement}
+\label{sec:arch:host}
 La machine utilisée pour le développement du projet est un MacBook Pro avec un
 processeur Intel à 3 GHz. Il a quand même fallut utiliser une machine virtuelle
 (VMware) utilisant Linux (Ubuntu 16.04.4 LTS) pour la compilation. Ce choix a été
@@ -50,21 +51,42 @@ pour la compilation et l'exécution du système d'exploitation. \\
 
 Le code doit être compilé pour être exécutable sous une architecture \acrshort{IA-32}.
 La compilation du code Rust est expliquée dans le chapitre \ref{rust_compil}. Certaines
-parties du code du \textit{kernel} ont été écrites en assembleur car étant trop bas niveau
-pour Rust. Nasm a été  utilisé pour compiler le code assembleur x86 en \acrshort{elf}
-32 bits. Nasm produit des fichiers objets pouvant être liés à d'autres fichiers
-objets (comme ceux générés par Rust) afin de créer un exécutable. Tout le mécanisme
-de génération d'un \textit{kernel} exécutable est décrit en détail dans le chapitre
-\ref{execution}. Pour ce projet, une machine virtuelle est utilisée pour démarrer
-sur notre système d'exploitation. Cette machine virtuelle est QEMU. Elle peut
-émuler plusieurs architectures dont l'architecture i386 qui nous intéresse ici.
-QEMU peut démarrer un système d'exploitation depuis un fichier \acrshort{iso}
-ou bien directement depuis un exécutable au format \acrshort{elf}. Dans notre
-cas, un fichier \acrshort{iso} contenant le \textit{kernel} est généré.
+parties du code du \textit{kernel} ont été écrites en assembleur car sont trop
+bas niveau pour Rust. Il faut donc compiler le code Rust avec le code assembleur.
+Tout le mécanisme de génération d'un \textit{kernel} est détaillé
+dans le chapitre \ref{execution}. Dans ce projet, une machine
+virtuelle est utilisée pour démarrer sur notre système d'exploitation. Cette machine
+virtuelle est QEMU. Elle peut émuler plusieurs architectures dont l'architecture
+i386 qui nous intéresse ici. QEMU peut démarrer sur un système d'exploitation depuis
+un fichier \acrshort{iso}. La figure \ref{global_arch} illustre ce comportement \cite{ref42}.
 
 \begin{figure}[!h]
     \centering
-    \includegraphics[scale=0.75]{images/global_arch.png}
+    \includegraphics[scale=0.65]{images/global_arch.png}
     \caption{Architecture globale du projet}
-    \label{os_arch}
+    \label{global_arch}
 \end{figure}
+
+D'un côté nous avons la machine de développement (ou machine hôte) contenant tous
+les fichiers servant à compiler le \textit{kernel}. De l'autre il y a QEMU qui
+démarre le système d'exploitation à partir du \textit{kernel}. Les fichiers côté
+machine de développement sont ordonnés d'une manière bien précise \cite{ref42}.
+
+\begin{center}
+	\scalebox{0.8}{
+		\begin{tabular}{| l | l | }
+			\hline
+			Répertoire & Description \\ \hline
+			\mintinline{text}{common} & Fichiers communs entre le \textit{kernel}
+            et les applications utilisateurs \\ \hline
+			\mintinline{text}{grub} & Fichiers de configuration du \textit{bootloader}
+            \acrshort{grub} \\ \hline
+			\mintinline{text}{kernel} & Code source du \textit{kernel} \\ \hline
+			\mintinline{text}{tools} & Codes source des différents outils développés
+            pour l'\acrshort{os} \\ \hline
+			\mintinline{text}{user} & Codes source des des applications utilisateurs \\ \hline
+		\end{tabular}
+	}
+    \captionof{table}{Structure du projet}
+    \label{tab:project_struct}
+\end{center}
