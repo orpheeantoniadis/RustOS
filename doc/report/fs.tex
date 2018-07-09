@@ -5,7 +5,7 @@
 \subsection{Introduction}
 Dans le chapitre \ref{peripherals} qui traite le sujet des périphériques, nous
 avons vu très brièvement qu'un processeur \acrshort{IA-32} peut avoir un controlleur
-de disque dur. Actuellement, tout le \textit{kernel} et ses dépendences sont
+de disque dur. Actuellement, tout le \textit{kernel} et ses dépendances sont
 stockés dans la \acrshort{ram}. Si on veut plus tard exécuter des programmes utilisateur
 ou lire et écrire des fichiers texte, il est nécessaire d'avoir un disque dur.
 Un disque dur permet de stocker des fichiers qui pourront être lus par l'\acrshort{os}
@@ -125,7 +125,7 @@ dans le \textit{superblock} permettent de localiser le bloc de métadonnées. Le
 fichier demandé est trouvé en parcourant ce bloc et son premier bloc de données
 peut ainsi être lu. Il reste toujours un problème si le fichier a une taille supérieure
 à la taille d'un bloc. C'est là que la table d'allocation peut être
-utilisée. En effet, l'entrée de de la table d'allocation correspondant au bloc
+utilisée. En effet, l'entrée de la table d'allocation correspondant au bloc
 de données peut soit pointer sur le bloc suivant, soit indiquer que ce bloc est
 le dernier de la chaîne. \newpage
 
@@ -136,14 +136,14 @@ le dernier de la chaîne. \newpage
   \label{microfs}
 \end{figure}
 
-La figure \ref{microfs} donne un exemple de comment pourrait fonctionner le système
+La figure \ref{microfs} donne un exemple de contenu du système
 de fichiers développé. Dans cet exemple, la taille d'un bloc est la même que la
 taille d'un secteur. Le système de fichiers contient quatre fichiers. Le premier,
 \mintinline{text}{splash.txt}, rentre dans un seul bloc. La chaîne d'allocation
 s'arrête dès la première entrée avec un 0x0 écrit dans l'entrée 0x3 de la table
 d'allocation. Prenons maintenant le deuxième fichier, \mintinline{text}{shell.exe}.
 Ce fichier a besoin de quatre blocs pour être stocké. Dans la table d'allocation,
-on voit que le premier bloc de ce fichier qui d'indice 0x4 pointe sur le bloc
+on voit que le premier bloc de ce fichier (d'indice 0x4) pointe sur le bloc
 d'indice 0x5. En suivant ainsi la chaîne d'allocation, on peut retrouver l'intégralité
 des blocs de données à partir de leurs indices. Cet exemple montre aussi que la
 \acrshort{fat} permet de stocker les fichiers de manière discontinue. Le fichier
@@ -160,9 +160,9 @@ par conséquent depuis la machine hôte et le gestionnaire de paquet de rust, ca
 peut être utilisé normalement. L'outil développé possède deux
 modes de fonctionnement. Soit à l'aide d'un menu soit directement en ligne de
 commande en spécifiant certaines options. Les deux modes de fonctionnement
-font exactement la même chose soit manipuler un fichier image donné. Cet outil permet
-de créer un système de fichiers vide, d'ajouter et de supprimer un fichier, de
-lister l'intégralité des fichiers contenus dans le système de fichiers et enfin
+font exactement la même chose. Ils manipulent un fichier image donné.
+Cet outil permet de créer un système de fichiers vide, d'ajouter et de supprimer
+un fichier, de lister l'intégralité des fichiers contenus dans le système de fichiers et enfin
 d'afficher les informations du \textit{superblock}. La gestion des arguments en
 ligne de commande se fait à l'aide du paquet \mintinline{text}{clap} installé avec
 cargo. Le menu avec les différentes options décrites se présente comme sur la figure

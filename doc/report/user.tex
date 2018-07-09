@@ -27,7 +27,7 @@ aux périphériques, définir les vecteurs d'interruptions ou encore arrêter le
 processeur. L'\acrshort{os} démarre en mode privilégié car le \textit{kernek} doit
 pouvoir accéder au matériel sans aucune restriction. Si ce n'était pas le cas toutes
 les configurations de la mémoire et des périphériques décrites dans ce document
-auraient été impossibles. En revanche, Les applications utilisateur s'exécutent
+auraient été impossibles. En revanche, Les applications utilisateurs s'exécutent
 en mode utilisateur (\textit{ring} 3). Si une application utilisateur démarrait
 avec le niveau de privilèges maximal, elle pourrait écrire dans les régions mémoires
 du \textit{kernel}, modifier la configuration de la mémoire (\acrshort{gdt} ou 
@@ -47,7 +47,7 @@ L'architecture \acrshort{IA-32} implémente la gestion des tâches au niveau mat
 Une tâche doit être constituée d'un espace d'exécution et d'une structure \acrshort{tss}.
 L'espace d'exécution est constitué d'un segment de code, d'un segment de données
 et d'un segment de pile. La manière dont ces segments sont définis dépend de la
-méthode de gestion mémoire utilisée. Si la pagination n'est pas utilisée, ces segment
+méthode de gestion mémoire utilisée. Si la pagination n'est pas utilisée, ces segments
 seront définis par une \acrshort{ldt}. Avant d'implémenter la pagination, cette
 méthode était utilisée par notre \textit{kernel} pour gérer l'espace d'adressage
 d'une tâche. Avec la pagination, deux segments en \textit{ring} 3 sur tout l'espace
@@ -151,7 +151,7 @@ utilisateur contenu par exemple dans le disque dur peut ainsi être exécuté en
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Appels systèmes}
-Les appels systèmes sont des fonctions exposées aux applications utilisateur par
+Les appels systèmes sont des fonctions exposées aux applications utilisateurs par
 le \textit{kernel}. Lors d'un appel système, un changement de privilèges a lieu
 car du code du \textit{kernel} est appelé. Il est important d'avoir des appels
 systèmes dans un \textit{kernel} appelant des applications utilisateurs car
@@ -160,7 +160,7 @@ fonctions s'il ne pouvait pas appeler du code au niveau du \textit{kernel}. Pren
 par exemple un simple affichage texte. Le programme utilisateur étant isolé du reste
 de la mémoire, il ne peut pas accéder à la \acrshort{vram} et par conséquent ne
 peut rien afficher à l'écran. Les appels systèmes se présentent donc comme une
-\acrshort{api} de l'\acrshort{os}. Le mécanisme permettant à du code exécuté en
+\acrshort{api} de l'\acrshort{os}. Le mécanisme permettant au code exécuté en
 mode utilisateur d'appeler du code en mode \textit{kernel}
 est réalisé grâce à une interruption logicielle choisie et configurée par le \textit{kernel}.
 Cette interruption est configurée afin d'être exécutable en \textit{ring} 3.
@@ -188,7 +188,7 @@ cette interruption. Ainsi, cette interruption peut être appelée avec l'instruc
 les appels systèmes. Ceci est possible car un numéro d'appel système est passé en
 argument à la routine d'interruption qui s'occupe d'appeler la bonne fonction.
 En général, d'autres paramètres doivent être passés à l'appel système dépendamment
-de l'action faite par ce dernier. Par exemple un chaîne de caractères à afficher
+de l'action faite par ce dernier. Par exemple une chaîne de caractères à afficher
 à l'écran. Tous ces paramètres sont envoyés à la routine d'interruption dans les
 registres du processeur (\mintinline{text}{eax}, \mintinline{text}{ebx}, \mintinline{text}{ecx},
 \mintinline{text}{edx} et \mintinline{text}{esi}).
@@ -213,8 +213,8 @@ et le reste par le \textit{kernel}.
 \subsection{Allocation dynamique en mode utilisateur}
 \label{alloc_user}
 Le concept d'allocation dynamique a été expliqué dans le chapitre \ref{alloc_kernel}.
-Les fonction décrites dans ce chapitre permettent seulement d'allour de la mémoire
-en mode \textit{kernel}. Les tâches utilisateur pourraient très bien se passer
+Les fonction décrites dans ce chapitre permettent seulement d'allouer de la mémoire
+en mode \textit{kernel}. Les tâches utilisateurs pourraient très bien se passer
 d'allocation dynamique et utiliser des structures statiques à la place. C'est
 d'ailleurs de cette manière qu'avaient été implémentées les tâches dans une version
 précédente de l'\acrshort{os}. Le problème qu'il y a avec l'utilisation de structures
@@ -289,7 +289,7 @@ Par défaut, le compilateur cherche la \mintinline{text}{GLOBAL_OFFSET_TABLE}
 qui n'existe pas lorsque le format de l'exécutable est un format binaire.
 Ce \textit{flag} va dire au compilateur d'ignorer ce mécanisme \cite{ref25}.
 De cette façon, un programme utilisateur peut être compilé mais sa taille sera
-excessivement grande (dans l'ordre des 100'000 octets). Ceci est du à plusieurs
+excessivement grande (dans l'ordre des 100'000 octets). Ceci est dû à plusieurs
 raisons. Tout d'abord, rust est compilé par défaut sans aucune option d'optimisation.
 Le \textit{flag} \mintinline{text}{-C opt-level=3} fixe un niveau d'optimisation
 de 3 (plus haut niveau d'optimisation). Un peu plus d'optimisation peut être
@@ -340,7 +340,7 @@ offre les fonctionnalités suivantes.
 			\mintinline{rust}{putc} & Affiche un caractère \\ \hline
 			\mintinline{rust}{exec} & Exécute un programme utilisateur contenu
             dans le disque dur \\ \hline
-            \mintinline{rust}{keypressed} & Indique si une touche tu clavier a
+            \mintinline{rust}{keypressed} & Indique si une touche du clavier a
             été appuyée \\ \hline
             \mintinline{rust}{getc} & Fonction bloquante. Retourne la touche
             appuyée par l'utilisateur \\ \hline
@@ -384,7 +384,7 @@ l'appel système pour allouer une page est appelé autant de fois que nécessair
 Cette gestion utilise des entêtes qui fonctionnent exactement comme ceux du
 \textit{heap} du \textit{kernel} décrits en \ref{alloc_kernel}. La seule différence
 est que l'espace alloué n'est pas aligné sur 4096 octets (la taille d'une page)
-car l'utilisateur aura tendance à allouer des espace plus petits et cela produirait
+car l'utilisateur aura tendance à allouer des espaces plus petits et cela produirait
 une trop grande perte de mémoire. De plus, si l'espace alloué était alligné sur
 la taille d'une page, un appel système aurait lieu à chaque allocation ce qui n'est
 pas souhaitable.
@@ -395,7 +395,7 @@ Actuellement, les applications utilisateurs ne peuvent être appélées que depu
 le \textit{kernel}. Ceci n'est pas très pratique d'un point de vue utilisateur.
 Afin d'avoir un système d'exploitation un peu plus intéractif, un shell très
 simple a été développé. Ce shell permet de lire les fichiers du disque dur et
-d'exécuter d'autres applications utilisateur. Le shell implémenté propose
+d'exécuter d'autres applications utilisateurs. Le shell implémenté propose
 les fonctionallités suivantes.
 
 \begin{itemize}[label=\textbullet]

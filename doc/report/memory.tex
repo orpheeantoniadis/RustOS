@@ -7,8 +7,8 @@ Le système d'exploitation développé est exécuté sur une architecture \acrsh
 (Intel 32-bits) aussi appelée i386. La mémoire est donc adressée sur 32 bits.
 $2^{32}=4Go$, on peut en déduire que la taille totale de la mémoire adressable est
 de 4Go dans notre système d'exploitation. Avoir un espace adressable de 4Go ne veut
-pas forcément dire que la mémoire physique (\acrshort{ram}) est de 4Go aussi. En
-réalité, la taille de la \acrshort{ram} dépend du \textit{hardware}. Dans notre
+pas forcément dire que la mémoire physique (\acrshort{ram}) est également de 4Go.
+En réalité, la taille de la \acrshort{ram} dépend du \textit{hardware}. Dans notre
 cas le matériel est émulé par QEMU. La taille de la mémoire physique de notre \acrshort{os}
 dépend de la configuration de l'émulateur. Ces 4Go sont donc virtuels. Lorsqu'une
 tache est exécutée, elle est chargée en mémoire et est définie par la paire base
@@ -24,9 +24,9 @@ processus \cite{ref42}.
 \end{figure}
 
 Une tache possède son propre espace d'adressage dit virtuel. Pour le processus 2
-de la figure \ref{ex_base_limit}, l'adresse $0$ est en fait à l'adresse physique
-$300040$. Il y a donc besoin de translater l'adresse virtuelle en adresse physique.
-C'est là qu'entre en jeu le \acrshort{mmu} (Memory Mangement Unit). Le \acrshort{mmu}
+de la figure \ref{ex_base_limit}, l'adresse 0 est en fait à l'adresse physique
+300'040. Il y a donc besoin de translater l'adresse virtuelle en adresse physique.
+C'est là qu'entre en jeu le \acrshort{mmu} (\textit{Memory Mangement Unit}). Le \acrshort{mmu}
 est un dispositif matériel permettant de faire cette translation d'adresses. A chaque
 référencement mémoire, il va convertir l'adresse virtuelle en adresse physique et
 regarder si elle ne dépasse pas la limite du processus. Le \acrshort{mmu} permet donc
@@ -96,7 +96,7 @@ la mémoire physique \cite{ref66}. \\
 La figure \ref{logic_addr_conv} résume bien la conversion d'adresse logique en
 adresse linéaire. On peut remarquer de plus que le sélecteur de segment passe
 par une table de descripteurs (\acrshort{gdt} ou \acrshort{ldt}) afin de trouver
-le bon segment dans la mémoire linéaire. En effet, Un sélecteur a une taille de
+le bon segment dans la mémoire linéaire. En effet, un sélecteur a une taille de
 16 bits et contient l'index d'un descripteur dans une table, un bit indiquant si
 le descripteur est dans la \acrshort{gdt} ou dans une \acrshort{ldt} et enfin son
 niveau de privilège allant de 0 à 3 (figure \ref{seg_sel}) \cite{ref42}.
@@ -130,7 +130,7 @@ chacun une taille de 16 bits (même taille qu'un sélecteur de segment) \cite{re
 
 En mode protégé (32-bits), ces registres doivent pointer sur des descripteurs
 de segment de la \acrshort{gdt}. Au minimum les trois premiers registres décrits
-doivent être utilisé en mode protégé (CS, DS, et SS). Les opérations adressant
+doivent être utilisés en mode protégé (CS, DS, et SS). Les opérations adressant
 le code (décodage des instructons en mémoire, sauts, etc...) référencent le descripteur
 de segment sur lequel pointe le registre CS. Les opérations adressant les données
 (adressage de variables ou d'adresses mémoires) référencent le descripteur de segment
@@ -273,7 +273,7 @@ fait le décallage.
 
 \subsection{Pagination}
 \subsubsection{Principe général}
-La pagination est une autres technique de gestion de mémoire qui diffère de la
+La pagination est une autre technique de gestion de mémoire qui diffère de la
 segmentation. Alors que la segmentation permet d'allouer des morceaux de mémoire
 de taille variable, la pagination divise la mémoire en blocs de taille fixe appelés
 pages (de 4Ko, 2Mo ou 4Mo). De plus, la segmentation est obligatoire dans une
@@ -443,7 +443,7 @@ pour allouer de plus grandes régions mémoire comme par exemple du code utilisa
 qui peut faire plusieurs kilooctets. Pour implémenter l'allocation de mémoire
 dynamique, il faut dans un premier temps définir quelle zone mémoire peut être
 utilisée dans ce but. Actuellement, la totalité du code et des données est contenu
-dans le \textit{kernel}. Des zone mémoire peuvent donc commencer à être allouées
+dans le \textit{kernel}. Des zones mémoires peuvent donc commencer à être allouées
 à la fin de ce dernier. Le \textit{linker} a été légèrement modifié afin d'obtenir
 l'adresse de la fin du \textit{kernel}. Ceci peut se faire en ajoutant une expression
 au \textit{linker} et en la rendant accessible depuis le code assembleur. \\
@@ -479,7 +479,7 @@ page, il ira chercher le prochain bloc libre dans le tas situé donc entre la fi
 du \textit{kernel} et la fin de la mémoire physique. La recherche de bloc libre
 se complexifie rapidement si des blocs sont libérés. De nombreuses méthodes sont
 possibles pour la recherche de bloc libre et la gestion des blocs libérés. Le
-\textit{kernel} développé utilisé une liste doublement chaînée pour gérer la
+\textit{kernel} développé utilise une liste doublement chaînée pour gérer la
 mémoire dynamique. Chaque bloc mémoire alloué est précédé d'un entête contenant
 l'adresse du bloc précédent sur 32 bits, l'adresse du bloc suivant sur 32 bits,
 sa taille en octets sur 32 bits et un booléen indiquant si le bloc est libre ou
@@ -496,7 +496,7 @@ Le tas ainsi construit, avec chaque entête lié à ses voisins par des pointeur
 permet de rechercher aisément un bloc libre. Un nouvel entête est créé quand le
 dernier bloc de la liste chaînée est alloué. Un algorithme a aussi été implémenter
 pour la gestion de mémoire libérée. Si un bloc est libéré au milieu de blocs
-alloués ce blocs est simplement marqué comme libre (en utilisant le booléen \textit{free}
+alloués ce bloc est simplement marqué comme libre (en utilisant le booléen \textit{free}
 de l'entête). Si deux blocs libres sont contiguës, ils sont fusionnés pour n'en
 former qu'un seul. Dans le \textit{kernel}, la fonction pour l'allocation est
 \mintinline{rust}{kmalloc} et la fonction pour la libération est \mintinline{rust}{kfree}.
@@ -519,7 +519,7 @@ comme argument cette adresse pour libérer la mémoire.
 Voyons maintenant un exemple d'allocation et de libération mémoire utilisant les
 deux algorithmes décrits ci-dessus. Dans cet exemple, nous allons allouer plusieurs
 blocs mémoire puis les libérer afin de voir plus en détail le comportement
-de ces fonctions. Nous allons supposé que la fin du \textit{kernel} se situe
+de ces fonctions. Nous allons supposer que la fin du \textit{kernel} se situe
 à l'adresse 0x3FC000 et que la fin de la \acrshort{ram} se situe à l'adresse
 0x1000000. A l'initialisation du \textit{kernel}, un premier entête est créé au
 début de la zone d'allocation dynamique. Ce premier entête est donc situé à
@@ -535,11 +535,11 @@ de la parcourir.
 \end{figure}
 
 Si le \textit{kernel} a besoin d'allouer une nouvelle page maintenant, la fonction
-\ref{kmalloc} va être appelée qui va parcourir les blocs libre. Dans ce cas précis,
+\ref{kmalloc} va être appelée qui va parcourir les blocs libres. Dans ce cas précis,
 l'intégralité du tas est disponible donc la fonction va simplement créer un nouveau
-bloc. Dans la figure \ref{alloc1}, les blocs libre sont en vert et les blocs alloués
+bloc. Dans la figure \ref{alloc1}, les blocs libres sont en vert et les blocs alloués
 sont en rouge. A noter que que les blocs aloués sont alignés avec la taille d'une
-page (4096Ko ou 0x1000 en hexadécimal). Etant donné qu'il faut compté l'entête
+page (4096Ko ou 0x1000 en hexadécimal). Etant donné qu'il faut compter l'entête
 de 16 octets, il faudra toujours allouer une page de plus.
 
 \begin{figure}[!h]
@@ -552,7 +552,7 @@ de 16 octets, il faudra toujours allouer une page de plus.
 Si le \textit{kernel} a de nouveau besoin d'une page, on va se retrouver dans la
 situation où il n'y a plus assez de place dans la table des pages. Pour rappel,
 une table des pages a une taille de 4Mo (0x400000 en hexadécimal). Comme expliqué
-avec la figure \ref{kmalloc}, la fonction d'allocation va se charge toute seule
+avec la figure \ref{kmalloc}, la fonction d'allocation va se charger toute seule
 de créer une nouvelle table des pages et de l'ajouter au répertoire de pages.
 La page demandée par le \textit{kernel} sera ensuite allouée. On obtient donc
 la liste de la figure \ref{alloc2}, avec deux blocs alloués au lieu d'un seul.

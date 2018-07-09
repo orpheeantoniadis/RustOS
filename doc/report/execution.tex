@@ -9,12 +9,12 @@ est ensuite envoyé pour charger le \acrshort{bios}. Le \acrshort{bios} est le
 \textit{firmware} du \acrshort{pc}, il est localisé en mémoire flash de la carte
 mère. Il a pour rôle de vérifier que chaque périphérique est alimenté et qu'il
 n'y a pas de problème avec la mémoire puis il initialise le \textit{hardware}.
-Ensuite, le \acrshort{bios} charge le \acrshort{mbr} depuis le premier disque.
+Ensuite, le \acrshort{bios} charge le \acrshort{mbr} depuis le premier disque dur.
 Le \acrshort{mbr} est situé dans les 512 premiers octets du disque et il contient
 le \textit{bootloader} du système qui est un morceau de code exécutable. Le
 \textit{bootloader} a pour tâche de localiser l'image du \textit{kernel} pour le
 charger en mémoire. Il passe ensuite le \acrshort{cpu} en mode protégé (32 bits) 
-puis exécute le code du \textit{kernel}. La figure \ref{fig:exec:boot} résume tout
+puis exécute le code du \textit{kernel}. La figure ci dessous résume tout
 ce processus appelé \textit{boot} en anglais \cite{ref42}.
 
 \begin{figure}[!h]
@@ -27,7 +27,7 @@ ce processus appelé \textit{boot} en anglais \cite{ref42}.
 Pour rappel, nous utilisons le logiciel QEMU, qui émule le comportement d'une
 machine physique. Pour exécuter notre \textit{kernel} sur QEMU, il faut d'abord
 compiler ses sources en un exécutable au format \acrshort{elf}. Une image \acrshort{iso}
-doit ensuite être générée à partir de ce fichier. Cette image doit contenir le
+est ensuite générée à partir de ce fichier. Cette image doit contenir le
 \textit{kernel} et le \textit{bootloader} de notre système d'exploitation.
 Il est possible d'écrire son propre \textit{bootloader} mais c'est une démarche
 assez complexe. Il existe de nombreux \textit{bootloaders open source}. Celui
@@ -54,7 +54,7 @@ Ce compilateur génère des fichiers objets à partir de programmes écrits en a
 x86. La compilation du code Rust est décrit en détail dans le chapitre \ref{rust_compil}.
 Etant donné que nous voulons lier le code assembleur au code Rust, il faut que
 ce dernier soit compilé en fichier objet. Ceci peut être fait en rajoutant une section
-dans le fichier \mintinline{text}{Cargo.toml} (voir listing \ref{lst:exec:cargotoml}).
+dans le fichier \mintinline{text}{Cargo.toml} (voir \textit{listing} \ref{lst:exec:cargotoml}).
 
 \begin{code}
 \begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single,linenos]{text}
@@ -98,14 +98,14 @@ pub extern "C" fn __floatundisf() {
     loop {}
 }
 \end{rustcode}
-\caption{Exemple de structure en Rust}
+\caption{Fichier principal du \textit{kernel}}
 \label{lst:exec:kmain}
 \end{code} \bigbreak
 
 La fonction \mintinline{rust}{panic_fmt()} est utilisée par Rust quand le programe
 panique. La fonction \mintinline{rust}{__floatundisf()} est utilisée pour faire
 des calculs avec nombres flottants \cite{ref6}. Sans librairie standard, il faut
-les déclarer. On constate de plus que beaucoup d'attributs sont utilisés. Les
+les déclarer. On constate que beaucoup d'attributs sont utilisés. Les
 attributs préfixés de "\mintinline{text}{#!}" sont appliqués à l'intégralité de
 la \textit{crate}. Un attribut simplement préfixé d'un '\mintinline{text}{#}' ne
 s'applique qu'à la fonction qui lui est associée. L'attribut \mintinline{rust}{no_std}
@@ -126,7 +126,7 @@ depuis le \textit{bootstrap} en assembleur.
 \label{linking}
 Nous avons vu que \acrshort{nasm} et Xargo sont utilisés pour générer des fichiers
 objets. Nous avons d'un côté les fichiers objets du code assembleur et de l'autre
-les fichiers objets du code Rust. Comme déjà expliqué dans la partie précédente,
+les fichiers objets du code Rust. Comme expliqué précédemment,
 ces fichiers doivent être liés en utilisant un \textit{linker}. Le compilateur
 \acrshort{gcc} est utilisé comme \textit{linker} pour notre \textit{kernel}.
 Pour faire l'édition des liens, \acrshort{gcc} utilise un fichier spécifique nommé
@@ -134,7 +134,7 @@ Pour faire l'édition des liens, \acrshort{gcc} utilise un fichier spécifique n
 défaut. C'est en général ce qui est fait quand on compile un simple programme C.
 Le \textit{linker script} permet de structurer le code par sections. Notre
 \acrshort{os} doit avoir une structure bien précise, nous avons donc besoin de
-notre propre \textit{linker script}. Le listing \ref{lst:exec:linking:script}
+notre propre \textit{linker script}. Le \textit{listing} \ref{lst:exec:linking:script}
 contient le \textit{script} utilisé pour ce projet. \\
 
 \begin{code}
@@ -180,10 +180,10 @@ de chaque section \cite{ref42,ref9,ref10,ref11}.
     \label{tab:exec:linker_sections}
 \end{center}
 
-A noter que les sections commencent avec un \textit{offset} de un mégaoctet. Il
+A noter que les sections commencent avec un \textit{offset} d'un mégaoctet. Il
 est nécessaire de placer le \textit{kernel} après cette adresse car le premier
-mégaoctet est une zone réservée \cite{ref42,ref13}. La mémoire vidéo (\acrshort{vram})
-se situe par exemple dans cette zone. La commande pour lier les fichiers objets
+mégaoctet est une zone réservée \cite{ref42,ref13}. Par exemple, la mémoire vidéo
+(\acrshort{vram}) se situe dans cette zone. La commande pour lier les fichiers objets
 avec le \textit{linker script} est la suivante.
 
 \begin{minted}[fontsize=\footnotesize,tabsize=4]{text}

@@ -8,14 +8,14 @@ le C ou le C++. Les trois caractéristiques mises en valeur par l'équipe de Rus
 sont la rapidité, la sécurité (prévient des erreurs de segmentation) et la concurrence
 (garantit la sûreté entre \textit{threads}) \cite{ref27}. La première version
 de Rust est sortie en janvier 2012 \cite{ref28}. Ce langage est donc très récent
-et emprunte beaucoup de concepts de programmation d'autres langages. Une première
+et emprunte beaucoup de concepts de programmation à d'autres langages. Une première
 partie de ce projet a été un travail de recherche afin d'apprendre ce langage.
 Beaucoup de documentation est disponible sur le site de Rust dont le livre
 de Rust, \textit{The Rust Programming Language}, sorti en deux éditions différentes
 (\href{https://doc.rust-lang.org/book/first-edition}{\textit{First Edition}} et
 \href{https://doc.rust-lang.org/book/second-edition}{\textit{Second Edition}}).
 Ce livre est disponible en ligne et est une très bonne introduction au langage.
-Il donne beaucoup d'exemples et permet rapidement de comprendre le fonctionnement de
+Il donne beaucoup d'exemples et permet de comprendre rapidement le fonctionnement de
 Rust.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -62,7 +62,7 @@ fn main() {
 \end{code} \bigbreak
 
 Le mot-clé \mintinline{rust}{let} indique qu'une variable est déclarée. On remarque
-qu'aucun type n'est donné dans la déclaration. L'inférence de types est un des
+qu'aucun type n'est donné dans la déclaration. L'inférence de types est l'un des
 nombreux concepts utilisés par Rust. L'équivalent en C serait
 \mintinline{c}{char hello[] = "Hello world!"}. Le programme affiche ensuite cette
 variable sur la sortie standard en utilisant la macro \mintinline{rust}{println!}.
@@ -71,16 +71,16 @@ distinguer des fonctions par la manière dont elles sont appelées. L'appel d'un
 macro se fait avec son nom suivi d'un '!'. Ce programme affiche donc "Hello world!"
 sur la sortie standard. Pour générer un exécutable à partir de ce code, le compilateur
 de Rust, rustc peut être utilisé avec la commande \mintinline{shell}{rustc hello.rs}.
-Cette méthode marche bien lorsqu'on ne veut compiler qu'un seul fichier
-comme dans cet exemple. Cela devient vite compliqué lorsqu'il faut gérer des dépendences
-entre plusieurs fichiers et utiiser des librairies externes. Heureusement,
-une solution existe pour résoudre ce problème. Rust fournie un gestionnaire
+Cette méthode fonctionne bien lorsqu'on ne veut compiler qu'un seul fichier
+comme dans cet exemple. Cela devient vite compliqué lorsqu'il faut gérer des dépendances
+entre plusieurs fichiers et utiliser des librairies externes. Heureusement,
+une solution existe pour résoudre ce problème. Rust fournit un gestionnaire
 de paquets nommé Cargo.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsubsection{Cargo}
-Le gestionnaire de paquets de Rust, Cargo, peut non seulement gérer les dépendences
+Le gestionnaire de paquets de Rust, Cargo, peut non seulement gérer les dépendances
 d'un projet mais s'occupe aussi de sa compilation \cite{ref3}. Cargo est installé
 en même temps que Rust, il n'y a donc pas de manipulations supplémentaires à faire
 pour l'utiliser. Cargo fonctionne à l'aide d'un fichier de configuration du projet
@@ -101,7 +101,7 @@ authors = ["Your Name <you@example.com>"]
 \label{lst:rust:cargotoml}
 \end{code} \bigbreak
 
-Cargo compile et gère automatiquement les dépendences de tous les fichiers contenus
+Cargo compile et gère automatiquement les dépendances de tous les fichiers contenus
 dans le répertoire \mintinline{text}{src}. Si on reprend l'exemple du \textit{listing}
 \ref{lst:rust:hello}, un projet utilisant Cargo aurait l'arborescence suivante. \\
 
@@ -112,13 +112,13 @@ dans le répertoire \mintinline{text}{src}. Si on reprend l'exemple du \textit{l
 .3 \mintinline{text}{main.rs}.
 } \bigbreak
 
-Des dépendences externes (appelées \textit{crates}) peuvent être utilisées dans
+Des dépendances externes (appelées \textit{crates}) peuvent être utilisées dans
 le projet en les ajoutant dans le fichier \acrshort{toml}, sous la section \textit{dependencies}.
 Une \textit{crate} peut être en local sur la machine hôte ou être disponible en ligne
 sur \href{https://crates.io}{Crate.io}. Ce site sert de registre pour toutes les
 librairies Rust développées par la communauté. Cargo télécharge automatiquement
-les dépendences depuis \href{https://crates.io}{Crate.io} \cite{ref2}. Pour compiler un projet,
-rustc n'a plus a être utilisé. Cargo fait appelle au compilateur
+les dépendances depuis \href{https://crates.io}{Crate.io} \cite{ref2}. Pour compiler un projet,
+rustc n'a plus a être utilisé. Cargo fait appel au compilateur
 de rust lui même. Pour demander à cargo de compiler le projet il faut exécuter
 la commande \mintinline{shell}{cargo build}. Si le projet est un exécutable,
 il est lancé avec la commande \mintinline{shell}{cargo run}. Notre système
@@ -127,7 +127,7 @@ se nomme Xargo. Il peut être installé directement depuis Cargo en utilisant
 la commande \mintinline{shell}{cargo install xargo}. Xargo est fait pour compiler
 un projet Rust dans un environnement \textit{bare metal}. Dans ce type d'environnement
 il n'y a aucune librairie système étant donné que nous créons nous même le système.
-Le code doit donc être compilé sans dépendences à la librairie standard. Rust a tout
+Le code doit donc être compilé sans dépendances à la librairie standard. Rust a tout
 de même besoin d'une base pour être compilé. Cette base est fournie par la librairie
 \mintinline{rust}{core}. Xargo lie la librairie \mintinline{rust}{core} au projet
 automatiquement contrairement à Cargo \cite{ref8}.
@@ -137,9 +137,9 @@ automatiquement contrairement à Cargo \cite{ref8}.
 \subsubsection{Compilation croisée}
 Dans le cadre du projet, le code Rust a du être compilé pour une architecture
 Intel 32-bits (\acrshort{IA-32}). On parle ici de compilation croisée
-car une machine hôte (le \textit{host} en anglais) compile du code pour une
-machine cible (la \textit{target} en anglais). Quand on fait de la compilation
-croisée, on se réfère à des caractèristiques nommées \textit{triple}. Un \textit{triple}
+car une machine hôte (\textit{host} en anglais) compile du code pour une
+machine cible (\textit{target} en anglais). Quand on fait de la compilation
+croisée, on se réfère à des caractéristiques nommées \textit{triple}. Un \textit{triple}
 a généralement le format architecture-vendeur-système-\acrshort{abi}. Par exemple
 pour \textit{cross-compiler} pour une machine Apple, le format du \textit{triple}
 est x86$\_$64-apple-darwin. A noter que l'\acrshort{abi} n'est pas spécifiée.
@@ -161,7 +161,7 @@ Notre projet a donc l'arborescence suivante. \\
 } \bigbreak
 
 Le fichier \mintinline{text}{i386-rust_os.json} configure la machine cible
-sous architecture i386 (\acrshort{IA-32}) et sans système d'exploitation.
+pour l'architecture i386 (\acrshort{IA-32}) et sans système d'exploitation.
 Ci-dessous, le contenu de ce fichier. \\
 
 \begin{code}
@@ -186,7 +186,7 @@ Ci-dessous, le contenu de ce fichier. \\
 
 Tous les champs du \textit{target triple} sont décrits dans la documentation de
 Rust \cite{ref4}. Le contenu de ce fichier est inspiré de plusieurs \textit{target triples}
-trouvés sur le \textit{net}. L'un dans une \textit{issue} du \textit{repository}
+trouvés sur internet. L'un dans une \textit{issue} du \textit{repository}
 de Rust sur GitHub \cite{ref5} et l'autre dans un blog parlant de l'écriture
 d'un système d'exploitation en Rust \cite{ref8}. La compilation croisée de notre
 \textit{kernel} peut maintenant se faire avec la commande
@@ -195,7 +195,7 @@ d'un système d'exploitation en Rust \cite{ref8}. La compilation croisée de not
 \textit{target triple} \cite{ref7}. Pour ne pas qu'il se produise, il faut indiquer
 le chemin d'accès au répertoire contenant le fichier \acrshort{json} en utilisant
 la variable d'environnement \mintinline{shell}{RUST_TARGET_PATH}. La commande finale
-pour compiler le projet est la suivante.
+pour compiler le projet est la suivante :
 
 \begin{shellcode}
 $ RUST_TARGET_PATH=$(pwd) xargo build --target i386-rust_os
@@ -282,10 +282,10 @@ static mut KHEAP_ADDR   : u32   = 0;
 \subsubsection{Fonctions et macros}
 Les fonctions en Rust sont semblables aux fonctions en C. Leur déclaration se fait
 avec le mot-clé \mintinline{rust}{fn}. Les macros de Rust reprennent le concept
-des macros du langage C. La différence entre une macro et une fonction est qu'une
-macro va être remplacée à la compilation par le code qu'elle contient. De plus,
-le nombre d'arguments d'une macro n'est pas fixe. Une macro fonctionne par motifs.
-Prenons pour exemple l'implémentation de la macro \mintinline{rust}{println!}. \\
+des macros du langage C. La particularité d'une macro par rapport à une fonction
+est qu'une macro va être remplacée à la compilation par le code qu'elle contient.
+De plus, le nombre d'arguments d'une macro n'est pas fixe. Une macro fonctionne
+par motifs. Prenons pour exemple l'implémentation de la macro \mintinline{rust}{println!}. \\
 
 \begin{code}
 \begin{rustcode}
@@ -299,8 +299,8 @@ macro_rules! println {
 \label{lst:rust:macro}
 \end{code} \bigbreak
 
-Cette macro a trois motifs différents. Si aucun argument est donné à la macro,
-le premier motif va être utilsé. Nous pouvons voir qu'il affiche simplement
+Cette macro a trois motifs différents. Si aucun argument n'est donné à la macro,
+le premier motif va être utilisé. Nous pouvons voir qu'il affiche simplement
 un saut de ligne avec la macro \mintinline{rust}{print!}. Dans une macro, la partie gauche
 contient un ensemble de symboles et la partie droite l'action à effectuer avec
 les symboles. Prenons maintenant la deuxième ligne de cette macro. Pour que
@@ -320,7 +320,7 @@ d'un '*', cela veut dire qu'il peut être répété zéro ou plus de fois \cite{
 Le langage Rust propose les mêmes structures de contrôle que le langage C.
 Une condition se fait avec l'expression \mintinline{rust}{if} et du code
 peut être répété avec les expressions  \mintinline{rust}{for},  \mintinline{rust}{while}
-et  \mintinline{rust}{loop}. Rust possède aussi une structure de contrôle pour
+et  \mintinline{rust}{loop}. Rust possède également une structure de contrôle pour
 faire du \textit{pattern matching}. Elle est utilisée avec l'expression \mintinline{rust}{match}.
 A noter qu'on parle ici d'expression. Une expression peut être utilisée dans la
 déclaration d'une variable. Le code suivant est donc possible \cite{ref2}. \\
@@ -345,7 +345,7 @@ valeur 5. \newpage
 
 \subsubsection{Structures de données}
 Rust donne aussi accès à des structures de données, semblables aux structures
-C dans leur déclaration mais tout de même différentes. Ces structures peuvent
+C dans leur déclaration mais néanmoins différentes. Ces structures peuvent
 implémenter des méthodes. On peut donc aussi les comparer aux classes en Java.
 Ci-dessous, une structure implémentant deux méthodes.
 
@@ -372,15 +372,16 @@ impl PageTable {
 \end{code} \bigbreak
 
 Ici, la structure \mintinline{rust}{PageTable} ne contient qu'un seul champs
-mais il peut y en avoir plus. Les deux lignes commençant par un '\#' sont des attributs
-appliqués à la structure \cite{ref2}. Le premier attributs permet d'inclure automatiquement
-les fonctionnalités du trait \mintinline{rust}{Clone} à notre structure. Le deuxième attribut
-indique que cette structure doit être représentée comme en C dans la mémoire et
-être alignée sur 4096 octets. L'implémentation de méthodes pour une structure se
-fait avec le mot-clé \mintinline{rust}{impl}. La première méthode est un constructeur
-renvoyant simplement une structure initialisée avec des 0. La deuxième méthode peut
-être appliquée à une structure, elle renvoie l'adresse de cette dernière. Le \textit{listing}
-\ref{lst:rust:struct:methods} montre comment appeler ces méthodes.
+mais il peut y en avoir plus. Les deux lignes commençant par un '\mintinline{text}{#}'
+sont des attributs appliqués à la structure \cite{ref2}. Le premier attribut permet
+d'inclure automatiquement les fonctionnalités du trait \mintinline{rust}{Clone}
+à notre structure. Le deuxième attribut indique que cette structure doit être représentée
+comme en C dans la mémoire et être alignée sur 4096 octets. L'implémentation de
+méthodes pour une structure se fait avec le mot-clé \mintinline{rust}{impl}. La
+première méthode est un constructeur renvoyant simplement une structure initialisée
+avec des zéros. La deuxième méthode peut être appliquée à une structure, elle
+renvoie l'adresse de cette dernière. Le \textit{listing} \ref{lst:rust:struct:methods}
+montre comment appeler ces méthodes.
 
 \begin{code}
 \begin{rustcode}
@@ -393,7 +394,7 @@ let table_addr = table.as_ptr();
 
 A noter que le mot-clé \mintinline{rust}{pub} est utilisé à trois reprises dans
 le \textit{listing} \ref{lst:rust:struct}. Ce mot-clé contrôle la visibilité de
-la variable, la fonction, le champs ou la structure qui lui est associé. Il fait
+la variable, la fonction, le champ ou la structure qui lui est associé. Il fait
 le contraire du mot-clé \mintinline{java}{private} en Java (de base tout est privé
 dans un fichier Rust) \cite{ref2}. En plus des structures, Rust propose aussi
 les énumérations ou \mintinline{rust}{enum}. Un \mintinline{rust}{enum} permet
@@ -421,7 +422,7 @@ pub enum Color {
 L'\textit{Ownership} est la fonctionnalité de Rust lui permettant de garantir la
 sécurité au niveau de la mémoire. Elle est décrite dans le livre de Rust comme
 la fonctionnalité fondamentale du langage. Chaque valeur en Rust est liée à une
-variable qui est appelée son propriétaire (\textit{owner} en anglais). Une valeur
+variable nommée propriétaire (\textit{owner} en anglais). Une valeur
 ne peut avoir qu'un seul propriétaire à la fois. Quand on sort de la portée de
 la variable, la valeur n'est plus accessible \cite{ref2}. Prenons pour exemple
 la structure \mintinline{rust}{PageTable} décrite plus haut. Le code suivant
@@ -445,7 +446,7 @@ le \textit{listing} \ref{lst:rust:struct}. Notre variable peut être stockée su
 la pile car sa taille est connue à la compilation. Un autre trait
 offert par Rust peut être utilisé ici pour copier sa valeur. C'est le trait
 \mintinline{rust}{Copy}. Les fonctionnalités de ce trait
-peuvent être rajouté à une structure stockée dans la pile en l'ajoutant à l'attribut
+peuvent être rajoutées à une structure stockée dans la pile en l'ajoutant à l'attribut
 \mintinline{rust}{derive}. Grâce à ce trait, il n'y a pas besoin
 d'appeler la méthode \mintinline{rust}{clone()} pour copier la valeur. La copie
 est faite automatiquement. Pour ne pas perdre l'\textit{Ownership} lors du passage
@@ -492,7 +493,7 @@ impl IndexMut<usize> for PageTable {
 
 \subsubsection{Gestion des erreurs}
 Rust possède tout un mécanisme de gestion des erreurs. Les erreurs sont séparées
-en deux catégories, les erreurs récupérables et non récupérables. Quand une erreur
+en deux catégories. Les erreurs récupérables et non récupérables. Quand une erreur
 est récupérable, le type \mintinline{rust}{Result<T, E>} est utilisé pour gérer
 l'erreur (en général dans une expression \mintinline{rust}{match}). Dans le cas
 contraire, la macro \mintinline{rust}{panic!} est appelée. Par défaut quand, un
@@ -510,11 +511,11 @@ panic = 'abort'
 \end{code} \bigbreak
 
 \subsubsection{Tests unitaires}
-Rust offre tout un mécanisme des tests unitaires. Ce mécanimse est utilisé avec
+Rust offre tout un mécanisme de tests unitaires. Ce mécanisme est utilisé avec
 Cargo en exécutant la commande \mintinline{shell}{cargo test}. Quand cette
 commande est exécutée, Cargo cherche le module \mintinline{rust}{tests} du projet.
 Un module en Rust contient des variables, des fonctions et des structures. Il permet
-de diviser le code en plus petites parties. Un module peut être dans le fichier
+de diviser le code en parties plus petites. Un module peut être dans le fichier
 principal du projet ou dans un fichier différent. Dans le cas des tests unitaires
 un module basique ressemblerait à celui décrit dans le \textit{listing} suivant.
 
@@ -552,6 +553,6 @@ Rust est utilisé dans ce projet pour créer un système d'exploitation. Il est 
 d'accéder à la mémoire sans restrictions et d'appeler du code assembleur. Rust donne
 la possibilité de supprimer la protection du compilateur avec le mot-clé
 \mintinline{rust}{unsafe}. Quand un code est \mintinline{rust}{unsafe}, plus aucune
-protection n'est appliquée il est donc très déconseillé de l'utiliser. En effet,
+protection n'est appliquée. Il est donc très déconseillé de l'utiliser. En effet,
 en utilisant du code \mintinline{rust}{unsafe}, on perd beaucoup d'avantages de Rust
 \cite{ref2}.

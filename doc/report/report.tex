@@ -39,85 +39,69 @@
 	}
 \makeglossaries
 
-\title{RustOS \protect\\ Système d’exploitation en Rust}
-\author{Orphée Antoniadis}
-\affil{\small Projet de Bachelor - Prof. Florent Glück}
-\affil{\small Hepia ITI 3\up{ème} année}
-\date{Semestre de Printemps 2017-2018}
-
 \begin{document}
-\maketitle
+\includepdf[pages=1]{../ITI_masque_couverture.pdf}
 
-\vspace*{\stretch{1}}
-\begin{figure}[!h]
-    \centering
-    \includegraphics[scale=0.6]{images/rustos.png}
-\end{figure}
-\vspace*{\stretch{1}}
-
-\begin{figure}[!b]
-	\centering
-	\begin{minipage}{.5\textwidth}
-		\centering
-		\includegraphics[width=.6\linewidth]{images/hepia.jpg}
-	\end{minipage}%
-	\begin{minipage}{.5\textwidth}
-		\centering
-		\includegraphics[width=.6\linewidth]{images/hesso.jpg}
-	\end{minipage}
-\end{figure}
 \newpage
+\thispagestyle{empty}
+\clearpage\mbox{}\clearpage
+\pagenumbering{arabic}
 
-\includepdf[pages=1]{../ITI_MAT_jour_enonce_diplome_Antoniadis_Gluck_2018.pdf}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \addcontentsline{toc}{section}{Descriptif}
+\includepdf[pages=1]{../ITI_MAT_jour_enonce_diplome_Antoniadis_Gluck_2018.pdf}
+
+\newpage
+\thispagestyle{empty}
+\clearpage\mbox{}\clearpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\addcontentsline{toc}{section}{Résumé}
+\includepdf[pages=1]{../ITI_masque_résumé_diplome_2018.pdf}
+
+\newpage
+\thispagestyle{empty}
+\clearpage\mbox{}\clearpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newpage
 \setcounter{tocdepth}{2}
-\tableofcontents
 \addcontentsline{toc}{section}{Table des matières}
+\tableofcontents
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newpage
-\listoffigures
 \addcontentsline{toc}{section}{Table des figures}
+\listoffigures
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newpage
+\addcontentsline{toc}{section}{Table des tables}
 \renewcommand{\listtablename}{Table des tables}
 \listoftables
-\addcontentsline{toc}{section}{Table des tables}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newpage
+\addcontentsline{toc}{section}{Table des listings de code}
 \renewcommand\listoflistingscaption{Table des listings de code}
 \listoflistings
-\addcontentsline{toc}{section}{Table des listings de code}
-\newpage
 
-\section*{Remerciements}
-\addcontentsline{toc}{section}{Remerciements}
-\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section*{Conventions typographiques}
-\addcontentsline{toc}{section}{Conventions typographiques}
-Lors de la rédaction de ce document, les conventions typographiques ci-dessous ont
-été adoptées.
-\begin{itemize}[label=\textbullet]
-	\item Tous les mots empruntés à la langue anglaise ont été écrits en \textit{italique}
-	\item Toute référence à un nom de fichier (ou dossier), un chemin d’accès, une 
-    utilisation de paramètre, variable, ou commande utilisable par l’utilisateur, 
-    est écrite avec la police d’écriture \mintinline{rust}{Courier New}.
-	\item Tout extrait de fichier ou de code est écrit selon le format suivant:
-\begin{rustcode}
-fn main() {
-    println!("Hello, world!");
-}
-\end{rustcode}
-    \item Toute commande importante dans le cadre du projet est écrite selon le
-    format suivant:
-\begin{shellcode}
-$ echo Hello world!
-\end{shellcode}
-\end{itemize}
 \newpage
-
 \addcontentsline{toc}{section}{Acronymes}
 \newacronym{os}{OS}{\textit{Operating System}}
 \newacronym{elf}{ELF}{\textit{Executable and Linkable Format}}
@@ -153,79 +137,166 @@ $ echo Hello world!
 \newacronym{json}{JSON}{\textit{JavaScript Object Notation}}
 \newacronym{nasm}{NASM}{\textit{Netwide Assembler}}
 \printglossary[type=\acronymtype,title={Acronymes}]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \newpage
+\section*{Avant-propos}
+\addcontentsline{toc}{section}{Avant-propos}
+
+\subsection*{Présentation}
+Ce mémoire constitue l'aboutissement de 11 semaines de travail dans le cadre de
+l'obtention du titre de Bachelor en Ingénierie des Technologies de l'Information,
+orientation informatique matérielle, à hepia. Le projet consiste à implémenter
+un système d'exploitation simple pour l'architecture \acrshort{IA-32} avec le langage
+de programmation Rust. Ce document commence par introduire le sujet en rappelant
+les objectifs et en décrivant l'architecture du système. Les caractéristiques principales
+du langage Rust sont ensuite détaillées. L'implémentation du sysème d'exploitation
+est expliquée en plusieurs parties. Nous nous intéressons en premier lieu à la
+compilation et à l'exécution du système. Nous voyons ensuite les différentes techniques
+de gestion mémoire utilisées (segmentation, pagination, allocation dynamique).
+Après cela, nous nous intéressons à la manière dont un processeur Intel 32 bits
+permet de communiquer avec ses périphériques (ports d'entrées/sorties, interruptions).
+Le système de fichiers développé pour notre système est ensuite présenté. Enfin,
+nous expliquons le fonctionnement du mode utilisateur et les différents mécanismes
+permettant à une application utilisateur de communiquer avec le \textit{kernel}.
+Ce rapport se termine par une présentation des résultats, une partie de discussions
+au sujet des problèmes rencontrés, des améliorations possibles et des différences
+entre le Rust et le C avant de conclure sur le bilan du travail accompli.
+
+\subsection*{Conventions typographiques}
+Lors de la rédaction de ce document, les conventions typographiques ci-dessous ont
+été adoptées.
+\begin{itemize}[label=\textbullet]
+	\item Tous les mots empruntés à la langue anglaise sont écrits en \textit{italique}
+	\item Toute référence à un nom de fichier (ou dossier), un chemin d’accès, une 
+    utilisation de paramètre, variable, ou commande utilisable par l’utilisateur, 
+    est écrite avec la police d’écriture \mintinline{rust}{Courier New}.
+	\item Tout extrait de fichier ou de code est écrit selon le format suivant:
+\begin{rustcode}
+fn main() {
+    println!("Hello, world!");
+}
+\end{rustcode}
+    \item Toute commande importante dans le cadre du projet est écrite selon le
+    format suivant:
+\begin{shellcode}
+$ echo Hello world!
+\end{shellcode}
+\end{itemize}
+
+\subsection*{Remerciements}
+J'aimerais remercier l'équipe enseignante pour la qualité de leurs enseignements,
+leur implication et leur pédagogie que j'ai pu apprécier au long de ces trois
+années passées à hepia. Merci à M. Glück, qui m'a suivi tout le long de ce travail
+de Bachelor, pour son aide et ses conseils. Merci à ma famille et à mes proches
+d'avoir été présents pendant toutes mes études. Pour finir, merci à Camille pour la
+relecture de ce mémoire mais surtout pour m'avoir soutenu et supporté durant ces
+11 semaines.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\newpage
 \section{Introduction}
 \subsection{Contexte}
-% Rust
-% Cours programmation avancée des systèmes
+Le langage C est généralement le langage utilisé dans le domaine de la programmation
+système. En effet, le langage étant bas niveau (opérations bit à bit, utilisation
+de pointeurs), il dispose d'une très grande rapidité d'exécution. De plus, il est
+compatible avec de nombreuses architectures car il est basé sur un standard ouvert.
+Ce langage souffre tout de même de nombreux problèmes. La gestion de la mémoire
+est la cause de beaucoup d'entre eux. Par exemple, le dépassement de tampon
+(\textit{buffer overflow}) reste une faille de sécurité encore exploitable.
+Dans ce contexte, des alternatives au langage C (C++, D, Go, Rust) ont rapidement
+été proposées. Le langage Rust est développé par les ingénieurs de Mozilla. Il
+est décrit par ces derniers comme étant extrêmement sécurisé. Plus robuste et tout
+aussi performant, il est vu par beaucoup comme le successeur du C.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Objectif}
+\subsection{Objectifs}
+L'objectif principal de ce projet est d'implémenter un système d'exploitation
+avec le langage Rust. Une première partie a donc été un travail de recherche
+sur le langage. Le but était de comprendre le fonctionnement de Rust, ses caractéristiques
+principales ainsi que ses spécificités. De plus, il a fallu étudier son utilisation
+dans le cadre de la programmation système et plus précisémment dans le développement
+d'un système d'exploitation \textit{bare metal}. La seconde partie a été l'implémentation
+du système d'exploitation en question pour l'architecture \acrshort{IA-32}. Une étude
+des sujets liés à la conception d'\acrshort{os} pour cette architecture a été faite.
+Le deuxième objectif de ce projet est de comparer le langage Rust au langage C.
+On a vu que le Rust est considéré comme étant le successeur du C. Les comparer dans
+le cadre de la programmation d'\acrshort{os} est un bon moyen de juger les performances
+de Rust. Pour résumer, ce travail de Bachelor a suivi les étapes suivantes : \\
+
+\begin{itemize}[label=\textbullet]
+	\item Etude du langage de programmation Rust dans le cadre de la conception
+    d'un système d'exploitation \textit{bare metal} 
+	\item Etude des sujets liés à la conception d'un système d'exploitation pour
+    l'architecture \acrshort{IA-32}
+	\item Implémentation en Rust d'un système d'exploitation simple
+    \item Comparaison entre le langage Rust et le langage C
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newpage
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 \section{Architecture globale}
 \input{architecture.tex}
 
-\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\newpage
 \section{Langage Rust}
 \input{rust.tex}
 
-\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\newpage
 \section{Exécution du \textit{kernel}}
 \input{execution.tex}
 
-\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\newpage
 \section{Gestion mémoire}
 \input{memory.tex}
 
-\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\newpage
 \section{Périphériques}
 \input{peripherals.tex}
 
-\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\newpage
 \section{Système de fichiers}
 \input{fs.tex}
 
-\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Tâches utilisateur}
+\newpage
+\section{Tâches utilisateurs}
 \input{user.tex}
 
-\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\newpage
 \section{Résultats}
 
-\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\newpage
 \section{Discussions}
 \subsection{Problèmes rencontrés}
 
@@ -233,17 +304,18 @@ $ echo Hello world!
 
 \subsection{Améliorations possibles}
 
-\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\newpage
 \section{Conclusion}
 
-\newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Références}
+\newpage
+\section*{Références}
+\addcontentsline{toc}{section}{Références}
 \nocite{*}
 \bibliographystyle{unsrt}
 \bibliography{biblio}

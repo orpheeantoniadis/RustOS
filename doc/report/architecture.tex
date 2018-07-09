@@ -3,9 +3,9 @@
 
 \subsection{Architecture de l'\acrshort{os}}
 Notre système d'exploitation a été conçu pour être utilisé sur un ordinateur
-disposant d'un proceseur Intel de la famille x86. L'architecture x86 regroupe
-plusieurs modes de fonctionnement. Les plus notables sont le \textit{real mode}
-(16 bits), le \textit{protected mode} (32 bits) et le \textit{long mode} (64 bits).
+disposant d'un processeur Intel de la famille x86. L'architecture x86 regroupe
+plusieurs modes de fonctionnement. Les plus notables sont le mode réel
+(16 bits), le mode protégé (32 bits) et le \textit{long mode} (64 bits).
 Le mode réel n'est aujourd'hui plus utilisé mais tous les processeurs de la
 famille x86, même modernes, démarrent dans ce mode avant de changer de mode.
 Le système d'exploitation développé utilise le mode protégé. Cette architecture
@@ -16,7 +16,7 @@ Le mode protégé offre deux mécanismes de gestion mémoire.
 Ces mécanismes sont la segmentation et la pagination. Ils sont tous deux gérés
 par l'\acrshort{os}. La gestion de la mémoire est traitée dans le chapitre \ref{memory}.
 Un processeur Intel 32 bits peut aussi communiquer avec de nombreux périphériques.
-Ceci se fait grâce à divers mécanismes comme les ports d'entrée/sortie ou
+Ceci se fait grâce à divers mécanismes comme les ports d'entrées/sorties ou
 les interruptions matérielles. Un de ces périphériques est le disque dur de
 l'ordinateur. Le disque dur doit avoir un système de fichiers pour être correctement
 utilisable par l'\acrshort{os}. Par exemple, le système de fichiers utilisé
@@ -40,7 +40,7 @@ sont gérés par le noyau (\textit{kernel} en anglais) du système d'exploitatio
 \subsection{Environnement de développement}
 \label{sec:arch:host}
 La machine utilisée pour le développement du projet est un MacBook Pro avec un
-processeur Intel à 3 GHz. Il a quand même fallut utiliser une machine virtuelle
+processeur Intel à 3 GHz. Il a cependant fallu utiliser une machine virtuelle
 (VMware) utilisant Linux (Ubuntu 16.04.4 LTS) pour la compilation. Ce choix a été
 fait car il existe beaucoup plus de documentation sur l'implémentation de systèmes
 d'exploitation sur Linux que sur Mac. Bien que Mac \acrshort{os} soit un système
@@ -51,8 +51,8 @@ pour la compilation et l'exécution du système d'exploitation. \\
 
 Le code doit être compilé pour être exécutable sous une architecture \acrshort{IA-32}.
 La compilation du code Rust est expliquée dans le chapitre \ref{rust_compil}. Certaines
-parties du code du \textit{kernel} ont été écrites en assembleur car sont trop
-bas niveau pour Rust. Il faut donc compiler le code Rust avec le code assembleur.
+parties du code du \textit{kernel}, trop bas niveau pour le langage Rust, ont été
+écrites en assembleur. Il faut donc compiler le code Rust avec le code assembleur.
 Tout le mécanisme de génération d'un \textit{kernel} est détaillé
 dans le chapitre \ref{execution}. Dans ce projet, une machine
 virtuelle est utilisée pour démarrer sur notre système d'exploitation. Cette machine

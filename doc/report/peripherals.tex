@@ -84,7 +84,7 @@ correspondant au numéro d'interruption logicielle specifiée. C'est la table de
 descripteurs d'interruption (\acrshort{idt}) qui permet de définir l'adresse du
 code à exécuter pour chaque numéro d'interruption (que ce soit une interruption
 logicielle, matérielle ou une exception). A noter aussi que les interruptions
-logicielles sont synchrone étant donné qu'elles sont exécutées par le processeur,
+logicielles sont synchrones étant donné qu'elles sont exécutées par le processeur,
 contrairement aux interruptions matérielles qui sont asynchrones. \\
 
 Nous avons vu que les interruptions matérielles étaient générées par le \textit{hardware}.
@@ -285,8 +285,8 @@ par une structure donne accès à cette dernière à de nombreuses méthodes mai
 qui nous intéresse ici est la méthode \mintinline{rust}{write_fmt}. Cette méthode
 prend en paramètre une structure \mintinline{rust}{Arguments}. La structure
 \mintinline{rust}{Arguments} permet la gestion des arguments en ligne de commande
-ou les macros à arguments variable. La macro \mintinline{rust}{print} possède
-un nombre d'arguments variable, nous pouvons donc implémenter cette macro ainsi
+ou les macros à arguments variables. La macro \mintinline{rust}{print} possède
+un nombre d'arguments variables, nous pouvons donc implémenter cette macro ainsi
 que la macro \mintinline{rust}{println} comme suit :
 
 \begin{code}
@@ -314,7 +314,7 @@ les arguments de la macro \mintinline{rust}{print} en structure \mintinline{rust
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{\textit{Timer}}
-Dans chaque \acrshort{pc} se trouve une puce pour mesure le temps et implémenter
+Dans chaque \acrshort{pc} se trouve une puce pour mesurer le temps et implémenter
 des \textit{timers} \cite{ref42}. Cette puce est le \textit{Programmable Interval Timer}
 (\acrshort{pit}). Sur architecture \acrshort{IA-32}, le \acrshort{pit} est générallement
 un Intel 8253 et dans notre cas, c'est celui émulé par QEMU. Le \acrshort{pit}
