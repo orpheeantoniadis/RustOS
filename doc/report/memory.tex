@@ -4,7 +4,7 @@
 
 \subsection{Introduction}
 Le système d'exploitation développé est exécuté sur une architecture \acrshort{IA-32}
-(Intel 32-bits) aussi appelée i386. La mémoire est donc adressée sur 32 bits.
+(Intel 32 bits) aussi appelée i386. La mémoire est donc adressée sur 32 bits.
 $2^{32}=4Go$, on peut en déduire que la taille totale de la mémoire adressable est
 de 4Go dans notre système d'exploitation. Avoir un espace adressable de 4Go ne veut
 pas forcément dire que la mémoire physique (\acrshort{ram}) est également de 4Go.
@@ -30,7 +30,7 @@ C'est là qu'entre en jeu le \acrshort{mmu} (\textit{Memory Mangement Unit}). Le
 est un dispositif matériel permettant de faire cette translation d'adresses. A chaque
 référencement mémoire, il va convertir l'adresse virtuelle en adresse physique et
 regarder si elle ne dépasse pas la limite du processus. Le \acrshort{mmu} permet donc
-aussi de protéger la mémoire car il va empêcher toute référence à une zone extérieure
+aussi de protéger la mémoire en empêchant toute référence à une zone extérieure
 au processus (voir figure \ref{mmu}) \cite{ref42}.
 
 \begin{figure}[!h]
@@ -64,7 +64,7 @@ ou locale (\acrshort{ldt}). Si la pagination est activée, l'adresse linéaire e
 convertie en adresse physique. Toute cette mécanique est décrite dans la figure
 \ref{addr_translation}. A noter que la pagination n'est pas obligatoire et un
 \acrshort{os} pourrait s'en passer contrairement à la segmentation qui est
-indispensable en mode protégé (32-bits) \cite{ref17}.
+indispensable en mode protégé (32 bits) \cite{ref17}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -93,11 +93,11 @@ la mémoire physique \cite{ref66}. \\
   \label{logic_addr_conv}
 \end{figure}
 
-La figure \ref{logic_addr_conv} résume bien la conversion d'adresse logique en
-adresse linéaire. On peut remarquer de plus que le sélecteur de segment passe
+La figure \ref{logic_addr_conv} résume la conversion d'adresse logique en
+adresse linéaire. On peut remarquer que le sélecteur de segment passe
 par une table de descripteurs (\acrshort{gdt} ou \acrshort{ldt}) afin de trouver
 le bon segment dans la mémoire linéaire. En effet, un sélecteur a une taille de
-16 bits et contient l'index d'un descripteur dans une table, un bit indiquant si
+16 bits et contient : l'index d'un descripteur dans une table, un bit indiquant si
 le descripteur est dans la \acrshort{gdt} ou dans une \acrshort{ldt} et enfin son
 niveau de privilège allant de 0 à 3 (figure \ref{seg_sel}) \cite{ref42}.
 
@@ -128,7 +128,7 @@ chacun une taille de 16 bits (même taille qu'un sélecteur de segment) \cite{re
     \label{table_seg_reg}
 \end{center}
 
-En mode protégé (32-bits), ces registres doivent pointer sur des descripteurs
+En mode protégé (32 bits), ces registres doivent pointer sur des descripteurs
 de segment de la \acrshort{gdt}. Au minimum les trois premiers registres décrits
 doivent être utilisés en mode protégé (CS, DS, et SS). Les opérations adressant
 le code (décodage des instructons en mémoire, sauts, etc...) référencent le descripteur
@@ -152,7 +152,7 @@ superviseur (\textit{ring} 0 ou niveau de privilège 0). Une \acrshort{ldt} est
 contenue dans la \acrshort{gdt}. Elle peut être utilisée pour contenir le code
 et les données d'une tâche utilisateur par exemple. Dans le cas où plusieurs tâches
 sont exécutées en même temps, une \acrshort{ldt} peut être créée par tâche ce qui
-permet en plus d'isoler le code de chaque processus. Une table de descipteurs
+permet en plus d'isoler le code de chaque processus. Une table de descripteurs
 est composée, comme son nom l'indique, de descripteurs. Chaque descripteur décrit
 une zone mémoire qui est définie par sa base (son adresse physique), sa limite (sa taille)
 et un niveau de privilèges (allant de 0 à 3, le niveau 0 ayant le plus de privilèges
@@ -172,10 +172,10 @@ la version actuelle de l'\acrshort{os}. \\
 La \acrshort{gdt} est contenue en mémoire. Cette dernière doit être initialisée
 par le \textit{kernel} avant d'être chargée et utilisée par le \acrshort{mmu}.
 Pour initialiser la \acrshort{gdt} il faut construire ses entrées. Chaque entrée
-(ou descripteur) de la table de descripteurs est sur 64 bit et décrit une zone
+(ou descripteur) de la table de descripteurs est sur 64 bits et décrit une zone
 mémoire. L'adresse de cette zone mémoire est sur 32 bits et sa taille est sur 20
 bits. Les bits restant sont des bits de contrôle pour l'accès aux données par
-exemple (niveau de privilèfes, droit d'écriture/lecture, ...). Voir la figure
+exemple (niveau de privilèges, droit d'écriture/lecture, ...). Voir la figure
 \ref{gdt_entry} pour plus de détails \cite{ref42,ref14}. \newpage
 
 \begin{figure}[!h]
@@ -187,11 +187,11 @@ exemple (niveau de privilèfes, droit d'écriture/lecture, ...). Voir la figure
 
 L'\acrshort{os} développé a un adressage segmenté de type \textit{flat}, c'est-à-dire
 que toute la mémoire est accédée de manière linéaire. Ce modèle de segmentation
-est le plus simple car il permet d'ignorer le mécanisme de segmentation car
-l'intégralité de la zone mémoire devient disponible. Dans un modèle de type \textit{flat},
+est le plus simple puisqu'il permet d'ignorer le mécanisme de segmentation car
+l'intégralité de la zone mémoire devient alors disponible. Dans un modèle de type \textit{flat},
 les segments de code et de données se chevauchent sur l'intégralité de la mémoire
-disponible. Ceci se fait en initialisant trois descripteurs dans la \acrshort{gdt}.
-Un descripteur nul à l'index 0 (obligatoire dans touts les modèles de segmentation),
+disponible. Ceci se fait en initialisant trois descripteurs dans la \acrshort{gdt} :
+un descripteur nul à l'index 0 (obligatoire dans tous les modèles de segmentation),
 un segment de code couvrant toute la mémoire et un segment de données couvrant
 aussi toute la mémoire. Les segments de code et de données adressent ainsi les mêmes
 zones mémoire. On verra par la suite que d'autres entrées ont été aujoutées à la
@@ -206,7 +206,7 @@ zones mémoire. On verra par la suite que d'autres entrées ont été aujoutées
 
 Pour obtenir un  segment sur toute la mémoire disponible, il faut mettre le bit
 de granularité à 1 pour avoir une limite en blocs de 4Ko. Ensuite, la limite doit
-être mise à la valeur 0xFFFFF ce qui donne une limite réele de 0x100000 $\times$
+être mise à la valeur 0xFFFFF ce qui donne une limite réelle de 0x100000 $\times$
 0x1000 soit 4Go. Le niveau de privilège doit être laissé à 0 (\textit{ring} 0)
 si on veut créer un segment pour le \textit{kernel} ou bien être mis à 3 (\textit{ring}
 3) si on veut créer un segment pour le mode utilisateur. Ci-dessous un exemple de
@@ -229,7 +229,7 @@ pub fn make_data_segment(base: u32, limit: u32, dpl: u8) -> GdtEntry {
 \end{code} \bigbreak
 
 Ici, \mintinline{rust}{new} est le prototype d'une méthode pour une structure 64
-bits représentant une entrée dans la \acrshort{gdt}. le bit \mintinline{rust}{s}
+bits représentant une entrée dans la \acrshort{gdt}. Le bit \mintinline{rust}{s}
 est mis à 1 car on construit des segments de code et de données \cite{ref66}.
 Le bit \mintinline{rust}{d} est mis à 1 car on veut un segment de 32 bits. Le bit
 \mintinline{rust}{g} est mis à 1 pour avoir une granularité de 4Ko. L'octet 0xB
@@ -240,7 +240,7 @@ GDTR. Ce registre est utilisé par le processeur pour faire le lien entre le \ac
 et la \acrshort{gdt} créée \cite{ref66}. L'adresse du descripteur de la \acrshort{gdt}
 doit donc être donnée en argument à l'instruction \mintinline{text}{lgdt}. Le
 descripteur de \acrshort{gdt} est défini par la structure 48-bits décrite dans
-la figure \ref{gdt_descriptor} \cite{ref14}.
+la figure suivante \cite{ref14}.
 
 \begin{figure}[!h]
   \centering
@@ -249,7 +249,7 @@ la figure \ref{gdt_descriptor} \cite{ref14}.
   \label{gdt_descriptor}
 \end{figure}
 
-Dans un descripteur de \acrshort{gdt} \textit{Size} est la limite sur 16 bits
+Dans un descripteur de \acrshort{gdt}, \textit{Size} est la limite sur 16 bits
 (c'est à dire la taille de la \acrshort{gdt} - 1) et \textit{Offset} est l'adresse
 physique de la \acrshort{gdt} sur 32 bits. Dans le cas de notre \acrshort{os},
 la \acrshort{gdt} est déclarée statiquement dans le \textit{kernel}. L'adresse
@@ -259,13 +259,13 @@ chargé dans le registre GTDR. Après avoir chargé la \acrshort{gdt} avec l'ins
 segments de la table de descripteurs à l'aide de sélecteurs. Pour rappel, un sélecteur
 est sur 16 bits et contient l'index d'un segment dans la \acrshort{gdt} précedemment
 chargée. Pour récupérer l'index d'un segment dans la \acrshort{gdt} à partir de
-l'index de son descripteur, il faut faire un décallage à gauche de 3 bits
-(voir figure \ref{seg_sel}). Prennons un descripteur se situant à l'index 2 de
+l'index de son descripteur, il faut faire un décalage à gauche de 3 bits
+(voir figure \ref{seg_sel}). Prenons un descripteur se situant à l'index 2 de
 la \acrshort{gdt}. Si on veut initialiser le segment de code (registre CS) avec
 ce descripteur, il faut mettre la valeur 16 dans le registre CS ($2 << 3 = 16$).
-Dans le cas où on veut définir ce segment avec un autre niveau de privilèges
+Dans le cas où l'on veut définir ce segment avec un autre niveau de privilèges
 ou bien pour une \acrshort{ldt}, il suffit de mettre les bons bits à 1 après avoir
-fait le décallage.
+fait le décalage.
 
 \newpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -279,7 +279,7 @@ de taille variable, la pagination divise la mémoire en blocs de taille fixe app
 pages (de 4Ko, 2Mo ou 4Mo). De plus, la segmentation est obligatoire dans une
 architecture i386 alors que la pagination ne l'est pas \cite{ref16}. Quand une tâche
 fait référence à une adresse logique en mémoire, cette adresse est convertie en
-adresse linéaire grace au mécanisme de segmentation et c'est le mécanisme de
+adresse linéaire grâce au mécanisme de segmentation. C'est le mécanisme de
 pagination qui permet de translater cette adresse linéaire en adresse physique
 (comme vu précedemment dans la partie sur la segmentation). Quand la
 pagination est activée, l'adresse linéaire est divisée en deux parties lorsque
@@ -345,7 +345,7 @@ de l'\acrshort{os}, le \textit{kernel} va être déplacé au dernier Go de la \a
 Grace à la pagination, ceci peut se faire assez simplement, il suffit de compléter
 le répertoire de pages ainsi que ses tables de pages correctement. Pour rappel,
 le \textit{kernel} commence à l'adresse 0x100000 (1Mo) mais il faut aussi rendre
-accessible le premier Mo de \acrshort{ram}. Il faut donc déplacer les adresses physiques
+accessible le premier mégaoctet de \acrshort{ram}. Il faut donc déplacer les adresses physiques
 allant de 0x0 à la fin du kernel (qui n'est pas fixe). Dans un premier temps, le
 \textit{linker} doit être modifié de cette manière :
 
@@ -374,19 +374,19 @@ SECTIONS {
 Ici, le \textit{kernel} est divisé en deux parties. La première est celle qui va
 être appelée au démarrage du système et qui va initialiser la pagination. Une fois
 la pagination active, le \textit{kernel} va continuer son exécution dans la deuxième
-partie qui est située dans le dernier Go de \acrshort{ram}. Nous sommes obligés de
+partie qui est située dans le dernier gigaoctet de \acrshort{ram}. Nous sommes obligés de
 démarrer le \textit{kernel} au début de la mémoire physique car toutes les adresses
-sont virtuelles. En réalité, le \textit{kernel} dispose de beaucoup moins (variable
-selon la configuration de l'émulateur, ici QEMU). Il n'existe donc pas d'adresse
-physique située à 3Go dans la mémoire physique du \textit{kernel} et il est donc
-impossible de démarrer le système à cette adresse. Regardons plus en détail de quelle
-manière la première partie du \textit{kernel} initialise la pagination. Comme dit
-précedemment, un répertoire de pages initial doit être construit. Etant donné que
-nous allons exécuter du code dans le premier Go et aussi dans le dernier, le \textit{kernel}
+sont virtuelles. Nous utilisons QEMU pour émuler le matériel. La taille de la \acrshort{ram}
+dépend de la configuration de celui-ci. Il n'existe donc peut-être pas d'adresse
+physique située à 3Go dans la \acrshort{ram} et il pourrait donc être impossible de
+démarrer le système à cette adresse (ce qui est notre cas). Regardons plus en détail de quelle
+manière la première partie du \textit{kernel} initialise la pagination. Comme expliqué,
+un répertoire de pages initial doit être construit. Etant donné que nous allons
+exécuter du code dans le premier gigaoctet et également dans le dernier, le \textit{kernel}
 doit être \textit{mappé} dans ces deux zones mémoire en même temps. La première
 partie va être adressée linéairement, ce qui veut dire que l'adresse physique
 0x0 correspondra à l'adresse virtuelle 0x0 et ainsi de suite jusqu'à la fin du
-\textit{kernel}. Cet adressage donne le répertoire de pages shématisé dans la figure
+\textit{kernel}. Cet adressage donne le répertoire de pages schématisé dans la figure
 \ref{low_kern_pd}.
 
 \begin{figure}[!h]
@@ -401,9 +401,9 @@ table de pages adressant le début de la \acrshort{ram}. Chaque entrée est incr
 de 4096 (0x1000 en hexadécimal) car une page fait 4096 octets. De plus, les deux
 premiers bits de poids faible de chaque page sont à 1 pour indiquer que la page est
 active et que l'on peut écrire et lire dedans (voir figure \ref{page_entry}). L'entrée
-dans le répertoire de page correspondant au dernier Go (soit 0xC0000000 en hexadécimal)
+dans le répertoire de pages correspondant au dernier gigaoctet (soit 0xC0000000 en hexadécimal)
 doit pointer sur une table des pages identique. Pour trouver une entrée dans le
-répertoire de pages depuis une adresse il faut faire un décallage à droite de 22
+répertoire de pages depuis une adresse il faut faire un décalage à droite de 22
 bits sur cette adresse (ce qui est équivalent à diviser par 4096, soit la taille
 d'une page, puis de nouveau diviser par 1024, soit le nombre de pages adressées par
 une table). Ici, 0xC0000000 $>>$ 22 = 0x300 (768 en décimal). Il faut donc faire
@@ -419,8 +419,8 @@ celle pointée par l'entrée 0 ce qui donne finalement le répertoire suivant.
 
 Une fois le répertoire de pages initialisé de cette manière, il ne reste plus
 qu'à faire pointer le registre CR3 dessus et activer la pagination en mettant
-le bit 31 du registre CR0 à 1. Le code peut ensuite sauter à la partie haute de
-la \acrshort{ram} où nous avons déplacé le \textit{kernel}. A partir de là,
+le bit 31 du registre CR0 à 1. Le pointeur d'instruction peut ensuite sauter à
+la partie haute de la \acrshort{ram} où nous avons déplacé le \textit{kernel}. A partir de là,
 tout le code qui sera exécuté sera dans le dernier Go de \acrshort{ram}, il n'y
 a donc plus besoin de faire pointer la première entrée du répertoire de pages
 sur le table des pages du \textit{kernel} ce qui peut être fait en écrivant 0
@@ -434,13 +434,13 @@ active.
 \label{alloc_kernel}
 Le dernier élément de gestion mémoire implémenté dans RustOS est l'allocation de
 mémoire dynamique. L'allocation dynamique consiste à réserver des blocs de mémoire
-pendant l'exécution du \textit{kernel} ou bien d'un programme utilisateur. Jusqu'à
-maintenant, toutes les structures utilisées était déclarées statiquement se retrouvant
+pendant l'exécution du \textit{kernel} ou d'un programme utilisateur. Jusqu'à
+maintenant, toutes les structures utilisées était déclarées statiquement, se retrouvant
 donc dans la zone mémoire du \textit{kernel}, plus précisément dans le segment
 bss (voir \ref{linking}). Déclarer des variables statiquement est pratique mais fait
-augmenter la taille du \textit{kernel} et ce n'est pas une solution viable
-pour allouer de plus grandes régions mémoire comme par exemple du code utilisateur
-qui peut faire plusieurs kilooctets. Pour implémenter l'allocation de mémoire
+augmenter la taille du \textit{kernel} ce qui n'est pas une solution viable
+pour allouer de plus grandes régions mémoire. Par exemple du code utilisateur
+pouvant faire plusieurs kilooctets. Pour implémenter l'allocation de mémoire
 dynamique, il faut dans un premier temps définir quelle zone mémoire peut être
 utilisée dans ce but. Actuellement, la totalité du code et des données est contenu
 dans le \textit{kernel}. Des zones mémoires peuvent donc commencer à être allouées
@@ -471,14 +471,14 @@ get_kernel_end:
 
 A partir de là, on peut définir la zone d'allocation mémoire aussi appelée tas
 (ou \textit{heap} en anglais). Dans notre \acrshort{os}, le tas commence à la
-fin du \textit{kernel} allignée avec la taille d'une page (4096 octets). Ce choix
+fin du \textit{kernel} alignée avec la taille d'une page (4096 octets). Ce choix
 a été fait car le \textit{kernel} n'aura besoin d'allouer que des nouvelles
 pages. La fin du tas dépend de la fin de la mémoire physique qui dépend de la
 configuration de QEMU. Quand le \textit{kernel} aura besoin d'allouer une nouvelle
-page, il ira chercher le prochain bloc libre dans le tas situé donc entre la fin
+page, il ira chercher le prochain bloc libre dans le tas situé entre la fin
 du \textit{kernel} et la fin de la mémoire physique. La recherche de bloc libre
 se complexifie rapidement si des blocs sont libérés. De nombreuses méthodes sont
-possibles pour la recherche de bloc libre et la gestion des blocs libérés. Le
+possibles pour la recherche de blocs libres et la gestion des blocs libérés. Le
 \textit{kernel} développé utilise une liste doublement chaînée pour gérer la
 mémoire dynamique. Chaque bloc mémoire alloué est précédé d'un entête contenant
 l'adresse du bloc précédent sur 32 bits, l'adresse du bloc suivant sur 32 bits,
@@ -501,11 +501,11 @@ de l'entête). Si deux blocs libres sont contiguës, ils sont fusionnés pour n'
 former qu'un seul. Dans le \textit{kernel}, la fonction pour l'allocation est
 \mintinline{rust}{kmalloc} et la fonction pour la libération est \mintinline{rust}{kfree}.
 La fonction \mintinline{rust}{kmalloc} va allouer de nouvelles pages et tables
-de pages automatiquement s'il y a besoin (comme le montre la figure \ref{kmalloc}).
+de pages automatiquement s'il y a besoin (voir figure \ref{kmalloc}).
 De la même manière, la fonction \mintinline{rust}{kfree} va libérer les pages et
 les tables de pages automatiquement. Ces deux fonctions permettent donc beaucoup
 d'abstraction au niveau de la pagination mais aussi de l'allocation car l'utilisation
-des entêtes est complètement transparent. La fonction \mintinline{rust}{kmalloc}
+des entêtes est complètement transparente. La fonction \mintinline{rust}{kmalloc}
 va simplement renvoyer une adresse sur 32 bits et \mintinline{rust}{kfree} prend
 comme argument cette adresse pour libérer la mémoire.
 
@@ -524,7 +524,7 @@ de ces fonctions. Nous allons supposer que la fin du \textit{kernel} se situe
 0x1000000. A l'initialisation du \textit{kernel}, un premier entête est créé au
 début de la zone d'allocation dynamique. Ce premier entête est donc situé à
 l'adresse 0x3FC000 et a pour taille 0x1000000 $-$ 0x3FC000 $=$ 0xC04000. C'est cette
-information qui permet de trouver la premier entrée de la liste et par la suite
+information qui permet de trouver la première entrée de la liste et par la suite
 de la parcourir.
 
 \begin{figure}[!h]
@@ -534,11 +534,11 @@ de la parcourir.
   \label{alloc0}
 \end{figure}
 
-Si le \textit{kernel} a besoin d'allouer une nouvelle page maintenant, la fonction
-\ref{kmalloc} va être appelée qui va parcourir les blocs libres. Dans ce cas précis,
+Maintenant, si le \textit{kernel} a besoin d'allouer une nouvelle page, la fonction
+\mintinline{rust}{kmalloc} va être appelée et va parcourir les blocs libres. Dans ce cas précis,
 l'intégralité du tas est disponible donc la fonction va simplement créer un nouveau
 bloc. Dans la figure \ref{alloc1}, les blocs libres sont en vert et les blocs alloués
-sont en rouge. A noter que que les blocs aloués sont alignés avec la taille d'une
+sont en rouge. A noter que les blocs alloués sont alignés avec la taille d'une
 page (4096Ko ou 0x1000 en hexadécimal). Etant donné qu'il faut compter l'entête
 de 16 octets, il faudra toujours allouer une page de plus.
 
@@ -552,7 +552,7 @@ de 16 octets, il faudra toujours allouer une page de plus.
 Si le \textit{kernel} a de nouveau besoin d'une page, on va se retrouver dans la
 situation où il n'y a plus assez de place dans la table des pages. Pour rappel,
 une table des pages a une taille de 4Mo (0x400000 en hexadécimal). Comme expliqué
-avec la figure \ref{kmalloc}, la fonction d'allocation va se charger toute seule
+dans la figure \ref{kmalloc}, la fonction d'allocation va se charger toute seule
 de créer une nouvelle table des pages et de l'ajouter au répertoire de pages.
 La page demandée par le \textit{kernel} sera ensuite allouée. On obtient donc
 la liste de la figure \ref{alloc2}, avec deux blocs alloués au lieu d'un seul.
@@ -567,8 +567,8 @@ sera finalement à l'adresse 0x400000.
   \label{alloc2}
 \end{figure}
 
-Libérer la page à l'adresse 0x400000 aura pour conséquence directe de libérer aussi
+Libérer la page à l'adresse 0x400000 aura pour conséquence de libérer également
 la table des pages nouvellement créée (la fonction \mintinline{rust}{kfree} libère
-automatiquement les tables des pages vides). On se retrouverait alors avec le même
+automatiquement les tables des pages vides). On se retrouvera alors avec le même
 schéma que dans la figure \ref{alloc1} car les blocs aux adresses 0x3FE000 et
-0x400000 seraient fusionnés au reste de la mémoire libre.
+0x400000 seront fusionnés au reste de la mémoire libre.

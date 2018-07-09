@@ -3,19 +3,19 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Introduction}
-Dans le chapitre \ref{peripherals} qui traite le sujet des périphériques, nous
-avons vu très brièvement qu'un processeur \acrshort{IA-32} peut avoir un controlleur
+Dans le chapitre \ref{peripherals} qui traite des périphériques, nous
+avons vu très brièvement qu'un processeur \acrshort{IA-32} peut avoir un controleur
 de disque dur. Actuellement, tout le \textit{kernel} et ses dépendances sont
-stockés dans la \acrshort{ram}. Si on veut plus tard exécuter des programmes utilisateur
+stockés dans la \acrshort{ram}. Plus tard, si on veut exécuter des programmes utilisateur
 ou lire et écrire des fichiers texte, il est nécessaire d'avoir un disque dur.
 Un disque dur permet de stocker des fichiers qui pourront être lus par l'\acrshort{os}
 si besoin. Pour rendre possible la gestion de plusieurs fichiers dans un disque
 dur, ce dernier doit contenir un système de fichiers. Un système de fichiers va
 organiser les fichiers ajoutés au disque dur d'une manière bien précise afin
-de les retrouver rapidement. Pour rappel, notre machine est émulée par QEMU.
+de les retrouver rapidement.
 Comme pour tous les autres périphériques gérés par notre \acrshort{os}, QEMU
-émule aussi un disque dur. Ce disque dur est vierge, il faut donc lui mettre
-un système de fichiers. Une option de QEMU permet de mettre un système de fichiers
+émule aussi un disque dur. Ce disque dur est vierge, il faut donc lui ajouter
+un système de fichiers. Une option de QEMU permet d'ajouter un système de fichiers
 dans le disque dur émulé à partir d'un fichier image. Ci-dessous la modification
 apportée à l'exécution du \textit{kernel}.
 
@@ -26,8 +26,8 @@ $ qemu-system-i386 -cdrom kernel.iso -hda fs.img
 L'option  \mintinline{text}{-cdrom} spécifie l'image \acrshort{iso} contenant
 le \textit{kernel} (voir partie \ref{iso}) et l'option \mintinline{text}{-hda} indique
 que le fichier image contenant le système de fichiers sera chargé dans le premier
-disque dur. La gestion d'un système de fichiers par le \textit{kernel} s'est donc
-déroulé en deux étapes. Il a d'abord fallut créer un système de fichiers simple
+disque dur. La gestion d'un système de fichiers par le \textit{kernel} se déroule
+donc en deux étapes. Il a faut d'abord créer un système de fichiers simple
 puis implémenter les \textit{drivers} au niveau du \textit{kernel} pour le lire.
 Le système de fichiers utilisé par notre \textit{kernel} est inspiré de \acrshort{fat}. \\
 
@@ -37,16 +37,16 @@ est fixe (512 octets). A noter qu'un \textit{cluster} peut avoir la même taille
 en octets qu'un secteur. Le système de fichiers gère une table indiquant si un
 \textit{cluster} est alloué. Cette table, appelée table d'allocation de fichiers
 (ou \textit{file allocation table} en anglais) est une carte où chaque entrée
-représente un \textit{cluster}. Une entrée dans la table d'allocations a une taille
+représente un \textit{cluster}. Une entrée dans la table d'allocation a une taille
 différente en fonction du type de \acrshort{fat}. La taille maximale du système
 de fichiers en nombre de \textit{clusters} dépend de la taille de cette entrée en
-bits. Si par exemple une entrée dans la table d'allocation fait 12 bits, le système
+bits. Par exemple, si une entrée dans la table d'allocation fait 12 bits, le système
 de fichiers pourra allouer un maximum de 4096 \textit{clusters} ($2^{12} = 4096$).
 Il existe plusieurs versions du système de fichiers \acrshort{fat} qui se
 différencient par la taille de leurs entrées dans la table d'allocation.
 \acrshort{fat}12 a des entrées de 12 bits, \acrshort{fat}16 des entrées de 16 bits
 et \acrshort{fat}32 des entrées de 32 bits. La \acrshort{fat} utilisée par notre
-\textit{kernel} a des entrées de huit bits, elle serait donc une \acrshort{fat}8.
+\textit{kernel} a des entrées de huit bits, c'est donc une \acrshort{fat}8.
 
 \begin{figure}[!h]
   \centering
@@ -55,14 +55,14 @@ et \acrshort{fat}32 des entrées de 32 bits. La \acrshort{fat} utilisée par not
   \label{fat}
 \end{figure}
 
-La figure \ref{fat} montre de manière simplifiée la structure d'un système de fichiers
+La figure ci-dessus montre de manière simplifiée la structure d'un système de fichiers
 \acrshort{fat}. Le système de fichiers réalisé s'inspire beaucoup de cette structure.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Structure}
-Notre système de fichiers a une structure similaire à \acrshort{fat} mais en plus
+\subsection{Structure du système de fichiers}
+Notre système de fichiers a une structure similaire à \acrshort{fat} mais plus
 simplifiée. Dans \acrshort{fat}, les 512 premiers octets sont reservés au secteur
 de \textit{boot}. Ce secteur contient toutes les informations sur le système de
 fichiers comme la taille d'un secteur, la taille d'un \textit{cluster}, le type
@@ -117,12 +117,12 @@ plus de détails sur la structure d'une entrée).
     \label{tab:fs:struct:entry}
 \end{center}
 
-Les blocs de données sont situés juste après le bloc de métadonnées. A noter de
-plus que notre système de fichiers n'est pas hiérarchique. Tous les fichiers sont
+Les blocs de données sont situés juste après le bloc de métadonnées. Il est a noter
+que notre système de fichiers n'est pas hiérarchique. Tous les fichiers sont
 ajoutés à la racine du système (pas de répertoires). A partir de ces structures,
-ont peut facilement accéder à un fichier dans le disque. Les informations contenus
+on peut facilement accéder à un fichier dans le disque. Les informations contenus
 dans le \textit{superblock} permettent de localiser le bloc de métadonnées. Le
-fichier demandé est trouvé en parcourant ce bloc et son premier bloc de données
+fichier demandé est trouvé en parcourant ce bloc, et son premier bloc de données
 peut ainsi être lu. Il reste toujours un problème si le fichier a une taille supérieure
 à la taille d'un bloc. C'est là que la table d'allocation peut être
 utilisée. En effet, l'entrée de la table d'allocation correspondant au bloc
@@ -136,7 +136,7 @@ le dernier de la chaîne. \newpage
   \label{microfs}
 \end{figure}
 
-La figure \ref{microfs} donne un exemple de contenu du système
+Cette figure donne un exemple de contenu du système
 de fichiers développé. Dans cet exemple, la taille d'un bloc est la même que la
 taille d'un secteur. Le système de fichiers contient quatre fichiers. Le premier,
 \mintinline{text}{splash.txt}, rentre dans un seul bloc. La chaîne d'allocation
@@ -153,19 +153,19 @@ n'est pas à l'indice 0x9 mais à l'indice 0xB.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Implémentation}
+\subsection{Implémentation du système de fichiers}
 La construction du système de fichiers se fait à l'aide d'un outil externe. Cet
 outil a été développé en utilisant la version standard de rust. Il s'exécute
-par conséquent depuis la machine hôte et le gestionnaire de paquet de rust, cargo,
+par conséquent depuis la machine hôte et le gestionnaire de paquet de rust, Cargo,
 peut être utilisé normalement. L'outil développé possède deux
 modes de fonctionnement. Soit à l'aide d'un menu soit directement en ligne de
 commande en spécifiant certaines options. Les deux modes de fonctionnement
 font exactement la même chose. Ils manipulent un fichier image donné.
-Cet outil permet de créer un système de fichiers vide, d'ajouter et de supprimer
+Cet outil permet de créer un système de fichiers vide, d'ajouter/supprimer
 un fichier, de lister l'intégralité des fichiers contenus dans le système de fichiers et enfin
 d'afficher les informations du \textit{superblock}. La gestion des arguments en
 ligne de commande se fait à l'aide du paquet \mintinline{text}{clap} installé avec
-cargo. Le menu avec les différentes options décrites se présente comme sur la figure
+Cargo. Le menu avec les différentes options décrites se présente comme sur la figure
 \ref{microfs_menu}. Toutes les options de ce menu peuvent aussi être appelées
 directement en ligne de commande (sauf l'option \textit{save} qui sauvegarde les
 modifications apportées au système de fichiers). \\ 
@@ -185,12 +185,12 @@ du système de fichiers. Nous avons vu comment le système de fichiers était co
 dans un fichier image et aussi que ce fichier image pouvait être donné à QEMU afin
 d'être chargé dans le disque dur virtuel. Il reste encore à lire dans le système
 de fichiers depuis le \textit{kernel}. Pour lire dans le système de fichiers, il
-faut utiliser les ports du controlleur de disque dur. QEMU peut émuler plusieurs
+faut utiliser les ports du controleur de disque dur. QEMU peut émuler plusieurs
 disques. Nous utilisons le premier dont les registres de contrôle sont aux ports
 0x1f0 à 0x1f7. La lecture et l'écriture de secteurs (512 octets) du disque dur
 sont fait par l'intermédiaire de ces registres. Un code d'exemple peut être trouvé
 sur le site OSDev \cite{ref24}. Deux fonctions ont été implémentées pour communiquer
-avec le controlleur de disque dont les prototypes sont ci-dessous.
+avec le controleur de disque dont les prototypes sont ci-dessous.
 
 \begin{code}
 \begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single,linenos]{rust}

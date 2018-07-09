@@ -5,6 +5,7 @@
 \usepackage{authblk}
 \usepackage{pdfpages}
 \usepackage{minted}
+\definecolor{bg}{RGB}{246,248,250}
 \newminted{rust}{fontsize=\footnotesize,tabsize=4,frame=single,linenos}
 \newminted{shell}{tabsize=4}
 \usepackage{dirtree}
@@ -39,6 +40,9 @@
 	}
 \makeglossaries
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \begin{document}
 \includepdf[pages=1]{../ITI_masque_couverture.pdf}
 
@@ -61,7 +65,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \addcontentsline{toc}{section}{Résumé}
-\includepdf[pages=1]{../ITI_masque_résumé_diplome_2018.pdf}
+\includepdf[pages=1]{../ITI_masque_resume_diplome_2018.pdf}
 
 \newpage
 \thispagestyle{empty}
@@ -94,8 +98,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newpage
-\addcontentsline{toc}{section}{Table des listings de code}
-\renewcommand\listoflistingscaption{Table des listings de code}
+\addcontentsline{toc}{section}{Table des \textit{listings} de code}
+\renewcommand\listoflistingscaption{Table des \textit{listings} de code}
 \listoflistings
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -225,9 +229,10 @@ d'un système d'exploitation \textit{bare metal}. La seconde partie a été l'im
 du système d'exploitation en question pour l'architecture \acrshort{IA-32}. Une étude
 des sujets liés à la conception d'\acrshort{os} pour cette architecture a été faite.
 Le deuxième objectif de ce projet est de comparer le langage Rust au langage C.
-On a vu que le Rust est considéré comme étant le successeur du C. Les comparer dans
-le cadre de la programmation d'\acrshort{os} est un bon moyen de juger les performances
-de Rust. Pour résumer, ce travail de Bachelor a suivi les étapes suivantes : \\
+On a vu que le Rust est considéré comme étant le successeur du C. La programmation
+d'\acrshort{os} est un bon contexte pour les comparer étant donnée qu'actuellement,
+la majorité des systèmes d'exploitation sont en C. Pour résumer, ce travail de
+Bachelor a suivi les étapes suivantes : \\
 
 \begin{itemize}[label=\textbullet]
 	\item Etude du langage de programmation Rust dans le cadre de la conception
@@ -291,24 +296,185 @@ de Rust. Pour résumer, ce travail de Bachelor a suivi les étapes suivantes : \
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newpage
-\section{Résultats}
+\section{Discussions}
+\subsection{Comparaison entre C et Rust}
+\subsubsection{Avantages du langage Rust}
+\paragraph{Sécurité} :
+un avantage principal du langage Rust par rapport au langage C est son compilateur.
+Beaucoup d'erreurs dans les programmes en C viennent du programmeur et du laxisme
+du compilateur C. Toutes les erreurs liées à la manipulation de la mémoire sont
+traitées directement à la compilation d'un programme Rust. Les variable immutables
+par défaut ainsi que le concept d'\textit{ownership} oblige le programmeur à faire
+un programme sécurisé au niveau de la manipulation de la mémoire.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\paragraph{Langage moderne} :
+Rust étant un langage moderne, il emprunte de nombreux concepts à d'autres langages.
+Les structures et les traits permettent de faire de la programmation orientée objet.
+Par exemple dans notre \acrshort{os}, l'implémentation de la macro \mintinline{rust}{print!}
+permettant d'afficher une chaîne de caractères formatée a été extrêment simple et
+rapide. Ceci a été permis grâce au concept de trait et à la manipulation de chaînes
+de caractères native à Rust.
+
+\paragraph{Flexibilité} :
+Rust est aussi beaucoup plus flexible que C. Des librairies peuvent être ajoutées
+au projet directement avec Cargo et \href{https://crates.io}{Crates.io}. De plus,
+Cargo permet aisément de faire des tests unitaires, de générer de la documentation
+pour le code et d'exécuter un projet avec de nombreuses dépendances.
+
+\paragraph{Rapidité} :
+un dernier avantage de Rust sont ses performances. D'après le site
+\href{https://benchmarksgame-team.pages.debian.net/benchmarksgame/}{Benchmarks Game},
+Rust est presque aussi performant que le C \cite{ref30}. Le langage Rust arrive
+donc a avoir presque les mêmes performances que le C tout en étant plus sécurisé,
+plus moderne et plus flexible.
+
+\subsubsection{Inconvénients du langage Rust}
+\paragraph{Documentation} :
+actuellement, un des gros inconvénients de Rust est sa documentation. Le langage
+étant récent, il est difficile de trouver des exemples sur internet. Il est vrai
+que l'équipe de Rust fournit des documents (livre de Rust, de Cargo, exemples, etc)
+mais ceux-ci restent légèrement incomplets au sujet des fonctionnalités avancées
+de Rust.
+
+\paragraph{Taille des exécutables} :
+le langage Rust offre de nombreux mécanismes de sécurité. Il est moderne et possède
+beaucoup de fonctionnalités. Le problème ici est que toutes ces fonctionnalités
+et mécanismes viennent augmenter la taille de l'exécutable généré par le compilateur.
+Un simple programme affichant une chaîne de caractères sur la sortie standard peut
+faire jusqu'à 500'000 octets alors qu'en C le même programme aurait une taille de
+8000 octets. Dans le chapitre \ref{sec:user:compil}, des méthodes ont été
+données pour diminuer la taille d'un exécutable. Cependant, ces méthodes suppriment
+certains mécanismes de Rust. Ces problèmes font qu'il est difficile d'utiliser
+Rust dans des systèmes embarqués là où C est indispensable.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newpage
-\section{Discussions}
 \subsection{Problèmes rencontrés}
+\subsubsection{Compilation de Rust}
+Les plus grandes difficultés du projet ont été rencontrées pour la compilation
+du Rust. Le langage et le compilateur sont bien documentés tant qu'on reste
+dans de la programmation haut niveau. Il n'y a pas contre que très peu d'informations
+sur les options avancées du compilateur. Un premier exemple est le contenu d'un
+fichier \textit{target triple}. Toutes les options de ce fichier sont énumérées
+dans la documentation de Rust mais il n'y a qu'une simple description, aucun exemple.
+De plus, les systèmes d'exploitation en Rust existants sont en général pour une
+architecture 64 bits. Il a donc aussi été compliqué de trouver des exemples pour
+l'architecture utilisée (\acrshort{IA-32}). Un autre exemple est la compilation
+d'un programme Rust en format binaire (expliquée dans la partie \ref{sec:user:compil}).
+Pour rappel, afin de compiler le code Rust en fichier objet destiné à un format
+binaire, il faut utiliser l'option \mintinline{text}{-C relocation_model=static}.
+D'après la documentation de la structure \mintinline{text}{Target}, l'option
+\mintinline{text}{relocation_model} peut être mise directement dans le
+\textit{target triple} sans passer par les options du compilateur \cite{ref29}.
+En réalité, l'option ne marche pas lorsqu'elle est mise dans le fichier \textit{target},
+il est impératif de spécifier l'option à Xargo.
+
+\subsubsection{Librairie \mintinline{text}{core}}
+La librairie \mintinline{text}{core}, bien que très pratique pour la réalisation
+de ce travail, a été la source de quelques problèmes. Cette librairie constitue
+la base de Rust. Sans cette librairie il ne serait même pas possible de faire une
+addition avec l'opérateur '\mintinline{text}{+}'. L'ennui est qu'elle offre aussi
+de nombreux mécansimes de protection tel que la macro \mintinline{text}{panic!}.
+Tous ces mécanismes réprésentent une place considérable dans un programme Rust
+compilé statiquement. Une solution a finalement été trouvé et détaillée dans le
+chapitre \ref{sec:user:compil} mais avant de comprendre que les programmes utilisateurs
+ne marchaient pas pour cette raison, il a fallu énormément investiguer.
+
+\subsubsection{Passage à la pagination}
+Le passage de la gestion mémoire par segmentation à la pagination a été l'origine
+de quelques difficultés. Peu de documentation est disponible à ce sujet sur internet.
+Des exemple peuvent être trouvés mais aucun n'a fonctionné dans le cas de notre
+\acrshort{os}. Le plus compliqué a été de déplacer le \textit{kernel} à la fin
+de la \acrshort{ram}. Ensuite il a fallu refaire la gestion des applications
+utilisateurs en utilisant la pagination. Il n'y a aucune information implicite
+sur l'utilisation du champ \mintinline{text}{cr3} du \acrshort{tss} dans la documentation
+d'Intel. Tout a été trouvé de manière empirique en regardant le comportement
+du \textit{kernel} lorsque des paramètres sont changés. De plus, quand il y a
+un problème au niveau de la pagination, le processeur lève en général l'exception
+\textit{Triple Fault} qui a pour conséquence de faire redémarrer QEMU. Il est
+donc plus compliqué de corriger les erreurs car il n'y a plus l'information de
+la ligne de code qui a provoqué l'exception.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\newpage
 \subsection{Améliorations possibles}
+Actuellement, toutes les fonctionnalités décrites dans ce document marchent
+parfaitement. Il n'a malheureusement pas été possible (faute de temps), de démontrer
+ces fonctionnalités avec une application utilisateur plus poussée. Une démo a
+été développée utilisant l'intégralité des appels systèmes du \textit{kernel}
+mais elle ne fait qu'afficher du texte à l'écran. Par exemple, il pourrait être
+intéressant de développer un jeu. Ce jeu pourrait avoir un affichage en mode texte
+avec l'implémentation d'une librairie comme \mintinline{text}{curses} en C ou bien
+un affichage pixel par pixel en changeant le mode de l'écran \acrshort{vga}. \\
+
+Plusieurs améliorations sont aussi possibles au niveau de l'implémentation des
+tâches utilisateurs. Une première amélioration pourrait être de gérer les
+librairies dans le système. Dans le cas de notre \acrshort{os}, on pourrait
+ainsi avoir la librairie système stockée dans le système de fichiers et les
+applications utilisateurs feraient appel à cette dernière plutôt que d'être
+chacun compilé statiquement. Cela implique d'avoir des pages partagées entre plusieurs
+tâches. Une autre amélioration possible pourrait être la gestion de la concurrence
+afin d'exécuter plusieurs tâches en parallèle. A l'heure actuelle, quand plusieurs
+tâches sont exécutées en même temps, elles sont impriquées. Une tâche en appelle
+une autre et elle reprend son exécution quand la nouvelle tâche a fini la sienne. \\
+
+Il pourrait aussi être intéressant d'améliorer le système de fichiers. Pour le
+moment le système de fichiers est très basique. Tous les fichiers sont ajoutés
+à la racine, il n'est pas possible d'écrire, il y a une limite de stockage
+de fichiers très basse. Toutes ces fonctionnalités actuellement non disponibles
+pourraient être rajoutées. On pourrait même imaginer un autre système de fichiers
+que \acrshort{fat} qui serait plus moderne.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \newpage
 \section{Conclusion}
+Ce projet avait plusieurs objectifs. Il fallait dans un premier temps prendre
+en main le langage de programmation Rust afin de développer un système d'exploitation
+\textit{bare metal}. Ce projet reposait beaucoup sur le cours de programmation
+système avancée de l'orientation logiciels et systèmes complexes à hepia. Etant
+en orientation matérielle, il a fallu étudier ce sujet en plus du langage Rust.
+Ce projet a donc été pour une grande partie un travail de recherche sur le Rust
+et sur la conception d'un système d'exploitation pour processeurs Intel 32 bits. \\
+
+Un système d'exploitation simple a finalement été développé. Il est intégralement
+en Rust (à l'exception de certaines fonctions en assembleur). Beaucoup
+de code a du être mis en \mintinline{text}{unsafe}. Il n'a pas été possible de faire
+autrement car nous sommes obligés de faire des manipulations mémoires considérées
+\mintinline{text}{unsafe} par le compilateur de Rust. Le mot-clé \mintinline{text}{unsafe}
+a tout de même été utilisé avec parcimonie car un des plus gros avantages de Rust
+est son compilateur. Mettre l'intégralité du code \mintinline{text}{unsafe} reviendrait
+à coder en C. Les objectifs internes à l'implémentation du système d'exploitation
+ont aussi été atteints. La gestion de la mémoire par pagination est fonctionnelle. 
+Il est aussi possible d'allouer de la mémoire dynamiquement en tant qu'utilisateur
+avec les fonctions \mintinline{rust}{malloc} et \mintinline{rust}{free} de la
+librairie système implémentée. Des périphériques sont utilisés (affichage \acrshort{vga},
+\textit{timer} et clavier). Ils sont gérés grâce aux ports d'entrées/sorties
+et aux interruptions. Un mécanisme de commutation de tâches a été implémenté
+permettant d'exécuter des applications utilisateurs. Par ailleurs, un shell
+a été développé rendant l'\acrshort{os} plus intéractif. \\
+
+Ce projet a aussi permis d'examiner le langage Rust. Il est vrai que c'est un
+langage très performant et sécurisé. Il a beaucoup d'avantages par rapport
+au C et ses inconvénients sont présents surtout car il est encore jeune. Il est
+fort possible que ce langage remplace un jour le C pour la programmation système
+et même pour la conception d'\acrshort{os}. Le système d'exploitation Redox est
+d'ailleurs entièrement fait en Rust \cite{ref31}. Il est tout de même difficile
+de voir un jour Rust remplacer complètement le C. En effet, il semble encore trop
+haut niveau pour les systèmes embarqués. \\
+
+En conclusion, je dirais que ce projet a été très instructif. N'ayant pas fait le
+cours de programmation système avancée, j'étais très motivé à l'idée de réaliser
+ce travail. La programmation système est un domaine qui m'intéresse beaucoup
+car il fait le lien entre le matériel et le logiciel. De plus, j'ai eu l'occasion
+d'apprendre un nouveau langage : le Rust. Je pense que ce langage a de l'avenir
+et que connaitre ses spécificités pourra être bénéfique pour plus tard. Je serais
+aussi curieux de voir ce qu'il pourrait donner dans la programmation pour systèmes
+embarqués.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -319,5 +485,51 @@ de Rust. Pour résumer, ce travail de Bachelor a suivi les étapes suivantes : \
 \nocite{*}
 \bibliographystyle{unsrt}
 \bibliography{biblio}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\section*{Annexe A : Code source}
+\addcontentsline{toc}{section}{Annexe A : Code source}
+Le code source du projet est disponible en annexe au format papier ou au format
+électronique à l'adresse \url{https://github.com/orpheeantoniadis/RustOS}.
+
+\newpage
+\section*{Annexe B : Installation}
+\addcontentsline{toc}{section}{Annexe B : Installation}
+Ci dessous, les étapes d'installation du système d'exploitation. Toutes les
+commandes sont à exécuter dans un shell d'une distribution Linux. \\
+
+\paragraph{Configuration de Linux} \mbox{} \\
+\begin{minted}[tabsize=4,frame=single,bgcolor=bg]{shell}
+sudo apt-get install git curl nasm qemu
+\end{minted}
+
+\paragraph{Configuration de Rust} \mbox{} \\
+\begin{minted}[tabsize=4,frame=single,bgcolor=bg]{shell}
+curl https://sh.rustup.rs -sSf | sh
+echo source $HOME/.cargo/env >> ~/.bashrc
+rustup override add nightly
+cargo install xargo
+rustup component add rust-src
+\end{minted}
+
+\paragraph{Compilation} \mbox{} \\
+\begin{minted}[tabsize=4,frame=single,bgcolor=bg]{shell}
+git clone git@github.com:orpheeantoniadis/RustOS.git
+cd RustOS
+make build
+\end{minted}
+
+\paragraph{Exécution} \mbox{} \\
+\begin{minted}[tabsize=4,frame=single,bgcolor=bg]{shell}
+make run
+\end{minted}
+
+\paragraph{Documentation} \mbox{} \\
+\begin{minted}[tabsize=4,frame=single,bgcolor=bg]{shell}
+make doc
+\end{minted}
 
 \end{document}

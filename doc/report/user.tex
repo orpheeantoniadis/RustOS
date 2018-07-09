@@ -3,8 +3,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Introduction}
-Pour rappel, notre \acrshort{os} est exécuté sur architecture Intel 32-bits (\acrshort{IA-32})
-en mode protégé. Dans cette architecture, quatre niveaux de privilèges existent.
+En mode protégé (architecture Intel 32 bits, \acrshort{IA-32}), quatre niveaux
+de privilèges existent.
 Nous avons déjà fait référence aux niveaux de privilèges (ou \textit{ring})
 dans ce document quand les différentes tables de descripteurs ont été décrites
 (chapitres \ref{gdt_ldt} sur la \acrshort{gdt} et la \acrshort{ldt} et \ref{idt}
@@ -24,7 +24,7 @@ Le \textit{ring} 0 est aussi appelé mode privilégié. Ce mode peut accéder au
 privilégiées de la mémoire (définies lors de l'initialisation de la \acrshort{gdt}
 ou de la pagination). Seulement ce mode peut contrôler le \acrshort{mmu}, accéder
 aux périphériques, définir les vecteurs d'interruptions ou encore arrêter le
-processeur. L'\acrshort{os} démarre en mode privilégié car le \textit{kernek} doit
+processeur. L'\acrshort{os} démarre en mode privilégié car le \textit{kernel} doit
 pouvoir accéder au matériel sans aucune restriction. Si ce n'était pas le cas toutes
 les configurations de la mémoire et des périphériques décrites dans ce document
 auraient été impossibles. En revanche, Les applications utilisateurs s'exécutent
@@ -34,7 +34,7 @@ du \textit{kernel}, modifier la configuration de la mémoire (\acrshort{gdt} ou
 répertoire de pages) ou encore changer l'\acrshort{idt}. Il est donc impératif
 d'exécuter les applications en \textit{ring} 3. Grâce à ce mécanisme de protection,
 le \textit{kernel} peut être complètement isolé des applications. Le rôle du \textit{kernel}
-est dans un premier temps d'attribuer et de gérer l'espace mémoire de chaque application.
+est d'abord d'attribuer et de gérer l'espace mémoire de chaque application.
 Il doit ensuite programmer correctement le processeur pour isoler les tâches exécutées
 et assurer le bon fonctionnement du système.
 
@@ -82,13 +82,13 @@ pages.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsubsection{Commutation de tâche}
+\subsubsection{Commutation de tâches}
 Nous avons vu dans la partie précédente qu'une tâche est divisée en deux parties,
 son espace d'exécution et sa structure \acrshort{tss}. Le processeur fourni un
 mécanisme permettant de sauvegarder le contexte de la tâche courante et de commuter
 vers une nouvelle tâche. La sauvegarde du contexte se fait en utilisant le \acrshort{tss}
 lié à la tâche à exécuter et plus particulièrement le sélecteur de ce \acrshort{tss}
-dans la \acrshort{gdt}. Ce dernier doit être donné commer argument à l'instruction
+dans la \acrshort{gdt}. Ce dernier doit être donné comme argument à l'instruction
 \mintinline{text}{ltr}. Cette instruction permet de charger le sélecteur de \acrshort{tss}
 dans un registre spécial, le \textit{task register}. Ce registre indique au processeur
 quelle est la tâche courante. Lorsqu'une commutation de tâche a lieu, l'état
@@ -154,8 +154,8 @@ utilisateur contenu par exemple dans le disque dur peut ainsi être exécuté en
 Les appels systèmes sont des fonctions exposées aux applications utilisateurs par
 le \textit{kernel}. Lors d'un appel système, un changement de privilèges a lieu
 car du code du \textit{kernel} est appelé. Il est important d'avoir des appels
-systèmes dans un \textit{kernel} appelant des applications utilisateurs car
-un programme utilisateur ne pourrait que modifier des variables et appeler des
+systèmes dans un \textit{kernel} appelant des applications utilisateurs.
+Un programme utilisateur ne pourrait que modifier des variables et appeler des
 fonctions s'il ne pouvait pas appeler du code au niveau du \textit{kernel}. Prenons
 par exemple un simple affichage texte. Le programme utilisateur étant isolé du reste
 de la mémoire, il ne peut pas accéder à la \acrshort{vram} et par conséquent ne
@@ -179,7 +179,7 @@ IDT[48] = IdtEntry::new(GDT_KERNEL_CODE_SELECTOR as u16,
 \end{code} \medbreak
 
 La structure des entrées de l'\acrshort{idt} est décrite dans la figure \ref{idt_entry}.
-Dans ce code, le constructeur d'une entrée prend comme argument le sélecteur de
+Dans ce code, le constructeur d'une entrée prend comme arguments : le sélecteur de
 segment pour accéder à l'\acrshort{isr} (ici le sélecteur de segment de code du
 \textit{kernel}), le pointeur vers l'\acrshort{isr} en question, le type d'entrée
 (ici c'est une \textit{trap gate}) et enfin le niveau de privilèges pour appeler
@@ -217,7 +217,7 @@ Les fonction décrites dans ce chapitre permettent seulement d'allouer de la mé
 en mode \textit{kernel}. Les tâches utilisateurs pourraient très bien se passer
 d'allocation dynamique et utiliser des structures statiques à la place. C'est
 d'ailleurs de cette manière qu'avaient été implémentées les tâches dans une version
-précédente de l'\acrshort{os}. Le problème qu'il y a avec l'utilisation de structures
+précédente de l'\acrshort{os}. Le problème avec l'utilisation de structures
 statiques est que la même quantité de mémoire va être utilisée pour une application
 faisant 200 octets et une application faisant 200'000 octets. De plus, toute la
 mémoire dédiée aux tâches doit alors être réservée dès la compilation du \textit{kernel}
@@ -235,12 +235,12 @@ de la mémoire en \textit{ring} 0 puis \textit{map} ces blocs mémoire
 dans le répertoire de pages de la tâche utilisateur en commençant à l'adresse 0x0.
 Le code du programme utilisateur est donc situé physiquement dans le \textit{heap}
 du \textit{kernel} mais est placé virtuellement au début de l'espace d'adressage
-de la tâche. Ce mécanisme est bien expliqué par la figure \ref{mem_view_user}.
+de la tâche. Ce mécanisme est expliqué par la figure \ref{mem_view_user}.
 Dans cet exemple, on peut voir que le code du programme utilisateur se situe
 dans le tas du \textit{kernel} mais qu'il est \textit{mappé} à l'adresse 0x0
 dans l'espace d'adressage de la tâche. A noter que le \textit{kernel} et son tas
 sont encore présents dans la mémoire en mode \textit{user} pour rendre possibles
-les appels systèmes (comme expliqué dans la partie précédente).
+les appels systèmes.
 
 \begin{figure}[!h]
   \centering
@@ -254,6 +254,7 @@ les appels systèmes (comme expliqué dans la partie précédente).
 
 \subsection{Librairie système et applications}
 \subsubsection{Compilation d'une application utilisateur}
+\label{sec:user:compil}
 Le \textit{kernel} pouvant charger et exécuter des programmes, les appels systèmes
 étant mis en place et l'allocation dynamique fonctionnelle en mode \textit{user},
 des programmes utilisateurs peuvent maintenant être écrits. Ces applications
@@ -264,7 +265,7 @@ compilé en format binaire. Sous ce format, le code du programme commence direct
 à l'adresse 0x0. Il n'y a pas d'entête comme avec le format \acrshort{elf}.
 Ci-dessous, les lignes importantes du \textit{linker} pour compiler en format
 binaire. Ce \textit{linker} appelle une fonction assembleur très simple qui
-appelle la fonction \mintinline{rust}{main} du programme \cite{ref42}. \\
+appelle la fonction \mintinline{rust}{main} du programme \cite{ref42}.
 
 \begin{code}
 \begin{minted}[fontsize=\footnotesize,tabsize=4,frame=single,linenos]{text}
@@ -278,27 +279,27 @@ SECTIONS {
 \label{lst:tasks:app:linker}
 \end{code} \bigbreak
 
-Le langage rust a été utilisé pour développer une librairie système et quelques
-applications. La compilation de rust est légèrement différente que pour le
-\textit{kernel} car d'une part nous sommes dans un format binaire, et ensuite
-il faut se défaire de tous les mécanismes de protection de rust qui prennent
-une place considérable dans l'exécutable. Pour compiler un programme rust
+Le langage Rust a été utilisé pour développer une librairie système et quelques
+applications. La compilation de Rust est légèrement différente que pour le
+\textit{kernel}. D'une part nous sommes dans un format binaire, et ensuite
+il faut se défaire de tous les mécanismes de protection de Rust qui prennent
+une place considérable dans l'exécutable. Pour compiler un programme Rust
 en fichier objet destiné à un format binaire, le \textit{flag}
 \mintinline{text}{-C relocation-model=static} doit être passé au compilateur.
 Par défaut, le compilateur cherche la \mintinline{text}{GLOBAL_OFFSET_TABLE}
 qui n'existe pas lorsque le format de l'exécutable est un format binaire.
 Ce \textit{flag} va dire au compilateur d'ignorer ce mécanisme \cite{ref25}.
 De cette façon, un programme utilisateur peut être compilé mais sa taille sera
-excessivement grande (dans l'ordre des 100'000 octets). Ceci est dû à plusieurs
-raisons. Tout d'abord, rust est compilé par défaut sans aucune option d'optimisation.
+excessivement grande (de l'ordre des 100'000 octets). Ceci est dû à plusieurs
+raisons. Tout d'abord, Rust est compilé par défaut sans aucune option d'optimisation.
 Le \textit{flag} \mintinline{text}{-C opt-level=3} fixe un niveau d'optimisation
 de 3 (plus haut niveau d'optimisation). Un peu plus d'optimisation peut être
-fait en disant à xargo de compiler en mode \textit{release} et non \textit{debug}
+fait en demandant à Xargo de compiler en mode \textit{release} et non \textit{debug}
 avec l'option \mintinline{text}{--release}. Le niveau d'optimisation a un impact
 sur le code écrit mais ce sont les librairies qui prennent le plus de place dans
 un exécutable. Pour rappel, nous compilons sans librairie standard mais la librairie
-\mintinline{text}{core} est tout de même utilisée. Quand on compile un code rust,
-l'intégralité de cette librairie est compilée aussi, même si certaines parties
+\mintinline{text}{core} est tout de même utilisée. Quand on compile un code Rust,
+l'intégralité de cette librairie est également compilée, même si certaines parties
 sont inutiles. Pour résoudre ce problème il faut cette fois-ci modifier le fichier
 \mintinline{text}{cargo.toml} et lui rajouter les lignes suivantes \cite{ref26}.
 
@@ -312,20 +313,20 @@ panic = 'abort'
 \label{lst:tasks:app:cargotoml}
 \end{code} \bigbreak
 
-A noter que les \textit{flags} passés au compilateur de rust (avec l'option
-\mintinline{text}{-C}), sont appliqués au compilateur rustc et non à xargo. Pour
-dire à xargo (ou cargo) de rajouter des options lors de la compilation, il faut
+A noter que les \textit{flags} passés au compilateur de Rust (avec l'option
+\mintinline{text}{-C}), sont appliqués au compilateur rustc et non à Xargo. Pour
+dire à Xargo (ou Cargo) de rajouter des options lors de la compilation, il faut
 mettre ces options dans la variable d'environnement \mintinline{text}{RUSTFLAGS}.
 Comme pour le \textit{kernel}, \acrshort{gcc} est utilisé pour \textit{linker}
 les fichier objets en un exécutable.
 
 \subsubsection{Librairie système}
 Pour faciliter le développement d'applications pour l'\acrshort{os}, une librairie
-système a été développée. Cetter dernière agit comme une mini librairie C offrant
+système a été développée. Cette dernière agit comme une mini librairie C offrant
 les fonctionnalités de base à un programme utilisateur. Cette librairie offre
 un niveau d'abstraction plus élevé cachant l'utilisation d'appels systèmes
 à l'utilisateur. Ainsi, aucune application n'a besoin de faire appel des appels
-systèmes. C'est la librairie système qui s'en charge. La librairie dévelopée
+systèmes. C'est la librairie système qui s'en charge. La librairie développée
 offre les fonctionnalités suivantes.
 
 \begin{center}
@@ -377,7 +378,7 @@ page dans le répertoire de pages de la tâche. Cet appel système appelle lui m
 la fonction \mintinline{rust}{umalloc} décrite dans la partie \ref{alloc_user}.
 la fonction \mintinline{rust}{malloc} gère la mémoire de la même manière que le
 \textit{kernel}. Un tas est utilisé au niveau utilisateur. Quand un utilisateur
-alloue de la mémoire, \mintinline{rust}{malloc} va regarder s'il y a assez de
+alloue de la mémoire, \mintinline{rust}{malloc} regarde s'il y a assez de
 place dans la dernière page allouée. Si c'est le cas, aucun appel système n'est
 appelé, une partie de la dernière page va être reservée. Dans le cas contraire,
 l'appel système pour allouer une page est appelé autant de fois que nécessaire.
@@ -385,15 +386,15 @@ Cette gestion utilise des entêtes qui fonctionnent exactement comme ceux du
 \textit{heap} du \textit{kernel} décrits en \ref{alloc_kernel}. La seule différence
 est que l'espace alloué n'est pas aligné sur 4096 octets (la taille d'une page)
 car l'utilisateur aura tendance à allouer des espaces plus petits et cela produirait
-une trop grande perte de mémoire. De plus, si l'espace alloué était alligné sur
+une trop grande perte de mémoire. De plus, si l'espace alloué était aligné sur
 la taille d'une page, un appel système aurait lieu à chaque allocation ce qui n'est
 pas souhaitable.
 
 \subsubsection{Applications développées}
 \paragraph{Shell} \mbox{} \\
 Actuellement, les applications utilisateurs ne peuvent être appélées que depuis
-le \textit{kernel}. Ceci n'est pas très pratique d'un point de vue utilisateur.
-Afin d'avoir un système d'exploitation un peu plus intéractif, un shell très
+le \textit{kernel}. Ceci n'est pas pratique d'un point de vue utilisateur.
+Afin d'avoir un système d'exploitation un peu plus interactif, un shell très
 simple a été développé. Ce shell permet de lire les fichiers du disque dur et
 d'exécuter d'autres applications utilisateurs. Le shell implémenté propose
 les fonctionallités suivantes.
